@@ -216,17 +216,17 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                   </FormControl>
                   <SelectContent>
                     {categoriesLoading ? (
-                      <SelectItem value="" disabled>
+                      <div className="p-2 text-sm text-muted-foreground">
                         Carregando categorias...
-                      </SelectItem>
+                      </div>
                     ) : categoriesError ? (
-                      <SelectItem value="" disabled>
+                      <div className="p-2 text-sm text-red-500">
                         Erro ao carregar categorias
-                      </SelectItem>
+                      </div>
                     ) : !categories || categories.length === 0 ? (
-                      <SelectItem value="" disabled>
+                      <div className="p-2 text-sm text-muted-foreground">
                         Nenhuma categoria encontrada
-                      </SelectItem>
+                      </div>
                     ) : (
                       categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
