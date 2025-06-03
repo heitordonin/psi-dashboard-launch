@@ -8,6 +8,7 @@ export interface Payment {
   status: 'draft' | 'pending' | 'paid' | 'failed';
   payment_url?: string;
   paid_date?: string;
+  payer_cpf?: string;
   created_at: string;
 }
 

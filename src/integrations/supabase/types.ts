@@ -151,6 +151,7 @@ export type Database = {
           id: string
           paid_date: string | null
           patient_id: string
+          payer_cpf: string | null
           payment_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
         }
@@ -161,6 +162,7 @@ export type Database = {
           id?: string
           paid_date?: string | null
           patient_id: string
+          payer_cpf?: string | null
           payment_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
         }
@@ -171,6 +173,7 @@ export type Database = {
           id?: string
           paid_date?: string | null
           patient_id?: string
+          payer_cpf?: string | null
           payment_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
         }
