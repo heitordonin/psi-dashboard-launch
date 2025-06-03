@@ -51,11 +51,10 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       patient_id: string; 
       amount: number; 
       due_date: string; 
-      description: string;
-      status?: string;
-      paid_date?: string;
+      status: 'draft' | 'pending' | 'paid' | 'failed';
+      paid_date?: string | null;
     }) => {
-      const { error } = await supabase.from('payments').insert([data]);
+      const { error } = await supabase.from('payments').insert(data);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -73,9 +72,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       patient_id: string; 
       amount: number; 
       due_date: string; 
-      description: string;
-      status?: string;
-      paid_date?: string;
+      status: 'draft' | 'pending' | 'paid' | 'failed';
+      paid_date?: string | null;
     }) => {
       const { error } = await supabase
         .from('payments')
@@ -130,8 +128,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         patient_id: formData.patient_id,
         amount: Number(formData.amount),
         due_date: formData.due_date,
-        description: formData.description.trim(),
-        status: isAlreadyReceived ? 'paid' : 'draft',
+        status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null
       };
       
