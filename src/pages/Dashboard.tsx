@@ -1,0 +1,27 @@
+
+import { SignedIn, SignedOut, SignOutButton } from "@clerk/clerk-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-center">
+        <SignedIn>
+          <h1 className="text-4xl font-bold mb-8">Setup OK</h1>
+          <SignOutButton>
+            <Button variant="outline" size="lg">Sair</Button>
+          </SignOutButton>
+        </SignedIn>
+        <SignedOut>
+          {navigate("/")}
+        </SignedOut>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
