@@ -7,10 +7,6 @@ import { useEffect } from "react";
 const Index = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // This will be handled by the SignedIn component
-  }, []);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
@@ -21,16 +17,21 @@ const Index = () => {
           </SignInButton>
         </SignedOut>
         <SignedIn>
-          <div>
-            {(() => {
-              navigate("/dashboard");
-              return null;
-            })()}
-          </div>
+          <RedirectToDashboard />
         </SignedIn>
       </div>
     </div>
   );
+};
+
+const RedirectToDashboard = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate("/dashboard");
+  }, [navigate]);
+
+  return null;
 };
 
 export default Index;

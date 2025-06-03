@@ -2,6 +2,7 @@
 import { SignedIn, SignedOut, SignOutButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Users } from "lucide-react";
 
 const Dashboard = () => {
@@ -39,15 +40,20 @@ const Dashboard = () => {
         </div>
       </SignedIn>
       <SignedOut>
-        <div>
-          {(() => {
-            navigate("/");
-            return null;
-          })()}
-        </div>
+        <RedirectToHome />
       </SignedOut>
     </div>
   );
+};
+
+const RedirectToHome = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate("/");
+  }, [navigate]);
+
+  return null;
 };
 
 export default Dashboard;

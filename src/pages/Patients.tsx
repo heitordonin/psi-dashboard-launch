@@ -1,7 +1,6 @@
-
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -398,15 +397,20 @@ const Patients = () => {
         </div>
       </SignedIn>
       <SignedOut>
-        <div>
-          {(() => {
-            navigate("/");
-            return null;
-          })()}
-        </div>
+        <RedirectToHome />
       </SignedOut>
     </div>
   );
+};
+
+const RedirectToHome = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate("/");
+  }, [navigate]);
+
+  return null;
 };
 
 export default Patients;
