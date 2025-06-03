@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,18 +36,41 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: categories } = useQuery({
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['expense-categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expense_categories')
-        .select('*')
-        .order('name');
+      console.log('Buscando categorias de despesa...');
+      try {
+        const { data, error } = await supabase
+          .from('expense_categories')
+          .select('*')
+          .order('name');
 
-      if (error) throw error;
-      return data as ExpenseCategory[];
+        if (error) {
+          console.error('Erro ao buscar categorias:', error);
+          throw error;
+        }
+        
+        console.log('Categorias encontradas:', data);
+        return data as ExpenseCategory[];
+      } catch (err) {
+        console.error('Erro na query de categorias:', err);
+        throw err;
+      }
     }
   });
+
+  // Log dos dados das categorias para debug
+  useEffect(() => {
+    if (categoriesError) {
+      console.error('Erro nas categorias:', categoriesError);
+      toast({
+        title: "Erro ao carregar categorias",
+        description: "Erro: " + categoriesError.message,
+        variant: "destructive",
+      });
+    }
+  }, [categoriesError, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,6 +94,8 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
+      console.log('Salvando despesa com valores:', values);
+      
       const expenseData = {
         category_id: values.category_id,
         amount: parseFloat(values.amount),
@@ -83,19 +109,27 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
           : null,
       };
 
+      console.log('Dados a serem salvos:', expenseData);
+
       if (expense) {
         const { error } = await supabase
           .from('expenses')
           .update(expenseData)
           .eq('id', expense.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao atualizar despesa:', error);
+          throw error;
+        }
       } else {
         const { error } = await supabase
           .from('expenses')
           .insert(expenseData);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao criar despesa:', error);
+          throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -109,6 +143,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
       onClose();
     },
     onError: (error) => {
+      console.error('Erro na mutação:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar despesa: " + error.message,
@@ -188,11 +223,25 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories?.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.code} - {category.name}
+                    {categoriesLoading ? (
+                      <SelectItem value="" disabled>
+                        Carregando categorias...
                       </SelectItem>
-                    ))}
+                    ) : categoriesError ? (
+                      <SelectItem value="" disabled>
+                        Erro ao carregar categorias
+                      </SelectItem>
+                    ) : !categories || categories.length === 0 ? (
+                      <SelectItem value="" disabled>
+                        Nenhuma categoria encontrada
+                      </SelectItem>
+                    ) : (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.code} - {category.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

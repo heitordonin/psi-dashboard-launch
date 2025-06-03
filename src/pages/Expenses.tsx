@@ -19,30 +19,57 @@ const Expenses = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: expenses, isLoading } = useQuery({
+  const { data: expenses, isLoading, error } = useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select(`
-          *,
-          expense_categories (*)
-        `)
-        .order('created_at', { ascending: false });
+      console.log('Carregando despesas...');
+      try {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select(`
+            *,
+            expense_categories (*)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as ExpenseWithCategory[];
+        if (error) {
+          console.error('Erro ao carregar despesas:', error);
+          throw error;
+        }
+        
+        console.log('Despesas carregadas:', data);
+        return data as ExpenseWithCategory[];
+      } catch (err) {
+        console.error('Erro na query de despesas:', err);
+        throw err;
+      }
     }
   });
 
+  // Log de erros para debug
+  useEffect(() => {
+    if (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast({
+        title: "Erro de conectividade",
+        description: "Erro ao conectar com o banco de dados: " + error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
   const deleteExpenseMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Excluindo despesa:', id);
       const { error } = await supabase
         .from('expenses')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao excluir despesa:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -52,6 +79,7 @@ const Expenses = () => {
       });
     },
     onError: (error) => {
+      console.error('Erro na exclusão:', error);
       toast({
         title: "Erro",
         description: "Erro ao excluir despesa: " + error.message,
@@ -87,6 +115,14 @@ const Expenses = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  // Adicionar logs de debug para conectividade
+  useEffect(() => {
+    console.log('Estado da página Expenses:');
+    console.log('- Loading:', isLoading);
+    console.log('- Error:', error);
+    console.log('- Expenses data:', expenses);
+  }, [isLoading, error, expenses]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SignedIn>
@@ -118,10 +154,32 @@ const Expenses = () => {
               </div>
             </header>
 
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <h3 className="text-red-800 font-medium">Erro de conectividade</h3>
+                <p className="text-red-600 text-sm mt-1">
+                  Não foi possível conectar ao banco de dados. Verifique sua conexão.
+                </p>
+                <p className="text-red-500 text-xs mt-2 font-mono">
+                  Detalhes: {error.message}
+                </p>
+              </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
               {isLoading ? (
                 <div className="p-8 text-center">
                   <p className="text-gray-500">Carregando despesas...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center">
+                  <p className="text-red-500 mb-4">Erro ao carregar dados</p>
+                  <Button 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['expenses'] })}
+                    variant="outline"
+                  >
+                    Tentar novamente
+                  </Button>
                 </div>
               ) : !expenses || expenses.length === 0 ? (
                 <div className="p-8 text-center">
