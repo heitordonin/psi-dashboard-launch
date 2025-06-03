@@ -7,7 +7,6 @@ import { useEffect } from "react";
 const Index = () => {
   const navigate = useNavigate();
 
-  // Redirect to dashboard if already signed in
   useEffect(() => {
     // This will be handled by the SignedIn component
   }, []);
@@ -22,7 +21,12 @@ const Index = () => {
           </SignInButton>
         </SignedOut>
         <SignedIn>
-          {navigate("/dashboard")}
+          <div>
+            {(() => {
+              navigate("/dashboard");
+              return null;
+            })()}
+          </div>
         </SignedIn>
       </div>
     </div>

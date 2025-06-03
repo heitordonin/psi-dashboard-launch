@@ -7,6 +7,10 @@ import { useEffect } from "react";
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // No side effects needed here, just component mount
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
@@ -17,7 +21,12 @@ const Dashboard = () => {
           </SignOutButton>
         </SignedIn>
         <SignedOut>
-          {navigate("/")}
+          <div>
+            {(() => {
+              navigate("/");
+              return null;
+            })()}
+          </div>
         </SignedOut>
       </div>
     </div>
