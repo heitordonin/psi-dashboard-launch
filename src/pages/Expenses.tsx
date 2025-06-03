@@ -1,4 +1,3 @@
-
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExpenseWithCategory } from "@/types/expense";
 import { ExpenseForm } from "@/components/ExpenseForm";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -104,6 +103,16 @@ const Expenses = () => {
     setEditingExpense(null);
   };
 
+  const openEditDialog = (expense: ExpenseWithCategory) => {
+    setEditingExpense(expense);
+    setIsFormOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setEditingExpense(null);
+    setIsFormOpen(true);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -137,20 +146,25 @@ const Expenses = () => {
                 <Button onClick={() => navigate('/dashboard')} variant="outline">
                   Voltar ao Dashboard
                 </Button>
-                <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-                  <SheetTrigger asChild>
-                    <Button onClick={() => setEditingExpense(null)}>
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openCreateDialog}>
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Despesa
                     </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-lg">
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+                      </DialogTitle>
+                    </DialogHeader>
                     <ExpenseForm 
                       expense={editingExpense} 
                       onClose={handleFormClose}
                     />
-                  </SheetContent>
-                </Sheet>
+                  </DialogContent>
+                </Dialog>
               </div>
             </header>
 
@@ -184,20 +198,25 @@ const Expenses = () => {
               ) : !expenses || expenses.length === 0 ? (
                 <div className="p-8 text-center">
                   <p className="text-gray-500 mb-4">Nenhuma despesa encontrada</p>
-                  <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <SheetTrigger asChild>
-                      <Button onClick={() => setEditingExpense(null)}>
+                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogTrigger asChild>
+                      <Button onClick={openCreateDialog}>
                         <Plus className="w-4 h-4 mr-2" />
                         Criar primeira despesa
                       </Button>
-                    </SheetTrigger>
-                    <SheetContent className="w-full sm:max-w-lg">
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+                        </DialogTitle>
+                      </DialogHeader>
                       <ExpenseForm 
                         expense={editingExpense} 
                         onClose={handleFormClose}
                       />
-                    </SheetContent>
-                  </Sheet>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               ) : (
                 <Table>
@@ -235,7 +254,7 @@ const Expenses = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEdit(expense)}
+                              onClick={() => openEditDialog(expense)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>

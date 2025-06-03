@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExpenseCategory, ExpenseWithCategory } from "@/types/expense";
@@ -202,12 +200,6 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
 
   return (
     <div className="space-y-6">
-      <SheetHeader>
-        <SheetTitle>
-          {expense ? "Editar Despesa" : "Nova Despesa"}
-        </SheetTitle>
-      </SheetHeader>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
