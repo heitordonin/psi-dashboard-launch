@@ -1,7 +1,5 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Payment } from "@/types/payment";
 import { DescriptionAutocomplete } from "./DescriptionAutocomplete";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Input } from "@/components/ui/input";
 
 interface Patient {
   id: string;
@@ -239,15 +239,10 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       </div>
 
       <div>
-        <Label htmlFor="amount">Valor (R$) *</Label>
-        <Input
-          id="amount"
-          type="number"
-          step="0.01"
-          min="1"
+        <Label htmlFor="amount">Valor *</Label>
+        <CurrencyInput
           value={formData.amount}
-          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-          placeholder="0,00"
+          onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
           className={errors.amount ? 'border-red-500' : ''}
         />
         {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}

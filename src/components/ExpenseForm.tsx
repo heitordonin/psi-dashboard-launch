@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExpenseCategory, ExpenseWithCategory } from "@/types/expense";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
@@ -207,11 +207,9 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
               <FormItem>
                 <FormLabel>Valor *</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0,00" 
-                    {...field} 
+                  <CurrencyInput
+                    value={field.value}
+                    onChange={(value) => field.onChange(value.toString())}
                   />
                 </FormControl>
                 <FormMessage />
@@ -240,11 +238,9 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
               <FormItem>
                 <FormLabel>Multa/Juros</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0,00" 
-                    {...field} 
+                  <CurrencyInput
+                    value={field.value}
+                    onChange={(value) => field.onChange(value.toString())}
                   />
                 </FormControl>
                 <FormMessage />
