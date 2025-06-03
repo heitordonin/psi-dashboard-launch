@@ -3,7 +3,7 @@ import { SignedIn, SignedOut, SignOutButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { Users, CreditCard } from "lucide-react";
+import { Users, CreditCard, Receipt } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +38,17 @@ const Dashboard = () => {
                 <p className="text-gray-600 mb-4">Gerencie cobranças e pagamentos</p>
                 <Button onClick={() => navigate('/cobrancas')} className="w-full">
                   Acessar Cobranças
+                </Button>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div className="flex items-center mb-4">
+                  <Receipt className="w-8 h-8 text-purple-600 mr-3" />
+                  <h2 className="text-xl font-semibold">Despesas</h2>
+                </div>
+                <p className="text-gray-600 mb-4">Gerencie despesas do consultório</p>
+                <Button onClick={() => navigate('/despesas')} className="w-full">
+                  Acessar Despesas
                 </Button>
               </div>
             </div>

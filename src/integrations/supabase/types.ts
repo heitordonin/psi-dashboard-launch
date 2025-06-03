@@ -9,6 +9,83 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      expense_categories: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_residential: boolean
+          is_revenue: boolean
+          name: string
+          requires_competency: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_residential?: boolean
+          is_revenue?: boolean
+          name: string
+          requires_competency?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_residential?: boolean
+          is_revenue?: boolean
+          name?: string
+          requires_competency?: boolean
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category_id: string
+          competency: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_residential: boolean
+          payment_date: string
+          penalty_interest: number
+          residential_adjusted_amount: number | null
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          competency?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_residential?: boolean
+          payment_date: string
+          penalty_interest?: number
+          residential_adjusted_amount?: number | null
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          competency?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_residential?: boolean
+          payment_date?: string
+          penalty_interest?: number
+          residential_adjusted_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birthdate: string | null
