@@ -8,14 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Info } from "lucide-react";
+import { Plus, Edit, Trash2, Info, Settings } from "lucide-react";
 import { PaymentForm } from "@/components/PaymentForm";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentWithPatient } from "@/types/payment";
+import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
 
 const Payments = () => {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | undefined>();
   const queryClient = useQueryClient();
 
@@ -93,6 +95,13 @@ const Payments = () => {
               <Button variant="outline" onClick={() => navigate('/dashboard')}>
                 Voltar
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDescriptionsOpen(true)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Descrições padrão
+              </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={openCreateDialog}>
@@ -122,6 +131,7 @@ const Payments = () => {
                     <TableHead>Paciente</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Vencimento</TableHead>
+                    <TableHead>Descrição</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
@@ -129,7 +139,7 @@ const Payments = () => {
                 <TableBody>
                   {payments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         Nenhuma cobrança cadastrada
                       </TableCell>
                     </TableRow>
@@ -139,6 +149,7 @@ const Payments = () => {
                         <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
                         <TableCell>{formatCurrency(payment.amount)}</TableCell>
                         <TableCell>{formatDate(payment.due_date)}</TableCell>
+                        <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <PaymentStatusBadge status={payment.status} />
@@ -180,6 +191,11 @@ const Payments = () => {
             )}
           </div>
         </div>
+
+        <InvoiceDescriptionsManager 
+          isOpen={isDescriptionsOpen}
+          onClose={() => setIsDescriptionsOpen(false)}
+        />
       </SignedIn>
       <SignedOut>
         <RedirectToHome />

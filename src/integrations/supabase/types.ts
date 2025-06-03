@@ -86,6 +86,24 @@ export type Database = {
           },
         ]
       }
+      invoice_descriptions: {
+        Row: {
+          created_at: string
+          id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          text?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           birthdate: string | null

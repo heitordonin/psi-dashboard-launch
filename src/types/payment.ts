@@ -4,6 +4,7 @@ export interface Payment {
   patient_id: string;
   amount: number;
   due_date: string;
+  description?: string;
   status: 'draft' | 'pending' | 'paid' | 'failed';
   payment_url?: string;
   created_at: string;

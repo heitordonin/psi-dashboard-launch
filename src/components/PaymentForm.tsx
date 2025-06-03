@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Payment } from "@/types/payment";
+import { DescriptionAutocomplete } from "./DescriptionAutocomplete";
 
 interface Patient {
   id: string;
@@ -23,7 +24,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   const [formData, setFormData] = useState({
     patient_id: payment?.patient_id || '',
     amount: payment?.amount || '',
-    due_date: payment?.due_date || ''
+    due_date: payment?.due_date || '',
+    description: payment?.description || ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -42,7 +44,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string }) => {
+    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string }) => {
       const { error } = await supabase.from('payments').insert([data]);
       if (error) throw error;
     },
@@ -57,7 +59,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string }) => {
+    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string }) => {
       const { error } = await supabase
         .from('payments')
         .update(data)
@@ -95,6 +97,10 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         newErrors.due_date = 'Data de vencimento deve ser hoje ou no futuro';
       }
     }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Descrição é obrigatória';
+    }
     
     setErrors(newErrors);
     
@@ -102,7 +108,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       const paymentData = {
         patient_id: formData.patient_id,
         amount: Number(formData.amount),
-        due_date: formData.due_date
+        due_date: formData.due_date,
+        description: formData.description.trim()
       };
       
       if (payment) {
@@ -161,6 +168,12 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         />
         {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
       </div>
+
+      <DescriptionAutocomplete
+        value={formData.description}
+        onChange={(value) => setFormData({ ...formData, description: value })}
+        error={errors.description}
+      />
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
