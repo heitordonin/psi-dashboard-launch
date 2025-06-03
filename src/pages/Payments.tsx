@@ -131,6 +131,7 @@ const Payments = () => {
                     <TableHead>Paciente</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Vencimento</TableHead>
+                    <TableHead>Data Recebimento</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
@@ -139,7 +140,7 @@ const Payments = () => {
                 <TableBody>
                   {payments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                         Nenhuma cobrança cadastrada
                       </TableCell>
                     </TableRow>
@@ -149,6 +150,9 @@ const Payments = () => {
                         <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
                         <TableCell>{formatCurrency(payment.amount)}</TableCell>
                         <TableCell>{formatDate(payment.due_date)}</TableCell>
+                        <TableCell>
+                          {payment.paid_date ? formatDate(payment.paid_date) : '-'}
+                        </TableCell>
                         <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

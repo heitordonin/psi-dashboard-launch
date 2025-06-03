@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
     due_date: payment?.due_date || '',
     description: payment?.description || ''
   });
+  const [isAlreadyReceived, setIsAlreadyReceived] = useState(payment?.status === 'paid');
+  const [receivedDate, setReceivedDate] = useState(payment?.paid_date || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const queryClient = useQueryClient();
@@ -44,7 +47,14 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string }) => {
+    mutationFn: async (data: { 
+      patient_id: string; 
+      amount: number; 
+      due_date: string; 
+      description: string;
+      status?: string;
+      paid_date?: string;
+    }) => {
       const { error } = await supabase.from('payments').insert([data]);
       if (error) throw error;
     },
@@ -59,7 +69,14 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string }) => {
+    mutationFn: async (data: { 
+      patient_id: string; 
+      amount: number; 
+      due_date: string; 
+      description: string;
+      status?: string;
+      paid_date?: string;
+    }) => {
       const { error } = await supabase
         .from('payments')
         .update(data)
@@ -101,6 +118,10 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
     if (!formData.description.trim()) {
       newErrors.description = 'Descrição é obrigatória';
     }
+
+    if (isAlreadyReceived && !receivedDate) {
+      newErrors.receivedDate = 'Data do recebimento é obrigatória quando valor já foi recebido';
+    }
     
     setErrors(newErrors);
     
@@ -109,7 +130,9 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         patient_id: formData.patient_id,
         amount: Number(formData.amount),
         due_date: formData.due_date,
-        description: formData.description.trim()
+        description: formData.description.trim(),
+        status: isAlreadyReceived ? 'paid' : 'draft',
+        paid_date: isAlreadyReceived ? receivedDate : null
       };
       
       if (payment) {
@@ -174,6 +197,31 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         onChange={(value) => setFormData({ ...formData, description: value })}
         error={errors.description}
       />
+
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="already-received"
+            checked={isAlreadyReceived}
+            onCheckedChange={(checked) => setIsAlreadyReceived(checked === true)}
+          />
+          <Label htmlFor="already-received">Valor já recebido?</Label>
+        </div>
+
+        {isAlreadyReceived && (
+          <div>
+            <Label htmlFor="received_date">Data do Recebimento *</Label>
+            <Input
+              id="received_date"
+              type="date"
+              value={receivedDate}
+              onChange={(e) => setReceivedDate(e.target.value)}
+              className={errors.receivedDate ? 'border-red-500' : ''}
+            />
+            {errors.receivedDate && <p className="text-red-500 text-sm mt-1">{errors.receivedDate}</p>}
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>

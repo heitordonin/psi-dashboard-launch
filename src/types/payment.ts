@@ -7,6 +7,7 @@ export interface Payment {
   description?: string;
   status: 'draft' | 'pending' | 'paid' | 'failed';
   payment_url?: string;
+  paid_date?: string;
   created_at: string;
 }
 
