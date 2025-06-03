@@ -1,10 +1,11 @@
 
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,8 @@ interface Patient {
   phone?: string;
   email?: string;
   birthdate?: string;
+  has_financial_guardian: boolean;
+  guardian_cpf?: string;
 }
 
 const validateCPF = (cpf: string): boolean => {
@@ -59,7 +62,9 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
     cpf: patient?.cpf || '',
     phone: patient?.phone || '',
     email: patient?.email || '',
-    birthdate: patient?.birthdate || ''
+    birthdate: patient?.birthdate || '',
+    has_financial_guardian: patient?.has_financial_guardian || false,
+    guardian_cpf: patient?.guardian_cpf || ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -117,6 +122,14 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
       newErrors.email = 'Email inválido';
     }
     
+    if (formData.has_financial_guardian) {
+      if (!formData.guardian_cpf.trim()) {
+        newErrors.guardian_cpf = 'CPF do responsável é obrigatório quando há responsável financeiro';
+      } else if (!validateCPF(formData.guardian_cpf)) {
+        newErrors.guardian_cpf = 'CPF do responsável inválido';
+      }
+    }
+    
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
@@ -125,7 +138,10 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
         cpf: formData.cpf.replace(/\D/g, ''),
         phone: formData.phone || null,
         email: formData.email || null,
-        birthdate: formData.birthdate || null
+        birthdate: formData.birthdate || null,
+        guardian_cpf: formData.has_financial_guardian && formData.guardian_cpf 
+          ? formData.guardian_cpf.replace(/\D/g, '') 
+          : null
       };
       
       if (patient) {
@@ -136,10 +152,10 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
     }
   };
 
-  const handleCPFChange = (value: string) => {
+  const handleCPFChange = (value: string, field: 'cpf' | 'guardian_cpf') => {
     const cleanValue = value.replace(/\D/g, '');
     if (cleanValue.length <= 11) {
-      setFormData({ ...formData, cpf: formatCPF(cleanValue) });
+      setFormData({ ...formData, [field]: formatCPF(cleanValue) });
     }
   };
 
@@ -161,7 +177,7 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
         <Input
           id="cpf"
           value={formData.cpf}
-          onChange={(e) => handleCPFChange(e.target.value)}
+          onChange={(e) => handleCPFChange(e.target.value, 'cpf')}
           placeholder="000.000.000-00"
           className={errors.cpf ? 'border-red-500' : ''}
         />
@@ -198,6 +214,37 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
           value={formData.birthdate}
           onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
         />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="has_financial_guardian"
+            checked={formData.has_financial_guardian}
+            onCheckedChange={(checked) => {
+              setFormData({ 
+                ...formData, 
+                has_financial_guardian: checked,
+                guardian_cpf: checked ? formData.guardian_cpf : ''
+              });
+            }}
+          />
+          <Label htmlFor="has_financial_guardian">Existe um responsável financeiro?</Label>
+        </div>
+        
+        {formData.has_financial_guardian && (
+          <div>
+            <Label htmlFor="guardian_cpf">CPF do Responsável Financeiro *</Label>
+            <Input
+              id="guardian_cpf"
+              value={formData.guardian_cpf}
+              onChange={(e) => handleCPFChange(e.target.value, 'guardian_cpf')}
+              placeholder="000.000.000-00"
+              className={errors.guardian_cpf ? 'border-red-500' : ''}
+            />
+            {errors.guardian_cpf && <p className="text-red-500 text-sm mt-1">{errors.guardian_cpf}</p>}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
@@ -282,7 +329,7 @@ const Patients = () => {
                     Novo Paciente
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
@@ -301,7 +348,8 @@ const Patients = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
+                    <TableHead>Nome Completo</TableHead>
+                    <TableHead>CPF</TableHead>
                     <TableHead>Telefone</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
@@ -310,7 +358,7 @@ const Patients = () => {
                 <TableBody>
                   {patients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                         Nenhum paciente cadastrado
                       </TableCell>
                     </TableRow>
@@ -318,6 +366,7 @@ const Patients = () => {
                     patients.map((patient) => (
                       <TableRow key={patient.id}>
                         <TableCell className="font-medium">{patient.full_name}</TableCell>
+                        <TableCell>{formatCPF(patient.cpf)}</TableCell>
                         <TableCell>{patient.phone || '-'}</TableCell>
                         <TableCell>{patient.email || '-'}</TableCell>
                         <TableCell>
