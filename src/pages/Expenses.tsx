@@ -151,7 +151,16 @@ const Expenses = () => {
     },
     onSuccess: (deletedId) => {
       console.log('Exclusão bem-sucedida, atualizando cache:', deletedId);
+      
+      // Atualizar o cache imediatamente removendo a despesa excluída
+      queryClient.setQueryData(['expenses'], (oldData: ExpenseWithCategory[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.filter(expense => expense.id !== deletedId);
+      });
+      
+      // Invalidar a query para refazer a busca do servidor
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      
       toast({
         title: "Despesa excluída",
         description: "A despesa foi excluída com sucesso.",
