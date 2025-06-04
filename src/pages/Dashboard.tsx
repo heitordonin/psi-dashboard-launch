@@ -1,10 +1,15 @@
 
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { Users, CreditCard, Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, Bell, User, CreditCard, Calculator, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
-import LogoutButton from "@/components/LogoutButton";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ModuleTile } from "@/components/dashboard/ModuleTile";
+import { QuickTile } from "@/components/dashboard/QuickTile";
+import { SummaryCard } from "@/components/dashboard/SummaryCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +20,57 @@ const Dashboard = () => {
       navigate("/login");
     }
   }, [user, isLoading, navigate]);
+
+  // Fetch summary data for current month
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: ['dashboard-summary', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      // Fetch payments summary
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('status, amount')
+        .eq('owner_id', user.id)
+        .gte('due_date', startOfMonth.toISOString().split('T')[0])
+        .lte('due_date', endOfMonth.toISOString().split('T')[0]);
+
+      // Fetch expenses summary
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('amount')
+        .eq('owner_id', user.id)
+        .gte('payment_date', startOfMonth.toISOString().split('T')[0])
+        .lte('payment_date', endOfMonth.toISOString().split('T')[0]);
+
+      const paymentsByStatus = payments?.reduce((acc, payment) => {
+        if (!acc[payment.status]) acc[payment.status] = { count: 0, total: 0 };
+        acc[payment.status].count++;
+        acc[payment.status].total += Number(payment.amount);
+        return acc;
+      }, {} as Record<string, { count: number; total: number }>) || {};
+
+      const expenseTotal = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
+
+      return {
+        receivedCount: paymentsByStatus.paid?.count || 0,
+        receivedTotal: paymentsByStatus.paid?.total || 0,
+        confirmedCount: paymentsByStatus.pending?.count || 0,
+        confirmedTotal: paymentsByStatus.pending?.total || 0,
+        pendingCount: paymentsByStatus.draft?.count || 0,
+        pendingTotal: paymentsByStatus.draft?.total || 0,
+        overdueCount: 0, // TODO: Calculate overdue based on due_date < today
+        overdueTotal: 0,
+        expenseCount: expenses?.length || 0,
+        expenseTotal
+      };
+    },
+    enabled: !!user?.id
+  });
 
   if (isLoading) {
     return (
@@ -28,55 +84,131 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null; // Will redirect to login
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <header className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Bem-vindo ao sistema de gerenciamento</p>
-          </header>
+      {/* Top Bar */}
+      <div className="bg-indigo-700 px-4 py-4">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-indigo-600 cursor-not-allowed"
+            disabled
+          >
+            <Menu className="w-6 h-6" />
+          </Button>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex items-center mb-4">
-                <Users className="w-8 h-8 text-blue-600 mr-3" />
-                <h2 className="text-xl font-semibold">Pacientes</h2>
-              </div>
-              <p className="text-gray-600 mb-4">Gerencie informações dos pacientes</p>
-              <Button onClick={() => navigate('/patients')} className="w-full">
-                Acessar Pacientes
-              </Button>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex items-center mb-4">
-                <CreditCard className="w-8 h-8 text-green-600 mr-3" />
-                <h2 className="text-xl font-semibold">Cobranças</h2>
-              </div>
-              <p className="text-gray-600 mb-4">Gerencie cobranças e pagamentos</p>
-              <Button onClick={() => navigate('/payments')} className="w-full">
-                Acessar Cobranças
-              </Button>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex items-center mb-4">
-                <Receipt className="w-8 h-8 text-purple-600 mr-3" />
-                <h2 className="text-xl font-semibold">Despesas</h2>
-              </div>
-              <p className="text-gray-600 mb-4">Gerencie despesas do consultório</p>
-              <Button onClick={() => navigate('/expenses')} className="w-full">
-                Acessar Despesas
-              </Button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-indigo-600 cursor-not-allowed"
+              disabled
+            >
+              <Bell className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-indigo-600 cursor-not-allowed"
+              disabled
+            >
+              <User className="w-6 h-6" />
+            </Button>
           </div>
-          
-          <div className="text-center">
-            <LogoutButton />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Referral Banner */}
+        <Card className="flex items-center gap-4 bg-indigo-50 p-4">
+          <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
+            <FileText className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-indigo-900">Indique o Declara Psi</h3>
+            <p className="text-sm text-indigo-800">
+              Ganhe <strong>3 meses grátis</strong> ao indicar uma colega.
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate('/referral')} 
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700"
+          >
+            Indicar
+          </Button>
+        </Card>
+
+        {/* Quick Action Tiles */}
+        <div className="grid grid-cols-4 gap-2 overflow-x-auto">
+          <QuickTile
+            icon={CreditCard}
+            label="Criar cobrança"
+            onClick={() => navigate('/payments')}
+          />
+          <QuickTile
+            icon={FileText}
+            label="Link pagamento"
+            onClick={() => {}}
+            disabled
+          />
+          <QuickTile
+            icon={Calculator}
+            label="Simular IR"
+            onClick={() => {}}
+            disabled
+          />
+          <QuickTile
+            icon={FileText}
+            label="Registrar despesa"
+            onClick={() => navigate('/expenses')}
+          />
+        </div>
+
+        {/* Summary Card */}
+        <SummaryCard 
+          data={summaryData || {
+            receivedCount: 0,
+            receivedTotal: 0,
+            confirmedCount: 0,
+            confirmedTotal: 0,
+            pendingCount: 0,
+            pendingTotal: 0,
+            overdueCount: 0,
+            overdueTotal: 0,
+            expenseCount: 0,
+            expenseTotal: 0
+          }}
+          isLoading={summaryLoading}
+        />
+
+        {/* Navigation Modules */}
+        <div className="bg-white p-6 rounded-lg">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900">Módulos</h2>
+          <div className="grid grid-cols-3 gap-4">
+            <ModuleTile
+              icon={User}
+              color="indigo"
+              label="Pacientes"
+              to="/patients"
+            />
+            <ModuleTile
+              icon={CreditCard}
+              color="green"
+              label="Cobranças"
+              to="/payments"
+            />
+            <ModuleTile
+              icon={Receipt}
+              color="purple"
+              label="Despesas"
+              to="/expenses"
+            />
           </div>
         </div>
       </div>
