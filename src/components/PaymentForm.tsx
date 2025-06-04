@@ -41,16 +41,19 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
+      console.log('Buscando pacientes...');
       const { data, error } = await supabase
         .from('patients')
         .select('id, full_name, guardian_cpf')
         .order('full_name');
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar pacientes:', error);
+        throw error;
+      }
+      console.log('Pacientes encontrados:', data);
       return data as Patient[];
     }
   });
-
-  const selectedPatient = patients.find(p => p.id === formData.patient_id);
 
   // Atualizar payer_cpf quando o paciente ou titular mudar
   const handlePatientChange = (patientId: string) => {
@@ -119,9 +122,14 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       status: 'draft' | 'pending' | 'paid' | 'failed';
       paid_date?: string | null;
       payer_cpf?: string | null;
+      description?: string | null;
     }) => {
+      console.log('Criando cobrança com dados:', data);
       const { error } = await supabase.from('payments').insert(data);
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar cobrança:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -129,6 +137,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       onClose();
     },
     onError: (error: any) => {
+      console.error('Erro na mutação de criação:', error);
       toast.error('Erro ao criar cobrança: ' + error.message);
     }
   });
@@ -141,12 +150,17 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       status: 'draft' | 'pending' | 'paid' | 'failed';
       paid_date?: string | null;
       payer_cpf?: string | null;
+      description?: string | null;
     }) => {
+      console.log('Atualizando cobrança com dados:', data);
       const { error } = await supabase
         .from('payments')
         .update(data)
         .eq('id', payment!.id);
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar cobrança:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -154,6 +168,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       onClose();
     },
     onError: (error: any) => {
+      console.error('Erro na mutação de atualização:', error);
       toast.error('Erro ao atualizar cobrança: ' + error.message);
     }
   });
@@ -205,7 +220,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         due_date: formData.due_date,
         status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null,
-        payer_cpf: paymentTitular === 'other' ? payerCpf.replace(/\D/g, '') : null
+        payer_cpf: paymentTitular === 'other' ? payerCpf.replace(/\D/g, '') : null,
+        description: formData.description || null
       };
       
       if (payment) {
