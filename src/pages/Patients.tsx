@@ -22,6 +22,8 @@ interface Patient {
   has_financial_guardian: boolean;
   guardian_cpf?: string;
   is_payment_from_abroad: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 type SortField = 'full_name' | 'cpf';

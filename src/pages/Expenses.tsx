@@ -25,6 +25,7 @@ interface ExpenseCategory {
 
 interface ExpenseWithCategory {
   id: string;
+  category_id: string;
   amount: number;
   payment_date: string;
   description?: string;
@@ -32,6 +33,7 @@ interface ExpenseWithCategory {
   is_residential: boolean;
   residential_adjusted_amount?: number;
   penalty_interest: number;
+  created_at: string;
   expense_categories: ExpenseCategory;
 }
 
@@ -70,7 +72,16 @@ const Expenses = () => {
       const { data, error } = await supabase
         .from('expenses')
         .select(`
-          *,
+          id,
+          category_id,
+          amount,
+          payment_date,
+          description,
+          competency,
+          is_residential,
+          residential_adjusted_amount,
+          penalty_interest,
+          created_at,
           expense_categories (
             id,
             name,
