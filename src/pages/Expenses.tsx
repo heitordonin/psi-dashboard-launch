@@ -146,9 +146,10 @@ const Expenses = () => {
                 <Button onClick={() => navigate('/dashboard')} variant="outline">
                   Voltar ao Dashboard
                 </Button>
+                {/* Desktop New Expense Button */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog}>
+                    <Button onClick={openCreateDialog} className="hidden md:flex">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Despesa
                     </Button>
@@ -275,6 +276,30 @@ const Expenses = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Floating Action Button */}
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              onClick={openCreateDialog}
+              className="fixed bottom-6 right-4 z-50 md:hidden h-14 w-14 rounded-full shadow-lg"
+              size="icon"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+              </DialogTitle>
+            </DialogHeader>
+            <ExpenseForm 
+              expense={editingExpense} 
+              onClose={handleFormClose}
+            />
+          </DialogContent>
+        </Dialog>
       </SignedIn>
       <SignedOut>
         <RedirectToHome />

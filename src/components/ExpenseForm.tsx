@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,7 +230,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                     ) : (
                       categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
-                          {category.code} - {category.name}
+                          {category.name}
                         </SelectItem>
                       ))
                     )}
