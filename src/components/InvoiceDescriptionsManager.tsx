@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 interface InvoiceDescription {
   id: string;
@@ -28,15 +29,19 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
       console.log('Carregando descrições...');
+      console.log('Usuário autenticado:', isAuthenticated);
+      
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
         .order('created_at', { ascending: false });
+      
       if (error) {
         console.error('Erro ao carregar descrições:', error);
         throw error;
@@ -44,12 +49,17 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen
+    enabled: isOpen && isAuthenticated && !authLoading
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
+      console.log('Status de autenticação:', { isAuthenticated, authLoading });
+      
+      if (!isAuthenticated) {
+        throw new Error('Usuário não autenticado');
+      }
       
       // Don't include owner_id - let Supabase set it automatically via auth.uid() default
       const { error } = await supabase
@@ -172,6 +182,34 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const truncateText = (text: string, maxLength: number = 50) => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
+
+  if (authLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center">Carregando autenticação...</div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 text-center text-red-500">
+            Você precisa estar autenticado para gerenciar descrições.
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
