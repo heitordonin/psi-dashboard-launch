@@ -71,8 +71,11 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
     setPaymentTitular(value);
     if (value === 'patient') {
       setPayerCpf('');
-    } else if (value === 'other' && selectedPatient?.guardian_cpf) {
-      setPayerCpf(selectedPatient.guardian_cpf);
+    } else if (value === 'other') {
+      const selectedPatient = patients.find(p => p.id === formData.patient_id);
+      if (selectedPatient?.guardian_cpf) {
+        setPayerCpf(selectedPatient.guardian_cpf);
+      }
     }
   };
 
