@@ -146,20 +146,22 @@ const Expenses = () => {
         throw new Error(`Erro ao excluir despesa: ${error.message}`);
       }
 
-      console.log('Despesa excluída com sucesso');
+      console.log('Despesa excluída com sucesso do backend');
       return id;
     },
     onSuccess: (deletedId) => {
-      console.log('Exclusão bem-sucedida, atualizando cache:', deletedId);
+      console.log('Mutation bem-sucedida, removendo do cache:', deletedId);
       
-      // Atualizar o cache imediatamente removendo a despesa excluída
+      // Remover imediatamente do cache local
       queryClient.setQueryData(['expenses'], (oldData: ExpenseWithCategory[] | undefined) => {
-        if (!oldData) return [];
-        return oldData.filter(expense => expense.id !== deletedId);
+        if (!oldData) {
+          console.log('Cache vazio, retornando array vazio');
+          return [];
+        }
+        const filteredData = oldData.filter(expense => expense.id !== deletedId);
+        console.log('Cache atualizado:', filteredData.length, 'despesas restantes');
+        return filteredData;
       });
-      
-      // Invalidar a query para refazer a busca do servidor
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
       
       toast({
         title: "Despesa excluída",
@@ -173,6 +175,11 @@ const Expenses = () => {
         description: error.message || "Não foi possível excluir a despesa.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      console.log('Mutation finalizada, invalidando queries');
+      // Invalidar queries após a conclusão para garantir sincronização
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
     }
   });
 
@@ -182,7 +189,7 @@ const Expenses = () => {
   };
 
   const handleDelete = async (expense: ExpenseWithCategory) => {
-    console.log('Confirmando exclusão da despesa:', expense.id);
+    console.log('Iniciando processo de exclusão da despesa:', expense.id);
     deleteExpenseMutation.mutate(expense.id);
   };
 
