@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Menu, Bell, User, CreditCard, Calculator, FileText } from "lucide-react";
+import { Menu, Bell, User, CreditCard, Calculator, FileText, Receipt } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
