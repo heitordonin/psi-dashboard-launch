@@ -115,7 +115,6 @@ export type Database = {
       }
       patients: {
         Row: {
-          birthdate: string | null
           cpf: string
           created_at: string
           email: string | null
@@ -123,12 +122,12 @@ export type Database = {
           guardian_cpf: string | null
           has_financial_guardian: boolean
           id: string
+          is_payment_from_abroad: boolean
           owner_id: string | null
           phone: string | null
           updated_at: string
         }
         Insert: {
-          birthdate?: string | null
           cpf: string
           created_at?: string
           email?: string | null
@@ -136,12 +135,12 @@ export type Database = {
           guardian_cpf?: string | null
           has_financial_guardian?: boolean
           id?: string
+          is_payment_from_abroad?: boolean
           owner_id?: string | null
           phone?: string | null
           updated_at?: string
         }
         Update: {
-          birthdate?: string | null
           cpf?: string
           created_at?: string
           email?: string | null
@@ -149,6 +148,7 @@ export type Database = {
           guardian_cpf?: string | null
           has_financial_guardian?: boolean
           id?: string
+          is_payment_from_abroad?: boolean
           owner_id?: string | null
           phone?: string | null
           updated_at?: string

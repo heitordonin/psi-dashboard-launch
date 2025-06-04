@@ -7,6 +7,7 @@ export interface Patient {
   email?: string;
   guardian_cpf?: string;
   has_financial_guardian: boolean;
+  is_payment_from_abroad: boolean;
   created_at: string;
   updated_at: string;
 }

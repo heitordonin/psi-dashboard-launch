@@ -1,75 +1,116 @@
-
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ExpenseWithCategory } from "@/types/expense";
-import { ExpenseForm } from "@/components/ExpenseForm";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Plus, Edit, Trash2, Settings, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ExpenseForm } from "@/components/ExpenseForm";
+import { AdvancedExpenseFilter, ExpenseFilters } from "@/components/AdvancedExpenseFilter";
+import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
-type SortField = 'amount' | 'payment_date';
+interface ExpenseCategory {
+  id: string;
+  name: string;
+  code: string;
+  is_residential: boolean;
+  is_revenue: boolean;
+  requires_competency: boolean;
+}
+
+interface ExpenseWithCategory {
+  id: string;
+  amount: number;
+  payment_date: string;
+  description?: string;
+  competency?: string;
+  is_residential: boolean;
+  residential_adjusted_amount?: number;
+  penalty_interest: number;
+  expense_categories: ExpenseCategory;
+}
+
+type SortField = 'amount' | 'payment_date' | 'category_name';
 type SortDirection = 'asc' | 'desc';
 
 const Expenses = () => {
   const navigate = useNavigate();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<ExpenseWithCategory | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<ExpenseWithCategory | undefined>();
+  const [deletingExpense, setDeletingExpense] = useState<ExpenseWithCategory | undefined>();
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [filters, setFilters] = useState({
-    categories: [] as string[],
+  const [filters, setFilters] = useState<ExpenseFilters>({
+    categoryId: "",
     startDate: "",
     endDate: "",
+    isResidential: "",
+    competency: ""
   });
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!user) {
       navigate("/login");
     }
-  }, [user, isLoading, navigate]);
+  }, [user, navigate]);
 
-  const { data: expenses, isLoading: expensesLoading, error } = useQuery({
+  const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
-      console.log('Carregando despesas...');
-      try {
-        const { data, error } = await supabase
-          .from('expenses')
-          .select(`
-            *,
-            expense_categories (*)
-          `)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Erro ao carregar despesas:', error);
-          throw error;
-        }
+      console.log('Expenses - Buscando despesas para usuário:', user?.id);
+      
+      const { data, error } = await supabase
+        .from('expenses')
+        .select(`
+          *,
+          expense_categories (
+            id,
+            name,
+            code,
+            is_residential,
+            is_revenue,
+            requires_competency
+          )
+        `)
+        .order('payment_date', { ascending: false });
         
-        console.log('Despesas carregadas:', data);
-        return data as ExpenseWithCategory[];
-      } catch (err) {
-        console.error('Erro na query de despesas:', err);
-        throw err;
+      if (error) {
+        console.error('Expenses - Erro ao buscar despesas:', error);
+        throw error;
       }
+      
+      console.log('Expenses - Despesas encontradas:', data);
+      return data as ExpenseWithCategory[];
+    },
+    enabled: !!user,
+    retry: 1
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['expense-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data as ExpenseCategory[];
     },
     enabled: !!user
   });
 
   // Filter and sort expenses
   const filteredAndSortedExpenses = expenses?.filter(expense => {
-    // Filter by categories
-    if (filters.categories.length > 0 && !filters.categories.includes(expense.category_id)) {
+    // Filter by category
+    if (filters.categoryId && expense.expense_categories.id !== filters.categoryId) {
       return false;
     }
     
@@ -79,6 +120,16 @@ const Expenses = () => {
     }
     
     if (filters.endDate && expense.payment_date > filters.endDate) {
+      return false;
+    }
+    
+    // Filter by residential
+    if (filters.isResidential !== "" && expense.is_residential.toString() !== filters.isResidential) {
+      return false;
+    }
+    
+    // Filter by competency
+    if (filters.competency && expense.competency !== filters.competency) {
       return false;
     }
     
@@ -94,6 +145,9 @@ const Expenses = () => {
     } else if (sortField === 'payment_date') {
       aValue = new Date(a.payment_date).getTime();
       bValue = new Date(b.payment_date).getTime();
+    } else if (sortField === 'category_name') {
+      aValue = a.expense_categories.name.toLowerCase();
+      bValue = b.expense_categories.name.toLowerCase();
     } else {
       return 0;
     }
@@ -121,135 +175,67 @@ const Expenses = () => {
     return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
   };
 
-  // Log de erros para debug
-  useEffect(() => {
-    if (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast({
-        title: "Erro de conectividade",
-        description: "Erro ao conectar com o banco de dados: " + error.message,
-        variant: "destructive",
-      });
-    }
-  }, [error, toast]);
-
-  const deleteExpenseMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('=== INICIANDO EXCLUSÃO ===');
-      console.log('ID da despesa:', id);
-      console.log('Usuário autenticado:', user?.id);
+      console.log('Expenses - Deletando despesa:', id);
       
-      const { error: deleteError, status } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', id);
-
-      console.log('Supabase delete status:', status, deleteError);
-
-      if (deleteError) {
-        console.error('Erro ao excluir despesa:', deleteError);
-        
-        // Check for authentication/authorization errors
-        if (status === 401 || status === 403) {
-          const errorMessage = deleteError.message || 'Erro de autorização';
-          const errorDetails = deleteError.details || 'Verifique se você tem permissão para excluir esta despesa';
-          throw new Error(`${errorMessage}: ${errorDetails}`);
-        }
-        
-        throw new Error(`Erro ao excluir despesa: ${deleteError.message}`);
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) {
+        console.error('Expenses - Erro ao deletar:', error);
+        throw error;
       }
-
-      // Only show success if status is 204 (successful deletion)
-      if (status !== 204) {
-        console.error('Status inesperado:', status);
-        throw new Error(`Status de resposta inesperado: ${status}`);
-      }
-
-      console.log('=== EXCLUSÃO CONCLUÍDA COM SUCESSO ===');
-      return id;
     },
-    onSuccess: (deletedId) => {
-      console.log('=== SUCESSO NA EXCLUSÃO ===');
-      console.log('ID excluído:', deletedId);
-      
-      // Invalidar a query para recarregar os dados
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      
-      toast({
-        title: "Despesa excluída",
-        description: "Despesa excluída com sucesso.",
-      });
-      
-      console.log('=== PROCESSO DE EXCLUSÃO CONCLUÍDO ===');
+      toast.success('Despesa excluída com sucesso!');
+      setDeletingExpense(undefined);
     },
     onError: (error: any) => {
-      console.error('=== ERRO NA EXCLUSÃO ===');
-      console.error('Detalhes do erro:', error);
-      
-      toast({
-        title: "Erro ao excluir",
-        description: error.message || "Não foi possível excluir a despesa.",
-        variant: "destructive",
-      });
+      toast.error('Erro ao excluir despesa: ' + error.message);
     }
   });
 
-  const handleEdit = (expense: ExpenseWithCategory) => {
-    setEditingExpense(expense);
-    setIsFormOpen(true);
+  const handleDelete = (expense: ExpenseWithCategory) => {
+    setDeletingExpense(expense);
   };
 
-  const handleDelete = async (expense: ExpenseWithCategory) => {
-    console.log('=== INICIANDO PROCESSO DE EXCLUSÃO ===');
-    console.log('Despesa selecionada:', {
-      id: expense.id,
-      categoria: expense.expense_categories?.name,
-      valor: expense.amount,
-      owner_id: expense.owner_id
-    });
-    
-    deleteExpenseMutation.mutate(expense.id);
-  };
-
-  const handleFormClose = () => {
-    setIsFormOpen(false);
-    setEditingExpense(null);
+  const confirmDelete = () => {
+    if (deletingExpense) {
+      deleteMutation.mutate(deletingExpense.id);
+    }
   };
 
   const openEditDialog = (expense: ExpenseWithCategory) => {
     setEditingExpense(expense);
-    setIsFormOpen(true);
+    setIsDialogOpen(true);
   };
 
   const openCreateDialog = () => {
-    setEditingExpense(null);
-    setIsFormOpen(true);
+    setEditingExpense(undefined);
+    setIsDialogOpen(true);
   };
 
-  const handleFilterChange = (newFilters: typeof filters) => {
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingExpense(undefined);
+  };
+
+  const handleFilterChange = (newFilters: ExpenseFilters) => {
     setFilters(newFilters);
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Adicionar logs de debug para conectividade
-  useEffect(() => {
-    console.log('Estado da página Expenses:');
-    console.log('- Loading:', isLoading);
-    console.log('- Error:', error);
-    console.log('- Expenses data:', expenses);
-  }, [isLoading, error, expenses]);
-
-  if (isLoading) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -260,114 +246,125 @@ const Expenses = () => {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect to login
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-6 mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Despesas</h1>
-              <p className="text-gray-600">Gerencie as despesas do consultório</p>
+        <div className="flex flex-col gap-6 mb-6">
+          <h1 className="text-3xl font-bold">Despesas</h1>
+          
+          {/* Mobile-first responsive button layout */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:flex-wrap sm:items-center">
+            <div className="flex gap-2 order-1 sm:order-1">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none">
+                Voltar
+              </Button>
             </div>
             
-            {/* Mobile-first responsive button layout */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:flex-wrap sm:items-center">
-              <div className="flex gap-2 order-1 sm:order-1">
-                <Button onClick={() => navigate('/dashboard')} variant="outline" className="flex-1 sm:flex-none">
-                  Voltar ao Dashboard
-                </Button>
-              </div>
+            <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDescriptionsOpen(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Descrições padrão</span>
+                <span className="sm:hidden">Descrições</span>
+              </Button>
               
-              <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
-                <AdvancedExpenseFilter 
-                  onFilterChange={handleFilterChange}
-                  currentFilters={filters}
-                />
-                
-                {/* Desktop New Expense Button */}
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog} className="hidden sm:flex">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Nova Despesa
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <ExpenseForm 
-                      expense={editingExpense} 
-                      onClose={handleFormClose}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <AdvancedExpenseFilter 
+                onFilterChange={handleFilterChange}
+                currentFilters={filters}
+                categories={categories}
+                expenses={expenses}
+              />
+            </div>
+            
+            <div className="order-2 sm:order-3">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Despesa
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingExpense ? 'Editar Despesa' : 'Nova Despesa'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ExpenseForm expense={editingExpense} onClose={closeDialog} />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
+        </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <h3 className="text-red-800 font-medium">Erro de conectividade</h3>
-              <p className="text-red-600 text-sm mt-1">
-                Não foi possível conectar ao banco de dados. Verifique sua conexão.
-              </p>
-              <p className="text-red-500 text-xs mt-2 font-mono">
-                Detalhes: {error.message}
-              </p>
-            </div>
-          )}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {isLoading ? (
+            <div className="p-8 text-center">Carregando...</div>
+          ) : (
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4 p-4">
+                {filteredAndSortedExpenses?.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma despesa encontrada
+                  </div>
+                ) : (
+                  filteredAndSortedExpenses?.map((expense) => (
+                    <Card key={expense.id}>
+                      <CardContent className="text-sm p-4">
+                        <p><strong>Categoria:</strong> {expense.expense_categories.name}</p>
+                        <p><strong>Valor:</strong> {formatCurrency(expense.amount)}</p>
+                        {expense.is_residential && expense.residential_adjusted_amount && (
+                          <p><strong>Valor Ajustado:</strong> {formatCurrency(expense.residential_adjusted_amount)}</p>
+                        )}
+                        <p><strong>Data:</strong> {formatDate(expense.payment_date)}</p>
+                        <p><strong>Descrição:</strong> {expense.description || '-'}</p>
+                        {expense.competency && (
+                          <p><strong>Competência:</strong> {expense.competency}</p>
+                        )}
+                        {expense.is_residential && (
+                          <p><strong>Residencial:</strong> Sim</p>
+                        )}
+                        <div className="flex justify-end gap-2 mt-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(expense)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(expense)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
 
-          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-            {expensesLoading ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">Carregando despesas...</p>
-              </div>
-            ) : error ? (
-              <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">Erro ao carregar dados</p>
-                <Button 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['expenses'] })}
-                  variant="outline"
-                >
-                  Tentar novamente
-                </Button>
-              </div>
-            ) : !filteredAndSortedExpenses || filteredAndSortedExpenses.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500 mb-4">Nenhuma despesa encontrada</p>
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar primeira despesa
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <ExpenseForm 
-                      expense={editingExpense} 
-                      onClose={handleFormClose}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Categoria</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('category_name')}
+                        >
+                          Categoria {getSortIcon('category_name')}
+                        </Button>
+                      </TableHead>
                       <TableHead>
                         <Button
                           variant="ghost"
@@ -387,84 +384,98 @@ const Expenses = () => {
                         </Button>
                       </TableHead>
                       <TableHead>Descrição</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>Competência</TableHead>
+                      <TableHead>Residencial</TableHead>
+                      <TableHead className="w-24">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAndSortedExpenses.map((expense) => (
-                      <TableRow key={expense.id}>
-                        <TableCell>
-                          {expense.expense_categories.name}
-                          {expense.is_residential && (
-                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Residencial
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{formatCurrency(expense.amount)}</span>
-                            {expense.is_residential && expense.residential_adjusted_amount && (
-                              <span className="text-xs text-gray-500">
-                                Ajustado: {formatCurrency(expense.residential_adjusted_amount)}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatDate(expense.payment_date)}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {expense.description || '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(expense)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <DeleteConfirmationDialog
-                              title="Confirmar exclusão"
-                              description={`Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}? Esta ação não pode ser desfeita.`}
-                              onConfirm={() => handleDelete(expense)}
-                              isLoading={deleteExpenseMutation.isPending}
-                            />
-                          </div>
+                    {filteredAndSortedExpenses?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          Nenhuma despesa encontrada
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredAndSortedExpenses?.map((expense) => (
+                        <TableRow key={expense.id}>
+                          <TableCell className="font-medium">
+                            <span>{expense.expense_categories.name}</span>
+                            {expense.expense_categories.is_revenue && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                Receita
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span>{formatCurrency(expense.amount)}</span>
+                              {expense.is_residential && expense.residential_adjusted_amount && (
+                                <span className="text-xs text-gray-500">
+                                  Ajustado: {formatCurrency(expense.residential_adjusted_amount)}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatDate(expense.payment_date)}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {expense.description || '-'}
+                          </TableCell>
+                          <TableCell>{expense.competency || '-'}</TableCell>
+                          <TableCell>
+                            {expense.is_residential ? (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                Sim
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                                Não
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditDialog(expense)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(expense)}
+                                disabled={deleteMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Mobile Floating Action Button */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            onClick={openCreateDialog}
-            className="fixed bottom-6 right-4 z-50 sm:hidden h-14 w-14 rounded-full shadow-lg"
-            size="icon"
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-            </DialogTitle>
-          </DialogHeader>
-          <ExpenseForm 
-            expense={editingExpense} 
-            onClose={handleFormClose}
-          />
-        </DialogContent>
-      </Dialog>
+      <InvoiceDescriptionsManager 
+        isOpen={isDescriptionsOpen}
+        onClose={() => setIsDescriptionsOpen(false)}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={!!deletingExpense}
+        onClose={() => setDeletingExpense(undefined)}
+        onConfirm={confirmDelete}
+        title="Excluir Despesa"
+        description={`Tem certeza que deseja excluir esta despesa da categoria ${deletingExpense?.expense_categories.name}?`}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };

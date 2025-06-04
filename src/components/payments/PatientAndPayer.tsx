@@ -8,6 +8,7 @@ interface Patient {
   id: string;
   full_name: string;
   guardian_cpf?: string;
+  is_payment_from_abroad?: boolean;
 }
 
 interface PatientAndPayerProps {
@@ -25,6 +26,7 @@ interface PatientAndPayerProps {
   setPayerCpf: (value: string) => void;
   errors: Record<string, string>;
   validateCpf: (cpf: string) => boolean;
+  showCpfSection?: boolean;
 }
 
 export const PatientAndPayer = ({
@@ -36,7 +38,8 @@ export const PatientAndPayer = ({
   payerCpf,
   setPayerCpf,
   errors,
-  validateCpf
+  validateCpf,
+  showCpfSection = false
 }: PatientAndPayerProps) => {
   const formatCpf = (value: string) => {
     const cleanValue = value.replace(/\D/g, '');
@@ -70,61 +73,67 @@ export const PatientAndPayer = ({
     }
   };
 
-  return (
-    <>
-      <div>
-        <Label htmlFor="patient_id">Paciente *</Label>
-        <Select
-          value={formData.patient_id}
-          onValueChange={handlePatientChange}
-        >
-          <SelectTrigger className={errors.patient_id ? 'border-red-500' : ''}>
-            <SelectValue placeholder="Selecione um paciente" />
-          </SelectTrigger>
-          <SelectContent>
-            {patients.map((patient) => (
-              <SelectItem key={patient.id} value={patient.id}>
-                {patient.full_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
-      </div>
-
-      <div>
-        <Label>CPF do Titular *</Label>
-        <RadioGroup
-          value={paymentTitular}
-          onValueChange={handleTitularChange}
-          className="mt-2"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="patient" id="patient" />
-            <Label htmlFor="patient">CPF do Paciente</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="other" id="other" />
-            <Label htmlFor="other">Outro CPF</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      {paymentTitular === 'other' && (
+  if (showCpfSection) {
+    // Only render CPF section when showCpfSection is true
+    return (
+      <>
         <div>
-          <Label htmlFor="payer_cpf">CPF do Titular *</Label>
-          <Input
-            id="payer_cpf"
-            type="text"
-            value={formatCpf(payerCpf)}
-            onChange={(e) => setPayerCpf(e.target.value)}
-            placeholder="000.000.000-00"
-            maxLength={14}
-            className={errors.payerCpf ? 'border-red-500' : ''}
-          />
-          {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
+          <Label>CPF do Titular *</Label>
+          <RadioGroup
+            value={paymentTitular}
+            onValueChange={handleTitularChange}
+            className="mt-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="patient" id="patient" />
+              <Label htmlFor="patient">CPF do Paciente</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="other" id="other" />
+              <Label htmlFor="other">Outro CPF</Label>
+            </div>
+          </RadioGroup>
         </div>
-      )}
-    </>
+
+        {paymentTitular === 'other' && (
+          <div>
+            <Label htmlFor="payer_cpf">CPF do Titular *</Label>
+            <Input
+              id="payer_cpf"
+              type="text"
+              value={formatCpf(payerCpf)}
+              onChange={(e) => setPayerCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              className={errors.payerCpf ? 'border-red-500' : ''}
+            />
+            {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Default rendering with patient selection
+  return (
+    <div>
+      <Label htmlFor="patient_id">Paciente *</Label>
+      <Select
+        value={formData.patient_id}
+        onValueChange={handlePatientChange}
+      >
+        <SelectTrigger className={errors.patient_id ? 'border-red-500' : ''}>
+          <SelectValue placeholder="Selecione um paciente" />
+        </SelectTrigger>
+        <SelectContent>
+          {patients.map((patient) => (
+            <SelectItem key={patient.id} value={patient.id}>
+              {patient.full_name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
+    </div>
   );
 };

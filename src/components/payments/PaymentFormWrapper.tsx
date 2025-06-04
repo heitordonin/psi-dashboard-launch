@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { DefaultDescriptionModal } from "../DefaultDescriptionModal";
 import { InvoiceDescriptionsManager } from "../InvoiceDescriptionsManager";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -21,6 +21,7 @@ interface Patient {
   id: string;
   full_name: string;
   guardian_cpf?: string;
+  is_payment_from_abroad?: boolean;
 }
 
 interface PaymentFormWrapperProps {
@@ -39,6 +40,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
   const [receivedDate, setReceivedDate] = useState(payment?.paid_date || '');
   const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>('patient');
   const [payerCpf, setPayerCpf] = useState(payment?.payer_cpf || '');
+  const [isIncomeFromAbroad, setIsIncomeFromAbroad] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDefaultDescriptions, setShowDefaultDescriptions] = useState(false);
   const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
@@ -53,7 +55,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       
       const { data, error } = await supabase
         .from('patients')
-        .select('id, full_name, guardian_cpf')
+        .select('id, full_name, guardian_cpf, is_payment_from_abroad')
         .order('full_name');
         
       if (error) {
@@ -189,7 +191,8 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       newErrors.description = 'Descrição é obrigatória';
     }
 
-    if (paymentTitular === 'other') {
+    // Only validate CPF if income is NOT from abroad
+    if (!isIncomeFromAbroad && paymentTitular === 'other') {
       if (!payerCpf.trim()) {
         newErrors.payerCpf = 'CPF do titular é obrigatório';
       } else if (!validateCpf(payerCpf)) {
@@ -217,7 +220,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
         due_date: isAlreadyReceived ? receivedDate : formData.due_date,
         status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null,
-        payer_cpf: paymentTitular === 'other' ? payerCpf.replace(/\D/g, '') : null,
+        payer_cpf: (!isIncomeFromAbroad && paymentTitular === 'other') ? payerCpf.replace(/\D/g, '') : null,
         description: formData.description?.trim() || null
       };
       
@@ -235,6 +238,8 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
     setFormData({ ...formData, description });
   };
 
+  const selectedPatient = patients.find(p => p.id === formData.patient_id);
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -249,6 +254,32 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
           errors={errors}
           validateCpf={validateCpf}
         />
+
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="income_from_abroad"
+              checked={isIncomeFromAbroad}
+              onCheckedChange={setIsIncomeFromAbroad}
+            />
+            <Label htmlFor="income_from_abroad">Esta renda vem do exterior?</Label>
+          </div>
+        </div>
+
+        {!isIncomeFromAbroad && !selectedPatient?.is_payment_from_abroad && (
+          <PatientAndPayer
+            patients={patients}
+            formData={formData}
+            setFormData={setFormData}
+            paymentTitular={paymentTitular}
+            setPaymentTitular={setPaymentTitular}
+            payerCpf={payerCpf}
+            setPayerCpf={setPayerCpf}
+            errors={errors}
+            validateCpf={validateCpf}
+            showCpfSection={true}
+          />
+        )}
 
         <ReceivedCheckbox
           isAlreadyReceived={isAlreadyReceived}

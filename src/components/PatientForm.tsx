@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,7 +22,8 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     email: patient?.email || '',
     phone: patient?.phone || '',
     has_financial_guardian: patient?.has_financial_guardian || false,
-    guardian_cpf: patient?.guardian_cpf || ''
+    guardian_cpf: patient?.guardian_cpf || '',
+    is_payment_from_abroad: patient?.is_payment_from_abroad || false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -138,10 +140,13 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
       newErrors.full_name = 'Nome completo é obrigatório';
     }
     
-    if (!formData.cpf.trim()) {
-      newErrors.cpf = 'CPF é obrigatório';
-    } else if (!validateCpf(formData.cpf)) {
-      newErrors.cpf = 'CPF inválido';
+    // CPF is only required if payment is NOT from abroad
+    if (!formData.is_payment_from_abroad) {
+      if (!formData.cpf.trim()) {
+        newErrors.cpf = 'CPF é obrigatório';
+      } else if (!validateCpf(formData.cpf)) {
+        newErrors.cpf = 'CPF inválido';
+      }
     }
 
     if (formData.has_financial_guardian) {
@@ -161,11 +166,12 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     if (Object.keys(newErrors).length === 0) {
       const patientData = {
         full_name: formData.full_name.trim(),
-        cpf: formData.cpf.replace(/\D/g, ''),
+        cpf: formData.is_payment_from_abroad ? null : formData.cpf.replace(/\D/g, ''),
         email: formData.email?.trim() || null,
         phone: formData.phone?.replace(/\D/g, '') || null,
         has_financial_guardian: formData.has_financial_guardian,
-        guardian_cpf: formData.has_financial_guardian ? formData.guardian_cpf.replace(/\D/g, '') : null
+        guardian_cpf: formData.has_financial_guardian ? formData.guardian_cpf.replace(/\D/g, '') : null,
+        is_payment_from_abroad: formData.is_payment_from_abroad
       };
       
       console.log('Enviando dados do paciente:', patientData);
@@ -192,18 +198,37 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
         {errors.full_name && <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>}
       </div>
 
-      <div>
-        <Label htmlFor="cpf">CPF *</Label>
-        <Input
-          id="cpf"
-          value={formatCpf(formData.cpf)}
-          onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-          placeholder="000.000.000-00"
-          maxLength={14}
-          className={errors.cpf ? 'border-red-500' : ''}
-        />
-        {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="is_payment_from_abroad"
+            checked={formData.is_payment_from_abroad}
+            onCheckedChange={(checked) => {
+              setFormData({ 
+                ...formData, 
+                is_payment_from_abroad: checked,
+                cpf: checked ? '' : formData.cpf // Clear CPF if from abroad
+              });
+            }}
+          />
+          <Label htmlFor="is_payment_from_abroad">Pagamento vem do exterior?</Label>
+        </div>
       </div>
+
+      {!formData.is_payment_from_abroad && (
+        <div>
+          <Label htmlFor="cpf">CPF *</Label>
+          <Input
+            id="cpf"
+            value={formatCpf(formData.cpf)}
+            onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+            placeholder="000.000.000-00"
+            maxLength={14}
+            className={errors.cpf ? 'border-red-500' : ''}
+          />
+          {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+        </div>
+      )}
 
       <div>
         <Label htmlFor="email">Email</Label>
