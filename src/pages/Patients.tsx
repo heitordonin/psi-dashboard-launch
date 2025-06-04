@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,8 @@ const validateCPF = (cpf: string): boolean => {
   return true;
 };
 
-const formatCPF = (cpf: string): string => {
+const formatCPF = (cpf: string | null | undefined): string => {
+  if (!cpf) return '-';
   const cleanCPF = cpf.replace(/\D/g, '');
   return cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 };
