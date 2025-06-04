@@ -9,7 +9,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
-import { useAuth } from '@clerk/clerk-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface InvoiceDescription {
@@ -30,10 +29,9 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { ensureSupabaseAuth } = useSupabaseAuth();
+  const { ensureSupabaseAuth, isAuthenticated } = useSupabaseAuth();
 
-  console.log('InvoiceDescriptionsManager - Estado Clerk:', { isSignedIn, isLoaded });
+  console.log('InvoiceDescriptionsManager - Status autenticação:', isAuthenticated);
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
@@ -55,7 +53,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && isSignedIn && isLoaded
+    enabled: isOpen && isAuthenticated
   });
 
   const createMutation = useMutation({
@@ -194,20 +192,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  if (!isLoaded) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
-          </DialogHeader>
-          <div className="p-8 text-center">Carregando autenticação...</div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -219,8 +204,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
               Você precisa estar autenticado para gerenciar descrições.
             </div>
             <div className="text-sm text-gray-600">
-              <p>Status de autenticação: {isSignedIn ? 'Autenticado' : 'Não autenticado'}</p>
-              <p>Carregando: {!isLoaded ? 'Sim' : 'Não'}</p>
+              <p>Por favor, faça login e tente novamente.</p>
             </div>
           </div>
         </DialogContent>

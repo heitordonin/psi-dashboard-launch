@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DefaultDescriptionModal } from "../DefaultDescriptionModal";
 import { InvoiceDescriptionsManager } from "../InvoiceDescriptionsManager";
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface Patient {
   id: string;
@@ -43,11 +43,16 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
   const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
   
   const queryClient = useQueryClient();
+  const { ensureSupabaseAuth } = useSupabaseAuth();
   
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
       console.log('Buscando pacientes...');
+      
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
+      
       const { data, error } = await supabase
         .from('patients')
         .select('id, full_name, guardian_cpf')
@@ -72,6 +77,10 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       description?: string | null;
     }) => {
       console.log('Criando cobrança com dados:', data);
+      
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
+      
       const { error } = await supabase.from('payments').insert(data);
       if (error) {
         console.error('Erro ao criar cobrança:', error);
@@ -100,6 +109,10 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       description?: string | null;
     }) => {
       console.log('Atualizando cobrança com dados:', data);
+      
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
+      
       const { error } = await supabase
         .from('payments')
         .update(data)

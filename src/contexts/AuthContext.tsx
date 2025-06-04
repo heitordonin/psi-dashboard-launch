@@ -7,12 +7,14 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   supabaseToken: string | null;
+  ensureSupabaseAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   supabaseToken: null,
+  ensureSupabaseAuth: async () => {},
 });
 
 export const useAuthContext = () => {
@@ -29,30 +31,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [supabaseToken, setSupabaseToken] = useState<string | null>(null);
 
+  const ensureSupabaseAuth = async () => {
+    console.log('ensureSupabaseAuth - Verificando autenticação...');
+    
+    if (!isLoaded) {
+      console.log('ensureSupabaseAuth - Clerk ainda não carregou');
+      throw new Error('Autenticação ainda não carregada');
+    }
+
+    if (!isSignedIn) {
+      console.log('ensureSupabaseAuth - Usuário não autenticado no Clerk');
+      throw new Error('Usuário não autenticado');
+    }
+
+    try {
+      console.log('ensureSupabaseAuth - Obtendo token do Supabase...');
+      const token = await getToken({ template: 'supabase' });
+      
+      if (!token) {
+        console.error('ensureSupabaseAuth - Token do Supabase não disponível');
+        throw new Error('Token do Supabase não disponível');
+      }
+
+      console.log('ensureSupabaseAuth - Token obtido, configurando no cliente Supabase');
+      
+      // Configura o token no cliente Supabase
+      await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: 'placeholder', // Clerk gerencia o refresh
+      });
+
+      setSupabaseToken(token);
+      console.log('ensureSupabaseAuth - Token configurado com sucesso');
+      
+    } catch (error) {
+      console.error('ensureSupabaseAuth - Erro:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     console.log('AuthProvider - Estado do Clerk:', { isLoaded, isSignedIn });
     
-    const setupSupabaseAuth = async () => {
+    const setupAuth = async () => {
       if (isLoaded) {
         if (isSignedIn) {
           try {
-            console.log('AuthProvider - Obtendo token do Supabase...');
-            const token = await getToken({ template: 'supabase' });
-            console.log('AuthProvider - Token obtido:', !!token);
-            
-            if (token) {
-              // Configura o token globalmente no cliente Supabase
-              await supabase.auth.setSession({
-                access_token: token,
-                refresh_token: 'placeholder',
-              });
-              setSupabaseToken(token);
-              console.log('AuthProvider - Token configurado no Supabase');
-            }
-            
+            await ensureSupabaseAuth();
             setIsAuthenticated(true);
           } catch (error) {
-            console.error('AuthProvider - Erro ao obter token:', error);
+            console.error('AuthProvider - Erro na configuração:', error);
             setIsAuthenticated(false);
             setSupabaseToken(null);
           }
@@ -63,15 +91,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await supabase.auth.signOut();
         }
         setIsLoading(false);
-        console.log('AuthProvider - Autenticação configurada:', { isAuthenticated: isSignedIn });
       }
     };
 
-    setupSupabaseAuth();
+    setupAuth();
   }, [isSignedIn, isLoaded, getToken]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, supabaseToken }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      isLoading, 
+      supabaseToken,
+      ensureSupabaseAuth 
+    }}>
       {children}
     </AuthContext.Provider>
   );

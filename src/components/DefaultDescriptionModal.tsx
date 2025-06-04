@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface InvoiceDescription {
@@ -29,7 +29,7 @@ export const DefaultDescriptionModal = ({
   onSelectDescription,
   onManageDescriptions 
 }: DefaultDescriptionModalProps) => {
-  const { ensureSupabaseAuth } = useSupabaseAuth();
+  const { ensureSupabaseAuth, isAuthenticated } = useSupabaseAuth();
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
@@ -50,7 +50,7 @@ export const DefaultDescriptionModal = ({
       console.log('Descrições encontradas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen
+    enabled: isOpen && isAuthenticated
   });
 
   const handleSelectDescription = (description: InvoiceDescription) => {
