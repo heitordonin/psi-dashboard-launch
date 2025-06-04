@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -51,9 +50,20 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const createMutation = useMutation({
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
+      
+      // Verificar se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+      
       const { error } = await supabase
         .from('invoice_descriptions')
-        .insert([{ subject: data.subject, text: data.text }]);
+        .insert([{ 
+          subject: data.subject, 
+          text: data.text,
+          owner_id: user.id
+        }]);
       if (error) {
         console.error('Erro ao criar descrição:', error);
         throw error;
