@@ -247,11 +247,11 @@ const PatientForm = ({ patient, onClose }: { patient?: Patient; onClose: () => v
         )}
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
+      <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onClose} className="sm:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+        <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="sm:w-auto">
           {patient ? 'Atualizar' : 'Criar'} Paciente
         </Button>
       </div>
@@ -338,28 +338,35 @@ const Patients = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col gap-6 mb-6">
           <h1 className="text-3xl font-bold">Pacientes</h1>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              Voltar
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Paciente
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
-                  </DialogTitle>
-                </DialogHeader>
-                <PatientForm patient={editingPatient} onClose={closeDialog} />
-              </DialogContent>
-            </Dialog>
+          
+          {/* Mobile-first responsive button layout */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:flex-wrap sm:items-center">
+            <div className="flex gap-2 order-1 sm:order-1">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none">
+                Voltar
+              </Button>
+            </div>
+            
+            <div className="order-2 sm:order-2 sm:ml-auto">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Paciente
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <PatientForm patient={editingPatient} onClose={closeDialog} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
@@ -367,54 +374,56 @@ const Patients = () => {
           {patientsLoading ? (
             <div className="p-8 text-center">Carregando...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome Completo</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {patients.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      Nenhum paciente cadastrado
-                    </TableCell>
+                    <TableHead>Nome Completo</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
-                ) : (
-                  patients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">{patient.full_name}</TableCell>
-                      <TableCell>{formatCPF(patient.cpf)}</TableCell>
-                      <TableCell>{patient.phone || '-'}</TableCell>
-                      <TableCell>{patient.email || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditDialog(patient)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(patient)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {patients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        Nenhum paciente cadastrado
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    patients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell className="font-medium">{patient.full_name}</TableCell>
+                        <TableCell>{formatCPF(patient.cpf)}</TableCell>
+                        <TableCell>{patient.phone || '-'}</TableCell>
+                        <TableCell>{patient.email || '-'}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(patient)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(patient)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>

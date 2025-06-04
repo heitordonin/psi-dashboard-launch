@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -267,41 +268,49 @@ const Expenses = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          <header className="flex justify-between items-center mb-8">
+          <div className="flex flex-col gap-6 mb-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Despesas</h1>
               <p className="text-gray-600">Gerencie as despesas do consultório</p>
             </div>
-            <div className="flex gap-4">
-              <Button onClick={() => navigate('/dashboard')} variant="outline">
-                Voltar ao Dashboard
-              </Button>
-              <AdvancedExpenseFilter 
-                onFilterChange={handleFilterChange}
-                currentFilters={filters}
-              />
-              {/* Desktop New Expense Button */}
-              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog} className="hidden md:flex">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Despesa
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <ExpenseForm 
-                    expense={editingExpense} 
-                    onClose={handleFormClose}
-                  />
-                </DialogContent>
-              </Dialog>
+            
+            {/* Mobile-first responsive button layout */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:flex-wrap sm:items-center">
+              <div className="flex gap-2 order-1 sm:order-1">
+                <Button onClick={() => navigate('/dashboard')} variant="outline" className="flex-1 sm:flex-none">
+                  Voltar ao Dashboard
+                </Button>
+              </div>
+              
+              <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
+                <AdvancedExpenseFilter 
+                  onFilterChange={handleFilterChange}
+                  currentFilters={filters}
+                />
+                
+                {/* Desktop New Expense Button */}
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openCreateDialog} className="hidden sm:flex">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Nova Despesa
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ExpenseForm 
+                      expense={editingExpense} 
+                      onClose={handleFormClose}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
-          </header>
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -354,69 +363,71 @@ const Expenses = () => {
                 </Dialog>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-medium hover:bg-transparent"
-                        onClick={() => handleSort('amount')}
-                      >
-                        Valor {getSortIcon('amount')}
-                      </Button>
-                    </TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-medium hover:bg-transparent"
-                        onClick={() => handleSort('payment_date')}
-                      >
-                        Data {getSortIcon('payment_date')}
-                      </Button>
-                    </TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedExpenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>
-                        {expense.expense_categories.name}
-                        {expense.is_residential && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            Residencial
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>{formatCurrency(expense.amount)}</TableCell>
-                      <TableCell>{formatDate(expense.payment_date)}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {expense.description || '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(expense)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <DeleteConfirmationDialog
-                            title="Confirmar exclusão"
-                            description={`Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}? Esta ação não pode ser desfeita.`}
-                            onConfirm={() => handleDelete(expense)}
-                            isLoading={deleteExpenseMutation.isPending}
-                          />
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('amount')}
+                        >
+                          Valor {getSortIcon('amount')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('payment_date')}
+                        >
+                          Data {getSortIcon('payment_date')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedExpenses.map((expense) => (
+                      <TableRow key={expense.id}>
+                        <TableCell>
+                          {expense.expense_categories.name}
+                          {expense.is_residential && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Residencial
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{formatCurrency(expense.amount)}</TableCell>
+                        <TableCell>{formatDate(expense.payment_date)}</TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {expense.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(expense)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <DeleteConfirmationDialog
+                              title="Confirmar exclusão"
+                              description={`Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}? Esta ação não pode ser desfeita.`}
+                              onConfirm={() => handleDelete(expense)}
+                              isLoading={deleteExpenseMutation.isPending}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </div>
         </div>
@@ -427,7 +438,7 @@ const Expenses = () => {
         <DialogTrigger asChild>
           <Button 
             onClick={openCreateDialog}
-            className="fixed bottom-6 right-4 z-50 md:hidden h-14 w-14 rounded-full shadow-lg"
+            className="fixed bottom-6 right-4 z-50 sm:hidden h-14 w-14 rounded-full shadow-lg"
             size="icon"
           >
             <Plus className="w-6 h-6" />

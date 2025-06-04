@@ -7,19 +7,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Info, Settings } from "lucide-react";
+import { Plus, Edit, Trash2, Info, Settings, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import PaymentFormWrapper from "@/components/payments/PaymentFormWrapper";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentWithPatient } from "@/types/payment";
 import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
 import LogoutButton from "@/components/LogoutButton";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
+
+type SortField = 'amount' | 'due_date' | 'patient_name';
+type SortDirection = 'asc' | 'desc';
 
 const Payments = () => {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | undefined>();
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filters, setFilters] = useState<PaymentFilters>({
+    patientId: "",
+    startDate: "",
+    endDate: "",
+    status: ""
+  });
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -47,6 +59,82 @@ const Payments = () => {
     enabled: !!user,
     retry: 1
   });
+
+  const { data: patients = [] } = useQuery({
+    queryKey: ['patients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('id, full_name')
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
+  });
+
+  // Filter and sort payments
+  const filteredAndSortedPayments = payments?.filter(payment => {
+    // Filter by patient
+    if (filters.patientId && payment.patient_id !== filters.patientId) {
+      return false;
+    }
+    
+    // Filter by date range
+    if (filters.startDate && payment.due_date < filters.startDate) {
+      return false;
+    }
+    
+    if (filters.endDate && payment.due_date > filters.endDate) {
+      return false;
+    }
+    
+    // Filter by status
+    if (filters.status && payment.status !== filters.status) {
+      return false;
+    }
+    
+    return true;
+  })?.sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aValue, bValue;
+    
+    if (sortField === 'amount') {
+      aValue = a.amount;
+      bValue = b.amount;
+    } else if (sortField === 'due_date') {
+      aValue = new Date(a.due_date).getTime();
+      bValue = new Date(b.due_date).getTime();
+    } else if (sortField === 'patient_name') {
+      aValue = a.patients.full_name.toLowerCase();
+      bValue = b.patients.full_name.toLowerCase();
+    } else {
+      return 0;
+    }
+    
+    if (sortDirection === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4" />;
+    }
+    return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -88,6 +176,10 @@ const Payments = () => {
     setEditingPayment(undefined);
   };
 
+  const handleFilterChange = (newFilters: PaymentFilters) => {
+    setFilters(newFilters);
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -105,36 +197,54 @@ const Payments = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col gap-6 mb-6">
           <h1 className="text-3xl font-bold">Cobranças</h1>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              Voltar
-            </Button>
-            <LogoutButton />
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDescriptionsOpen(true)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Descrições padrão
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nova Cobrança
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
-                  </DialogTitle>
-                </DialogHeader>
-                <PaymentFormWrapper payment={editingPayment} onClose={closeDialog} />
-              </DialogContent>
-            </Dialog>
+          
+          {/* Mobile-first responsive button layout */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:flex-wrap sm:items-center">
+            <div className="flex gap-2 order-1 sm:order-1">
+              <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none">
+                Voltar
+              </Button>
+              <LogoutButton />
+            </div>
+            
+            <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDescriptionsOpen(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Descrições padrão</span>
+                <span className="sm:hidden">Descrições</span>
+              </Button>
+              
+              <PaymentAdvancedFilter 
+                onFilterChange={handleFilterChange}
+                currentFilters={filters}
+                patients={patients}
+              />
+            </div>
+            
+            <div className="order-2 sm:order-3">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Cobrança
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <PaymentFormWrapper payment={editingPayment} onClose={closeDialog} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
@@ -142,73 +252,99 @@ const Payments = () => {
           {isLoading ? (
             <div className="p-8 text-center">Carregando...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Data Recebimento</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      Nenhuma cobrança cadastrada
-                    </TableCell>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('patient_name')}
+                      >
+                        Paciente {getSortIcon('patient_name')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('amount')}
+                      >
+                        Valor {getSortIcon('amount')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('due_date')}
+                      >
+                        Vencimento {getSortIcon('due_date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>Data Recebimento</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
-                ) : (
-                  payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
-                      <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                      <TableCell>{formatDate(payment.due_date)}</TableCell>
-                      <TableCell>
-                        {payment.paid_date ? formatDate(payment.paid_date) : '-'}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <PaymentStatusBadge status={payment.status} />
-                          {payment.status === 'draft' && (
-                            <div className="group relative">
-                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                Cobrança salva. Envio ao paciente será habilitado em breve.
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditDialog(payment)}
-                            disabled={!canEdit(payment.status)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(payment)}
-                            disabled={!canDelete(payment.status) || deleteMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedPayments?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        Nenhuma cobrança encontrada
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredAndSortedPayments?.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
+                        <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                        <TableCell>{formatDate(payment.due_date)}</TableCell>
+                        <TableCell>
+                          {payment.paid_date ? formatDate(payment.paid_date) : '-'}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <PaymentStatusBadge status={payment.status} />
+                            {payment.status === 'draft' && (
+                              <div className="group relative">
+                                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                  Cobrança salva. Envio ao paciente será habilitado em breve.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(payment)}
+                              disabled={!canEdit(payment.status)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(payment)}
+                              disabled={!canDelete(payment.status) || deleteMutation.isPending}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>
