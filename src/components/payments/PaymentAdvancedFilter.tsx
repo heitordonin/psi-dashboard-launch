@@ -110,9 +110,7 @@ export function PaymentAdvancedFilter({
               <SelectContent>
                 <SelectItem value="">Todos os status</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
-                <SelectItem value="failed">Falhado</SelectItem>
               </SelectContent>
             </Select>
           </div>

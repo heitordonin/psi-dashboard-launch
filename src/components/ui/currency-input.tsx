@@ -9,10 +9,11 @@ interface CurrencyInputProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  name?: string;
 }
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ className, value, onChange, placeholder = "0,00", disabled = false, ...props }, ref) => {
+  ({ className, value, onChange, placeholder = "0,00", disabled = false, name, ...props }, ref) => {
     const handleValueChange = (value: string | undefined) => {
       if (onChange) {
         const numericValue = value ? parseFloat(value) : 0;
@@ -24,11 +25,13 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       <CurrencyInputField
         {...props}
         ref={ref}
+        name={name}
         value={value}
         onValueChange={handleValueChange}
         placeholder={placeholder}
         intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}
-        decimalsLimit={2}
+        decimalScale={2}
+        fixedDecimalLength={2}
         prefix="R$ "
         allowDecimals={true}
         allowNegativeValue={false}

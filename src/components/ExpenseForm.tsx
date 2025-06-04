@@ -252,6 +252,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormLabel>Valor *</FormLabel>
                 <FormControl>
                   <CurrencyInput
+                    name="amount"
                     value={field.value}
                     onChange={field.onChange}
                   />
@@ -283,6 +284,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormLabel>Multa/Juros</FormLabel>
                 <FormControl>
                   <CurrencyInput
+                    name="penalty_interest"
                     value={field.value}
                     onChange={field.onChange}
                   />

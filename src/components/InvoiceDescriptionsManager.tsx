@@ -1,21 +1,21 @@
+
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Edit, Trash2 } from "lucide-react";
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 
 interface InvoiceDescription {
   id: string;
-  subject: string;
+  subject?: string;
   text: string;
-  owner_id: string;
   created_at: string;
 }
 
@@ -25,105 +25,83 @@ interface InvoiceDescriptionsManagerProps {
 }
 
 export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescriptionsManagerProps) => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDescription, setEditingDescription] = useState<InvoiceDescription | null>(null);
-  const [formData, setFormData] = useState({ subject: '', text: '' });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const [deletingDescription, setDeletingDescription] = useState<InvoiceDescription | null>(null);
+  const [formData, setFormData] = useState({
+    subject: '',
+    text: ''
+  });
 
-  console.log('InvoiceDescriptionsManager - Status autenticação:', !!user);
+  const queryClient = useQueryClient();
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
-      console.log('Carregando descrições...');
-      
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Erro ao carregar descrições:', error);
-        throw error;
-      }
-      console.log('Descrições carregadas:', data);
+      if (error) throw error;
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && !!user
+    enabled: isOpen
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { subject: string; text: string }) => {
-      console.log('Criando descrição:', data);
-      
+    mutationFn: async (data: { subject?: string; text: string }) => {
       const { error } = await supabase
         .from('invoice_descriptions')
-        .insert([{ 
-          subject: data.subject, 
-          text: data.text
-        }]);
-      if (error) {
-        console.error('Erro ao criar descrição:', error);
-        throw error;
-      }
+        .insert(data);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição criada com sucesso!');
+      setIsFormOpen(false);
       setFormData({ subject: '', text: '' });
-      setEditingDescription(null);
     },
     onError: (error: any) => {
-      console.error('Erro na criação:', error);
       toast.error('Erro ao criar descrição: ' + error.message);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: string; subject: string; text: string }) => {
-      console.log('Atualizando descrição:', data);
-      
+    mutationFn: async (data: { id: string; subject?: string; text: string }) => {
+      const { id, ...updateData } = data;
       const { error } = await supabase
         .from('invoice_descriptions')
-        .update({ subject: data.subject, text: data.text })
-        .eq('id', data.id);
-      if (error) {
-        console.error('Erro ao atualizar descrição:', error);
-        throw error;
-      }
+        .update(updateData)
+        .eq('id', id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição atualizada com sucesso!');
-      setFormData({ subject: '', text: '' });
+      setIsFormOpen(false);
       setEditingDescription(null);
+      setFormData({ subject: '', text: '' });
     },
     onError: (error: any) => {
-      console.error('Erro na atualização:', error);
       toast.error('Erro ao atualizar descrição: ' + error.message);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('Excluindo descrição:', id);
-      
       const { error } = await supabase
         .from('invoice_descriptions')
         .delete()
         .eq('id', id);
-      if (error) {
-        console.error('Erro ao excluir descrição:', error);
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição excluída com sucesso!');
+      setDeletingDescription(null);
     },
     onError: (error: any) => {
-      console.error('Erro na exclusão:', error);
       toast.error('Erro ao excluir descrição: ' + error.message);
     }
   });
@@ -131,186 +109,167 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.subject.trim()) {
-      newErrors.subject = 'Assunto é obrigatório';
-    }
-    
     if (!formData.text.trim()) {
-      newErrors.text = 'Descrição é obrigatória';
+      toast.error('Texto é obrigatório');
+      return;
     }
-    
-    setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length === 0) {
-      if (editingDescription) {
-        updateMutation.mutate({ 
-          id: editingDescription.id, 
-          subject: formData.subject.trim(), 
-          text: formData.text.trim() 
-        });
-      } else {
-        createMutation.mutate({ 
-          subject: formData.subject.trim(), 
-          text: formData.text.trim() 
-        });
-      }
+
+    if (editingDescription) {
+      updateMutation.mutate({
+        id: editingDescription.id,
+        subject: formData.subject.trim() || undefined,
+        text: formData.text.trim()
+      });
+    } else {
+      createMutation.mutate({
+        subject: formData.subject.trim() || undefined,
+        text: formData.text.trim()
+      });
     }
   };
 
   const handleEdit = (description: InvoiceDescription) => {
     setEditingDescription(description);
-    setFormData({ subject: description.subject, text: description.text });
+    setFormData({
+      subject: description.subject || '',
+      text: description.text
+    });
+    setIsFormOpen(true);
   };
 
   const handleDelete = (description: InvoiceDescription) => {
-    if (window.confirm(`Tem certeza que deseja excluir a descrição "${description.subject}"?`)) {
-      deleteMutation.mutate(description.id);
+    setDeletingDescription(description);
+  };
+
+  const confirmDelete = () => {
+    if (deletingDescription) {
+      deleteMutation.mutate(deletingDescription.id);
     }
   };
 
-  const handleCancel = () => {
+  const openCreateForm = () => {
     setEditingDescription(null);
     setFormData({ subject: '', text: '' });
-    setErrors({});
+    setIsFormOpen(true);
   };
 
-  const truncateText = (text: string, maxLength: number = 50) => {
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
-
-  if (!user) {
-    return (
+  return (
+    <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
           </DialogHeader>
-          <div className="p-8 text-center">
-            <div className="text-red-500 mb-4">
-              Você precisa estar autenticado para gerenciar descrições.
-            </div>
-            <div className="text-sm text-gray-600">
-              <p>Por favor, faça login e tente novamente.</p>
-            </div>
+
+          <div className="space-y-4">
+            <Button onClick={openCreateForm} className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Descrição
+            </Button>
+
+            {isLoading ? (
+              <div className="text-center py-4">Carregando...</div>
+            ) : (
+              <div className="space-y-3">
+                {descriptions.map((description) => (
+                  <Card key={description.id}>
+                    <CardContent className="p-4">
+                      {description.subject && (
+                        <h4 className="font-medium text-sm mb-2">{description.subject}</h4>
+                      )}
+                      <p className="text-sm text-gray-600 mb-3">{description.text}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(description)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(description)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {descriptions.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhuma descrição cadastrada
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
-    );
-  }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-gray-50">
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingDescription ? 'Editar Descrição' : 'Nova Descrição'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="subject">
-                {editingDescription ? 'Editar Assunto' : 'Novo Assunto'} *
-              </Label>
+              <Label htmlFor="subject">Assunto (opcional)</Label>
               <Input
                 id="subject"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                placeholder="Digite o assunto da descrição"
-                className={errors.subject ? 'border-red-500' : ''}
+                placeholder="Ex: Consulta de acompanhamento"
               />
-              {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
             </div>
 
             <div>
-              <Label htmlFor="text">
-                {editingDescription ? 'Editar Descrição' : 'Nova Descrição'} *
-              </Label>
+              <Label htmlFor="text">Texto *</Label>
               <Textarea
                 id="text"
                 value={formData.text}
                 onChange={(e) => setFormData({ ...formData, text: e.target.value })}
-                placeholder="Digite a descrição completa"
-                className={errors.text ? 'border-red-500' : ''}
+                placeholder="Digite o texto da descrição"
                 rows={4}
+                required
               />
-              {errors.text && <p className="text-red-500 text-sm mt-1">{errors.text}</p>}
             </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                type="submit" 
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
+                className="flex-1"
               >
-                {editingDescription ? 'Atualizar' : 'Criar'} Descrição
+                {(createMutation.isPending || updateMutation.isPending)
+                  ? (editingDescription ? "Atualizando..." : "Criando...")
+                  : (editingDescription ? "Atualizar" : "Criar")
+                }
               </Button>
-              {editingDescription && (
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Cancelar
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsFormOpen(false)}
+              >
+                Cancelar
+              </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
 
-          <div className="border rounded-lg overflow-hidden">
-            {isLoading ? (
-              <div className="p-8 text-center">Carregando...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Assunto</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Data de Criação</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {descriptions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                        Nenhuma descrição cadastrada
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    descriptions.map((description) => (
-                      <TableRow key={description.id}>
-                        <TableCell className="font-medium">{description.subject}</TableCell>
-                        <TableCell className="max-w-xs">
-                          {truncateText(description.text, 60)}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(description.created_at).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(description)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(description)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <DeleteConfirmationDialog
+        isOpen={!!deletingDescription}
+        onClose={() => setDeletingDescription(null)}
+        onConfirm={confirmDelete}
+        title="Excluir Descrição"
+        description={`Tem certeza que deseja excluir a descrição "${deletingDescription?.subject || 'sem assunto'}"?`}
+        isLoading={deleteMutation.isPending}
+      />
+    </>
   );
 };
