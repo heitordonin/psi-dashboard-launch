@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +8,13 @@ import { PatientAndPayer } from "./PatientAndPayer";
 import { GuardianToggle } from "./GuardianToggle";
 import { ReceivedCheckbox } from "./ReceivedCheckbox";
 import { PaymentButtons } from "./PaymentButtons";
-import { DescriptionAutocomplete } from "../DescriptionAutocomplete";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { DefaultDescriptionModal } from "../DefaultDescriptionModal";
+import { InvoiceDescriptionsManager } from "../InvoiceDescriptionsManager";
 
 interface Patient {
   id: string;
@@ -35,6 +39,8 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
   const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>('patient');
   const [payerCpf, setPayerCpf] = useState(payment?.payer_cpf || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDefaultDescriptions, setShowDefaultDescriptions] = useState(false);
+  const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
   
   const queryClient = useQueryClient();
   
@@ -207,62 +213,100 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
     }
   };
 
+  const handleSelectDescription = (description: string) => {
+    setFormData({ ...formData, description });
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PatientAndPayer
-        patients={patients}
-        formData={formData}
-        setFormData={setFormData}
-        paymentTitular={paymentTitular}
-        setPaymentTitular={setPaymentTitular}
-        payerCpf={payerCpf}
-        setPayerCpf={setPayerCpf}
-        errors={errors}
-        validateCpf={validateCpf}
-      />
-
-      <div>
-        <Label htmlFor="amount">Valor *</Label>
-        <CurrencyInput
-          value={formData.amount}
-          onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
-          className={errors.amount ? 'border-red-500' : ''}
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PatientAndPayer
+          patients={patients}
+          formData={formData}
+          setFormData={setFormData}
+          paymentTitular={paymentTitular}
+          setPaymentTitular={setPaymentTitular}
+          payerCpf={payerCpf}
+          setPayerCpf={setPayerCpf}
+          errors={errors}
+          validateCpf={validateCpf}
         />
-        {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-      </div>
 
-      <div>
-        <Label htmlFor="due_date">Data de Vencimento *</Label>
-        <Input
-          id="due_date"
-          type="date"
-          value={formData.due_date}
-          onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-          className={errors.due_date ? 'border-red-500' : ''}
+        <div>
+          <Label htmlFor="amount">Valor *</Label>
+          <CurrencyInput
+            value={formData.amount}
+            onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
+            className={errors.amount ? 'border-red-500' : ''}
+          />
+          {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="due_date">Data de Vencimento *</Label>
+          <Input
+            id="due_date"
+            type="date"
+            value={formData.due_date}
+            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+            className={errors.due_date ? 'border-red-500' : ''}
+          />
+          {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="description">Descrição *</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDefaultDescriptions(true)}
+            >
+              Usar descrição padrão
+            </Button>
+          </div>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Digite a descrição da cobrança"
+            className={errors.description ? 'border-red-500' : ''}
+            rows={3}
+          />
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+        </div>
+
+        <ReceivedCheckbox
+          isAlreadyReceived={isAlreadyReceived}
+          setIsAlreadyReceived={setIsAlreadyReceived}
+          receivedDate={receivedDate}
+          setReceivedDate={setReceivedDate}
+          errors={errors}
         />
-        {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
-      </div>
 
-      <DescriptionAutocomplete
-        value={formData.description}
-        onChange={(value) => setFormData({ ...formData, description: value })}
-        error={errors.description}
+        <PaymentButtons
+          onClose={onClose}
+          isLoading={createMutation.isPending || updateMutation.isPending}
+          isEditing={!!payment}
+        />
+      </form>
+
+      <DefaultDescriptionModal
+        isOpen={showDefaultDescriptions}
+        onClose={() => setShowDefaultDescriptions(false)}
+        onSelectDescription={handleSelectDescription}
+        onManageDescriptions={() => {
+          setShowDefaultDescriptions(false);
+          setShowDescriptionsManager(true);
+        }}
       />
 
-      <ReceivedCheckbox
-        isAlreadyReceived={isAlreadyReceived}
-        setIsAlreadyReceived={setIsAlreadyReceived}
-        receivedDate={receivedDate}
-        setReceivedDate={setReceivedDate}
-        errors={errors}
+      <InvoiceDescriptionsManager
+        isOpen={showDescriptionsManager}
+        onClose={() => setShowDescriptionsManager(false)}
       />
-
-      <PaymentButtons
-        onClose={onClose}
-        isLoading={createMutation.isPending || updateMutation.isPending}
-        isEditing={!!payment}
-      />
-    </form>
+    </>
   );
 };
 

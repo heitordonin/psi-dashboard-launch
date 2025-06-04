@@ -9,7 +9,9 @@ import { Edit, Trash2 } from "lucide-react";
 
 interface InvoiceDescription {
   id: string;
+  subject: string;
   text: string;
+  owner_id: string;
   created_at: string;
 }
 
@@ -55,7 +57,7 @@ export const DefaultDescriptionModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Selecionar Descrição Padrão</DialogTitle>
         </DialogHeader>
@@ -75,6 +77,7 @@ export const DefaultDescriptionModal = ({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Assunto</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Data de Criação</TableHead>
                   </TableRow>
@@ -82,7 +85,7 @@ export const DefaultDescriptionModal = ({
                 <TableBody>
                   {descriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={2} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                         Nenhuma descrição cadastrada. 
                         <br />
                         <Button 
@@ -102,14 +105,10 @@ export const DefaultDescriptionModal = ({
                         onClick={() => handleSelectDescription(description)}
                       >
                         <TableCell className="font-medium">
-                          <div>
-                            <div className="font-semibold">{truncateText(description.text, 60)}</div>
-                            {description.text.length > 60 && (
-                              <div className="text-sm text-gray-500 mt-1">
-                                {description.text}
-                              </div>
-                            )}
-                          </div>
+                          {description.subject}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {truncateText(description.text, 60)}
                         </TableCell>
                         <TableCell>
                           {new Date(description.created_at).toLocaleDateString('pt-BR')}

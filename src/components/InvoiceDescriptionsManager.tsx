@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,9 @@ import { Edit, Trash2 } from "lucide-react";
 
 interface InvoiceDescription {
   id: string;
+  subject: string;
   text: string;
+  owner_id: string;
   created_at: string;
 }
 
@@ -23,7 +26,7 @@ interface InvoiceDescriptionsManagerProps {
 
 export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescriptionsManagerProps) => {
   const [editingDescription, setEditingDescription] = useState<InvoiceDescription | null>(null);
-  const [formData, setFormData] = useState({ text: '' });
+  const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
@@ -41,15 +44,16 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       }
       console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
-    }
+    },
+    enabled: isOpen
   });
 
   const createMutation = useMutation({
-    mutationFn: async (text: string) => {
-      console.log('Criando descrição:', text);
+    mutationFn: async (data: { subject: string; text: string }) => {
+      console.log('Criando descrição:', data);
       const { error } = await supabase
         .from('invoice_descriptions')
-        .insert([{ text }]);
+        .insert([{ subject: data.subject, text: data.text }]);
       if (error) {
         console.error('Erro ao criar descrição:', error);
         throw error;
@@ -58,26 +62,22 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição criada com sucesso!');
-      setFormData({ text: '' });
+      setFormData({ subject: '', text: '' });
       setEditingDescription(null);
     },
     onError: (error: any) => {
       console.error('Erro na criação:', error);
-      if (error.message?.includes('duplicate key') || error.message?.includes('unique')) {
-        toast.error('Esta descrição já existe!');
-      } else {
-        toast.error('Erro ao criar descrição: ' + error.message);
-      }
+      toast.error('Erro ao criar descrição: ' + error.message);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, text }: { id: string; text: string }) => {
-      console.log('Atualizando descrição:', { id, text });
+    mutationFn: async (data: { id: string; subject: string; text: string }) => {
+      console.log('Atualizando descrição:', data);
       const { error } = await supabase
         .from('invoice_descriptions')
-        .update({ text })
-        .eq('id', id);
+        .update({ subject: data.subject, text: data.text })
+        .eq('id', data.id);
       if (error) {
         console.error('Erro ao atualizar descrição:', error);
         throw error;
@@ -86,16 +86,12 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição atualizada com sucesso!');
-      setFormData({ text: '' });
+      setFormData({ subject: '', text: '' });
       setEditingDescription(null);
     },
     onError: (error: any) => {
       console.error('Erro na atualização:', error);
-      if (error.message?.includes('duplicate key') || error.message?.includes('unique')) {
-        toast.error('Esta descrição já existe!');
-      } else {
-        toast.error('Erro ao atualizar descrição: ' + error.message);
-      }
+      toast.error('Erro ao atualizar descrição: ' + error.message);
     }
   });
 
@@ -126,6 +122,10 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     
     const newErrors: Record<string, string> = {};
     
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Assunto é obrigatório';
+    }
+    
     if (!formData.text.trim()) {
       newErrors.text = 'Descrição é obrigatória';
     }
@@ -134,28 +134,39 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     
     if (Object.keys(newErrors).length === 0) {
       if (editingDescription) {
-        updateMutation.mutate({ id: editingDescription.id, text: formData.text.trim() });
+        updateMutation.mutate({ 
+          id: editingDescription.id, 
+          subject: formData.subject.trim(), 
+          text: formData.text.trim() 
+        });
       } else {
-        createMutation.mutate(formData.text.trim());
+        createMutation.mutate({ 
+          subject: formData.subject.trim(), 
+          text: formData.text.trim() 
+        });
       }
     }
   };
 
   const handleEdit = (description: InvoiceDescription) => {
     setEditingDescription(description);
-    setFormData({ text: description.text });
+    setFormData({ subject: description.subject, text: description.text });
   };
 
   const handleDelete = (description: InvoiceDescription) => {
-    if (window.confirm(`Tem certeza que deseja excluir a descrição "${description.text}"?`)) {
+    if (window.confirm(`Tem certeza que deseja excluir a descrição "${description.subject}"?`)) {
       deleteMutation.mutate(description.id);
     }
   };
 
   const handleCancel = () => {
     setEditingDescription(null);
-    setFormData({ text: '' });
+    setFormData({ subject: '', text: '' });
     setErrors({});
+  };
+
+  const truncateText = (text: string, maxLength: number = 50) => {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   return (
@@ -168,15 +179,30 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
         <div className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-gray-50">
             <div>
+              <Label htmlFor="subject">
+                {editingDescription ? 'Editar Assunto' : 'Novo Assunto'} *
+              </Label>
+              <Input
+                id="subject"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Digite o assunto da descrição"
+                className={errors.subject ? 'border-red-500' : ''}
+              />
+              {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
+            </div>
+
+            <div>
               <Label htmlFor="text">
                 {editingDescription ? 'Editar Descrição' : 'Nova Descrição'} *
               </Label>
-              <Input
+              <Textarea
                 id="text"
                 value={formData.text}
-                onChange={(e) => setFormData({ text: e.target.value })}
-                placeholder="Digite a descrição padrão"
+                onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                placeholder="Digite a descrição completa"
                 className={errors.text ? 'border-red-500' : ''}
+                rows={4}
               />
               {errors.text && <p className="text-red-500 text-sm mt-1">{errors.text}</p>}
             </div>
@@ -203,6 +229,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Assunto</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Data de Criação</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
@@ -211,14 +238,17 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
                 <TableBody>
                   {descriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                         Nenhuma descrição cadastrada
                       </TableCell>
                     </TableRow>
                   ) : (
                     descriptions.map((description) => (
                       <TableRow key={description.id}>
-                        <TableCell className="font-medium">{description.text}</TableCell>
+                        <TableCell className="font-medium">{description.subject}</TableCell>
+                        <TableCell className="max-w-xs">
+                          {truncateText(description.text, 60)}
+                        </TableCell>
                         <TableCell>
                           {new Date(description.created_at).toLocaleDateString('pt-BR')}
                         </TableCell>
