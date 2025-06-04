@@ -48,6 +48,7 @@ export type Database = {
           description: string | null
           id: string
           is_residential: boolean
+          owner_id: string | null
           payment_date: string
           penalty_interest: number
           residential_adjusted_amount: number | null
@@ -60,6 +61,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_residential?: boolean
+          owner_id?: string | null
           payment_date: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
@@ -72,6 +74,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_residential?: boolean
+          owner_id?: string | null
           payment_date?: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
@@ -120,6 +123,7 @@ export type Database = {
           guardian_cpf: string | null
           has_financial_guardian: boolean
           id: string
+          owner_id: string | null
           phone: string | null
           updated_at: string
         }
@@ -132,6 +136,7 @@ export type Database = {
           guardian_cpf?: string | null
           has_financial_guardian?: boolean
           id?: string
+          owner_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -144,6 +149,7 @@ export type Database = {
           guardian_cpf?: string | null
           has_financial_guardian?: boolean
           id?: string
+          owner_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -156,6 +162,7 @@ export type Database = {
           description: string | null
           due_date: string
           id: string
+          owner_id: string | null
           paid_date: string | null
           patient_id: string
           payer_cpf: string | null
@@ -168,6 +175,7 @@ export type Database = {
           description?: string | null
           due_date: string
           id?: string
+          owner_id?: string | null
           paid_date?: string | null
           patient_id: string
           payer_cpf?: string | null
@@ -180,6 +188,7 @@ export type Database = {
           description?: string | null
           due_date?: string
           id?: string
+          owner_id?: string | null
           paid_date?: string | null
           patient_id?: string
           payer_cpf?: string | null

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -5,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Edit } from "lucide-react";
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface InvoiceDescription {
   id: string;
@@ -28,21 +29,12 @@ export const DefaultDescriptionModal = ({
   onSelectDescription,
   onManageDescriptions 
 }: DefaultDescriptionModalProps) => {
-  const { ensureSupabaseAuth, isAuthenticated } = useSupabaseAuth();
+  const { user } = useAuth();
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
-      console.log('DefaultDescriptionModal - Buscando descrições padrão...');
-      
-      // Garantir que o token JWT do Clerk está configurado no Supabase
-      try {
-        await ensureSupabaseAuth();
-        console.log('DefaultDescriptionModal - Token Supabase configurado com sucesso');
-      } catch (authError) {
-        console.error('DefaultDescriptionModal - Erro na autenticação:', authError);
-        throw new Error('Falha na autenticação: ' + authError.message);
-      }
+      console.log('DefaultDescriptionModal - Buscando descrições padrão para usuário:', user?.id);
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
@@ -57,7 +49,7 @@ export const DefaultDescriptionModal = ({
       console.log('DefaultDescriptionModal - Descrições encontradas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && isAuthenticated,
+    enabled: isOpen && !!user,
     retry: 1
   });
 

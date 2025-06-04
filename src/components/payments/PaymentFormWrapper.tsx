@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { DefaultDescriptionModal } from "../DefaultDescriptionModal";
 import { InvoiceDescriptionsManager } from "../InvoiceDescriptionsManager";
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface Patient {
   id: string;
@@ -43,21 +44,12 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
   const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
   
   const queryClient = useQueryClient();
-  const { ensureSupabaseAuth } = useSupabaseAuth();
+  const { user } = useAuth();
   
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
-      console.log('PaymentFormWrapper - Buscando pacientes...');
-      
-      // Garantir que o token JWT do Clerk está configurado no Supabase
-      try {
-        await ensureSupabaseAuth();
-        console.log('PaymentFormWrapper - Token Supabase configurado para busca de pacientes');
-      } catch (authError) {
-        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
-        throw new Error('Falha na autenticação: ' + authError.message);
-      }
+      console.log('PaymentFormWrapper - Buscando pacientes para usuário:', user?.id);
       
       const { data, error } = await supabase
         .from('patients')
@@ -72,6 +64,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       console.log('PaymentFormWrapper - Pacientes encontrados:', data);
       return data as Patient[];
     },
+    enabled: !!user,
     retry: 1
   });
 
@@ -84,17 +77,9 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       paid_date?: string | null;
       payer_cpf?: string | null;
       description?: string | null;
+      owner_id: string;
     }) => {
       console.log('PaymentFormWrapper - Criando cobrança com dados:', data);
-      
-      // Garantir que o token JWT do Clerk está configurado no Supabase
-      try {
-        await ensureSupabaseAuth();
-        console.log('PaymentFormWrapper - Token Supabase configurado para criar cobrança');
-      } catch (authError) {
-        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
-        throw new Error('Falha na autenticação: ' + authError.message);
-      }
       
       const { error } = await supabase.from('payments').insert(data);
       if (error) {
@@ -124,15 +109,6 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       description?: string | null;
     }) => {
       console.log('PaymentFormWrapper - Atualizando cobrança com dados:', data);
-      
-      // Garantir que o token JWT do Clerk está configurado no Supabase
-      try {
-        await ensureSupabaseAuth();
-        console.log('PaymentFormWrapper - Token Supabase configurado para atualizar cobrança');
-      } catch (authError) {
-        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
-        throw new Error('Falha na autenticação: ' + authError.message);
-      }
       
       const { error } = await supabase
         .from('payments')
@@ -181,6 +157,11 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
     
     const newErrors: Record<string, string> = {};
     
@@ -242,7 +223,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       if (payment) {
         updateMutation.mutate(paymentData);
       } else {
-        createMutation.mutate(paymentData);
+        createMutation.mutate({ ...paymentData, owner_id: user.id });
       }
     }
   };

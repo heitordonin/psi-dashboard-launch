@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
+
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import PaymentFormWrapper from "@/components/payments/PaymentFormWrapper";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentWithPatient } from "@/types/payment";
 import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
+import LogoutButton from "@/components/LogoutButton";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 const Payments = () => {
   const navigate = useNavigate();
@@ -19,31 +21,12 @@ const Payments = () => {
   const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | undefined>();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
-      console.log('Payments - Buscando pagamentos...');
-      
-      // Tentar obter token do Clerk se disponível
-      try {
-        const { useAuth } = await import('@clerk/clerk-react');
-        const { getToken, isSignedIn } = useAuth();
-        
-        if (isSignedIn) {
-          const token = await getToken({ template: 'supabase' });
-          if (token) {
-            console.log('Payments - Configurando token Supabase para busca de payments');
-            supabase.realtime.setAuth(token);
-            await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: 'dummy-refresh-token',
-            });
-          }
-        }
-      } catch (authError) {
-        console.warn('Payments - Não foi possível configurar token:', authError);
-      }
+      console.log('Payments - Buscando pagamentos para usuário:', user?.id);
       
       const { data, error } = await supabase
         .from('payments')
@@ -61,32 +44,13 @@ const Payments = () => {
       console.log('Payments - Pagamentos encontrados:', data);
       return data as PaymentWithPatient[];
     },
+    enabled: !!user,
     retry: 1
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log('Payments - Deletando pagamento:', id);
-      
-      // Tentar obter token do Clerk se disponível
-      try {
-        const { useAuth } = await import('@clerk/clerk-react');
-        const { getToken, isSignedIn } = useAuth();
-        
-        if (isSignedIn) {
-          const token = await getToken({ template: 'supabase' });
-          if (token) {
-            console.log('Payments - Configurando token Supabase para deletar payment');
-            supabase.realtime.setAuth(token);
-            await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: 'dummy-refresh-token',
-            });
-          }
-        }
-      } catch (authError) {
-        console.warn('Payments - Não foi possível configurar token para delete:', authError);
-      }
       
       const { error } = await supabase.from('payments').delete().eq('id', id);
       if (error) {
@@ -140,135 +104,121 @@ const Payments = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SignedIn>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Cobranças</h1>
-            <div className="space-x-2">
-              <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                Voltar
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDescriptionsOpen(true)}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Descrições padrão
-              </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Cobrança
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <PaymentFormWrapper payment={editingPayment} onClose={closeDialog} />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {isLoading ? (
-              <div className="p-8 text-center">Carregando...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Data Recebimento</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        Nenhuma cobrança cadastrada
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    payments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
-                        <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                        <TableCell>{formatDate(payment.due_date)}</TableCell>
-                        <TableCell>
-                          {payment.paid_date ? formatDate(payment.paid_date) : '-'}
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <PaymentStatusBadge status={payment.status} />
-                            {payment.status === 'draft' && (
-                              <div className="group relative">
-                                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                  Cobrança salva. Envio ao paciente será habilitado em breve.
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(payment)}
-                              disabled={!canEdit(payment.status)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(payment)}
-                              disabled={!canDelete(payment.status) || deleteMutation.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Cobranças</h1>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={() => navigate('/dashboard')}>
+              Voltar
+            </Button>
+            <LogoutButton />
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDescriptionsOpen(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Descrições padrão
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreateDialog}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Cobrança
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
+                  </DialogTitle>
+                </DialogHeader>
+                <PaymentFormWrapper payment={editingPayment} onClose={closeDialog} />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        <InvoiceDescriptionsManager 
-          isOpen={isDescriptionsOpen}
-          onClose={() => setIsDescriptionsOpen(false)}
-        />
-      </SignedIn>
-      <SignedOut>
-        <RedirectToHome />
-      </SignedOut>
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {isLoading ? (
+            <div className="p-8 text-center">Carregando...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead>Data Recebimento</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-24">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      Nenhuma cobrança cadastrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  payments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
+                      <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell>{formatDate(payment.due_date)}</TableCell>
+                      <TableCell>
+                        {payment.paid_date ? formatDate(payment.paid_date) : '-'}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <PaymentStatusBadge status={payment.status} />
+                          {payment.status === 'draft' && (
+                            <div className="group relative">
+                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                Cobrança salva. Envio ao paciente será habilitado em breve.
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(payment)}
+                            disabled={!canEdit(payment.status)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(payment)}
+                            disabled={!canDelete(payment.status) || deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </div>
+
+      <InvoiceDescriptionsManager 
+        isOpen={isDescriptionsOpen}
+        onClose={() => setIsDescriptionsOpen(false)}
+      />
     </div>
   );
-};
-
-const RedirectToHome = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    navigate("/");
-  }, [navigate]);
-
-  return null;
 };
 
 export default Payments;
