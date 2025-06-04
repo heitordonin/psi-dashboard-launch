@@ -1,4 +1,3 @@
-
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Info, Settings } from "lucide-react";
-import { PaymentForm } from "@/components/PaymentForm";
+import PaymentFormWrapper from "@/components/payments/PaymentFormWrapper";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentWithPatient } from "@/types/payment";
 import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
@@ -115,7 +114,7 @@ const Payments = () => {
                       {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
                     </DialogTitle>
                   </DialogHeader>
-                  <PaymentForm payment={editingPayment} onClose={closeDialog} />
+                  <PaymentFormWrapper payment={editingPayment} onClose={closeDialog} />
                 </DialogContent>
               </Dialog>
             </div>
