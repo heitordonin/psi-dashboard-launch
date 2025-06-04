@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -102,15 +103,28 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       console.log('Salvando despesa com valores:', values);
       
+      // Parse currency values properly
+      const parsedAmount = Number(
+        String(values.amount).replace(/\./g, "").replace(",", ".")
+      );
+      
+      const parsedPenaltyInterest = Number(
+        String(values.penalty_interest ?? 0).replace(/\./g, "").replace(",", ".")
+      );
+      
+      const parsedResidentialAmount = Number(
+        String(values.residential_adjusted_amount ?? 0).replace(/\./g, "").replace(",", ".")
+      );
+
       const expenseData = {
         category_id: values.category_id,
-        amount: values.amount,
+        amount: parsedAmount,
         payment_date: values.payment_date,
-        penalty_interest: values.penalty_interest,
+        penalty_interest: parsedPenaltyInterest,
         description: values.description || null,
         is_residential: values.is_residential,
         competency: values.competency || null,
-        residential_adjusted_amount: values.residential_adjusted_amount || null,
+        residential_adjusted_amount: parsedResidentialAmount || null,
         // Don't send owner_id - let Supabase fill it via default auth.uid()
       };
 
@@ -176,27 +190,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
       return;
     }
 
-    // Parse currency values properly
-    const parsedAmount = Number(
-      String(values.amount).replace(/\./g, "").replace(",", ".")
-    );
-    
-    const parsedPenaltyInterest = Number(
-      String(values.penalty_interest ?? 0).replace(/\./g, "").replace(",", ".")
-    );
-    
-    const parsedResidentialAmount = Number(
-      String(values.residential_adjusted_amount ?? 0).replace(/\./g, "").replace(",", ".")
-    );
-
-    const submissionValues = {
-      ...values,
-      amount: parsedAmount,
-      penalty_interest: parsedPenaltyInterest,
-      residential_adjusted_amount: parsedResidentialAmount
-    };
-
-    mutation.mutate(submissionValues);
+    mutation.mutate(values);
   };
 
   const handleCategoryChange = (categoryId: string) => {
