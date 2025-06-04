@@ -27,7 +27,12 @@ export const PatientAdvancedFilter = ({
   const [tempFilters, setTempFilters] = useState<PatientFilters>(currentFilters);
 
   const handleApplyFilters = () => {
-    onFilterChange(tempFilters);
+    // Convert "__all" back to empty string for filtering logic
+    const processedFilters = {
+      ...tempFilters,
+      patientId: tempFilters.patientId === "__all" ? "" : tempFilters.patientId
+    };
+    onFilterChange(processedFilters);
     setIsOpen(false);
   };
 
@@ -67,14 +72,14 @@ export const PatientAdvancedFilter = ({
           <div>
             <Label htmlFor="patient-select">Paciente</Label>
             <Select
-              value={tempFilters.patientId}
+              value={tempFilters.patientId || "__all"}
               onValueChange={(value) => setTempFilters({ ...tempFilters, patientId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um paciente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os pacientes</SelectItem>
+                <SelectItem value="__all">Todos os pacientes</SelectItem>
                 {patients.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
                     {patient.full_name}

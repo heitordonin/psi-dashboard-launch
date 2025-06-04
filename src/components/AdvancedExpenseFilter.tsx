@@ -42,7 +42,13 @@ export const AdvancedExpenseFilter = ({ onFilterChange, currentFilters }: Advanc
   });
 
   const handleApplyFilter = () => {
-    onFilterChange(tempFilters);
+    // Convert "__all" back to empty string for filtering logic
+    const processedFilters = {
+      ...tempFilters,
+      categoryId: tempFilters.categoryId === "__all" ? "" : tempFilters.categoryId,
+      isResidential: tempFilters.isResidential === "__all" ? "" : tempFilters.isResidential
+    };
+    onFilterChange(processedFilters);
     setIsOpen(false);
   };
 
@@ -85,14 +91,14 @@ export const AdvancedExpenseFilter = ({ onFilterChange, currentFilters }: Advanc
           <div>
             <Label htmlFor="category-select">Categoria</Label>
             <Select
-              value={tempFilters.categoryId}
+              value={tempFilters.categoryId || "__all"}
               onValueChange={(value) => setTempFilters({ ...tempFilters, categoryId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="__all">Todas as categorias</SelectItem>
                 {categories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -126,14 +132,14 @@ export const AdvancedExpenseFilter = ({ onFilterChange, currentFilters }: Advanc
           <div>
             <Label htmlFor="residential-filter">Residencial</Label>
             <Select
-              value={tempFilters.isResidential}
+              value={tempFilters.isResidential || "__all"}
               onValueChange={(value) => setTempFilters({ ...tempFilters, isResidential: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="__all">Todos</SelectItem>
                 <SelectItem value="true">Sim</SelectItem>
                 <SelectItem value="false">Não</SelectItem>
               </SelectContent>

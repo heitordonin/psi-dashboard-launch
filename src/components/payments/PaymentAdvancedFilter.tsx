@@ -29,7 +29,13 @@ export function PaymentAdvancedFilter({
   const [filters, setFilters] = useState<PaymentFilters>(currentFilters);
 
   const handleApplyFilters = () => {
-    onFilterChange(filters);
+    // Convert "__all" back to empty string for filtering logic
+    const processedFilters = {
+      ...filters,
+      patientId: filters.patientId === "__all" ? "" : filters.patientId,
+      status: filters.status === "__all" ? "" : filters.status
+    };
+    onFilterChange(processedFilters);
     setIsOpen(false);
   };
 
@@ -61,14 +67,14 @@ export function PaymentAdvancedFilter({
           <div>
             <Label htmlFor="patient">Paciente</Label>
             <Select 
-              value={filters.patientId} 
+              value={filters.patientId || "__all"} 
               onValueChange={(value) => setFilters({ ...filters, patientId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os pacientes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os pacientes</SelectItem>
+                <SelectItem value="__all">Todos os pacientes</SelectItem>
                 {patients.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
                     {patient.full_name}
@@ -101,14 +107,14 @@ export function PaymentAdvancedFilter({
           <div>
             <Label htmlFor="status">Status</Label>
             <Select 
-              value={filters.status} 
+              value={filters.status || "__all"} 
               onValueChange={(value) => setFilters({ ...filters, status: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="__all">Todos os status</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
               </SelectContent>

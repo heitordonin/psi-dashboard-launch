@@ -30,10 +30,13 @@ const Dashboard = () => {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+      // Get today's date for overdue calculation
+      const today = new Date().toISOString().split('T')[0];
+
       // Fetch payments summary
       const { data: payments } = await supabase
         .from('payments')
-        .select('status, amount')
+        .select('status, amount, due_date')
         .eq('owner_id', user.id)
         .gte('due_date', startOfMonth.toISOString().split('T')[0])
         .lte('due_date', endOfMonth.toISOString().split('T')[0]);
@@ -46,24 +49,41 @@ const Dashboard = () => {
         .gte('payment_date', startOfMonth.toISOString().split('T')[0])
         .lte('payment_date', endOfMonth.toISOString().split('T')[0]);
 
-      const paymentsByStatus = payments?.reduce((acc, payment) => {
-        if (!acc[payment.status]) acc[payment.status] = { count: 0, total: 0 };
-        acc[payment.status].count++;
-        acc[payment.status].total += Number(payment.amount);
-        return acc;
-      }, {} as Record<string, { count: number; total: number }>) || {};
+      const totals = {
+        receivedCount: 0, receivedTotal: 0,
+        pendingCount: 0, pendingTotal: 0,
+        overdueCount: 0, overdueTotal: 0,
+      };
+
+      payments?.forEach(payment => {
+        const amount = Number(payment.amount);
+        
+        if (payment.status === 'paid') {
+          // Recebidas: status = "paid"
+          totals.receivedCount++;
+          totals.receivedTotal += amount;
+        } else if (['draft', 'pending'].includes(payment.status)) {
+          if (payment.due_date >= today) {
+            // Aguardando pagamento: status IN ("draft","pending") AND due_date >= today
+            totals.pendingCount++;
+            totals.pendingTotal += amount;
+          } else {
+            // Vencidas: status IN ("draft","pending") AND due_date < today
+            totals.overdueCount++;
+            totals.overdueTotal += amount;
+          }
+        }
+      });
 
       const expenseTotal = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
 
       return {
-        receivedCount: paymentsByStatus.paid?.count || 0,
-        receivedTotal: paymentsByStatus.paid?.total || 0,
-        confirmedCount: paymentsByStatus.pending?.count || 0,
-        confirmedTotal: paymentsByStatus.pending?.total || 0,
-        pendingCount: paymentsByStatus.draft?.count || 0,
-        pendingTotal: paymentsByStatus.draft?.total || 0,
-        overdueCount: 0, // TODO: Calculate overdue based on due_date < today
-        overdueTotal: 0,
+        receivedCount: totals.receivedCount,
+        receivedTotal: totals.receivedTotal,
+        pendingCount: totals.pendingCount,
+        pendingTotal: totals.pendingTotal,
+        overdueCount: totals.overdueCount,
+        overdueTotal: totals.overdueTotal,
         expenseCount: expenses?.length || 0,
         expenseTotal
       };
@@ -174,8 +194,6 @@ const Dashboard = () => {
           data={summaryData || {
             receivedCount: 0,
             receivedTotal: 0,
-            confirmedCount: 0,
-            confirmedTotal: 0,
             pendingCount: 0,
             pendingTotal: 0,
             overdueCount: 0,
