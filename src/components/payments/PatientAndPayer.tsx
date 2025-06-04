@@ -14,7 +14,7 @@ interface PatientAndPayerProps {
   patients: Patient[];
   formData: {
     patient_id: string;
-    amount: string;
+    amount: number;
     due_date: string;
     description: string;
   };
@@ -93,7 +93,7 @@ export const PatientAndPayer = ({
       </div>
 
       <div>
-        <Label>Quem é o titular do pagamento? *</Label>
+        <Label>CPF do Titular *</Label>
         <RadioGroup
           value={paymentTitular}
           onValueChange={handleTitularChange}
@@ -101,7 +101,7 @@ export const PatientAndPayer = ({
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="patient" id="patient" />
-            <Label htmlFor="patient">Paciente</Label>
+            <Label htmlFor="patient">CPF do Paciente</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="other" id="other" />

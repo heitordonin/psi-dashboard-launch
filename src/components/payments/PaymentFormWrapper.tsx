@@ -31,7 +31,7 @@ interface PaymentFormWrapperProps {
 export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps) => {
   const [formData, setFormData] = useState({
     patient_id: payment?.patient_id || '',
-    amount: payment?.amount?.toString() || '',
+    amount: payment?.amount || 0,
     due_date: payment?.due_date || '',
     description: payment?.description || ''
   });
@@ -173,12 +173,14 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       newErrors.amount = 'Valor deve ser maior que R$ 1,00';
     }
     
-    if (!formData.due_date) {
-      newErrors.due_date = 'Data de vencimento é obrigatória';
-    } else {
-      const today = new Date().toISOString().split('T')[0];
-      if (formData.due_date < today) {
-        newErrors.due_date = 'Data de vencimento deve ser hoje ou no futuro';
+    if (!isAlreadyReceived) {
+      if (!formData.due_date) {
+        newErrors.due_date = 'Data de vencimento é obrigatória';
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        if (formData.due_date < today) {
+          newErrors.due_date = 'Data de vencimento deve ser hoje ou no futuro';
+        }
       }
     }
 
@@ -211,7 +213,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       const paymentData = {
         patient_id: formData.patient_id,
         amount: Number(formData.amount),
-        due_date: formData.due_date,
+        due_date: isAlreadyReceived ? receivedDate : formData.due_date,
         status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null,
         payer_cpf: paymentTitular === 'other' ? payerCpf.replace(/\D/g, '') : null,
@@ -247,27 +249,37 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
           validateCpf={validateCpf}
         />
 
+        <ReceivedCheckbox
+          isAlreadyReceived={isAlreadyReceived}
+          setIsAlreadyReceived={setIsAlreadyReceived}
+          receivedDate={receivedDate}
+          setReceivedDate={setReceivedDate}
+          errors={errors}
+        />
+
         <div>
           <Label htmlFor="amount">Valor *</Label>
           <CurrencyInput
             value={formData.amount}
-            onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
+            onChange={(value) => setFormData({ ...formData, amount: value })}
             className={errors.amount ? 'border-red-500' : ''}
           />
           {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
         </div>
 
-        <div>
-          <Label htmlFor="due_date">Data de Vencimento *</Label>
-          <Input
-            id="due_date"
-            type="date"
-            value={formData.due_date}
-            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-            className={errors.due_date ? 'border-red-500' : ''}
-          />
-          {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
-        </div>
+        {!isAlreadyReceived && (
+          <div>
+            <Label htmlFor="due_date">Data de Vencimento *</Label>
+            <Input
+              id="due_date"
+              type="date"
+              value={formData.due_date}
+              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+              className={errors.due_date ? 'border-red-500' : ''}
+            />
+            {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
+          </div>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -291,14 +303,6 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
           />
           {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
         </div>
-
-        <ReceivedCheckbox
-          isAlreadyReceived={isAlreadyReceived}
-          setIsAlreadyReceived={setIsAlreadyReceived}
-          receivedDate={receivedDate}
-          setReceivedDate={setReceivedDate}
-          errors={errors}
-        />
 
         <PaymentButtons
           onClose={onClose}
