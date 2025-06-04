@@ -1,4 +1,3 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -11,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 type SortField = 'amount' | 'payment_date';
 type SortDirection = 'asc' | 'desc';
@@ -28,8 +28,15 @@ const Expenses = () => {
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isLoading } = useAuth();
 
-  const { data: expenses, isLoading, error } = useQuery({
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
+
+  const { data: expenses, isLoading: expensesLoading, error } = useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
       console.log('Carregando despesas...');
@@ -53,7 +60,8 @@ const Expenses = () => {
         console.error('Erro na query de despesas:', err);
         throw err;
       }
-    }
+    },
+    enabled: !!user
   });
 
   // Filter and sort expenses
@@ -202,30 +210,96 @@ const Expenses = () => {
     console.log('- Expenses data:', expenses);
   }, [isLoading, error, expenses]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <p className="mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <SignedIn>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-7xl mx-auto">
-            <header className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Despesas</h1>
-                <p className="text-gray-600">Gerencie as despesas do consultório</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <header className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Despesas</h1>
+              <p className="text-gray-600">Gerencie as despesas do consultório</p>
+            </div>
+            <div className="flex gap-4">
+              <Button onClick={() => navigate('/dashboard')} variant="outline">
+                Voltar ao Dashboard
+              </Button>
+              <AdvancedExpenseFilter 
+                onFilterChange={handleFilterChange}
+                currentFilters={filters}
+              />
+              {/* Desktop New Expense Button */}
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateDialog} className="hidden md:flex">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Despesa
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ExpenseForm 
+                    expense={editingExpense} 
+                    onClose={handleFormClose}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </header>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <h3 className="text-red-800 font-medium">Erro de conectividade</h3>
+              <p className="text-red-600 text-sm mt-1">
+                Não foi possível conectar ao banco de dados. Verifique sua conexão.
+              </p>
+              <p className="text-red-500 text-xs mt-2 font-mono">
+                Detalhes: {error.message}
+              </p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+            {expensesLoading ? (
+              <div className="p-8 text-center">
+                <p className="text-gray-500">Carregando despesas...</p>
               </div>
-              <div className="flex gap-4">
-                <Button onClick={() => navigate('/dashboard')} variant="outline">
-                  Voltar ao Dashboard
+            ) : error ? (
+              <div className="p-8 text-center">
+                <p className="text-red-500 mb-4">Erro ao carregar dados</p>
+                <Button 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['expenses'] })}
+                  variant="outline"
+                >
+                  Tentar novamente
                 </Button>
-                <AdvancedExpenseFilter 
-                  onFilterChange={handleFilterChange}
-                  currentFilters={filters}
-                />
-                {/* Desktop New Expense Button */}
+              </div>
+            ) : !filteredAndSortedExpenses || filteredAndSortedExpenses.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-gray-500 mb-4">Nenhuma despesa encontrada</p>
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                   <DialogTrigger asChild>
-                    <Button onClick={openCreateDialog} className="hidden md:flex">
+                    <Button onClick={openCreateDialog}>
                       <Plus className="w-4 h-4 mr-2" />
-                      Nova Despesa
+                      Criar primeira despesa
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -241,167 +315,101 @@ const Expenses = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-            </header>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <h3 className="text-red-800 font-medium">Erro de conectividade</h3>
-                <p className="text-red-600 text-sm mt-1">
-                  Não foi possível conectar ao banco de dados. Verifique sua conexão.
-                </p>
-                <p className="text-red-500 text-xs mt-2 font-mono">
-                  Detalhes: {error.message}
-                </p>
-              </div>
-            )}
-
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              {isLoading ? (
-                <div className="p-8 text-center">
-                  <p className="text-gray-500">Carregando despesas...</p>
-                </div>
-              ) : error ? (
-                <div className="p-8 text-center">
-                  <p className="text-red-500 mb-4">Erro ao carregar dados</p>
-                  <Button 
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ['expenses'] })}
-                    variant="outline"
-                  >
-                    Tentar novamente
-                  </Button>
-                </div>
-              ) : !filteredAndSortedExpenses || filteredAndSortedExpenses.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-gray-500 mb-4">Nenhuma despesa encontrada</p>
-                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={openCreateDialog}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Criar primeira despesa
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('amount')}
+                      >
+                        Valor {getSortIcon('amount')}
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <ExpenseForm 
-                        expense={editingExpense} 
-                        onClose={handleFormClose}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                          onClick={() => handleSort('amount')}
-                        >
-                          Valor {getSortIcon('amount')}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                          onClick={() => handleSort('payment_date')}
-                        >
-                          Data {getSortIcon('payment_date')}
-                        </Button>
-                      </TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('payment_date')}
+                      >
+                        Data {getSortIcon('payment_date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedExpenses.map((expense) => (
+                    <TableRow key={expense.id}>
+                      <TableCell>
+                        {expense.expense_categories.name}
+                        {expense.is_residential && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            Residencial
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatCurrency(expense.amount)}</TableCell>
+                      <TableCell>{formatDate(expense.payment_date)}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {expense.description || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(expense)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(expense.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAndSortedExpenses.map((expense) => (
-                      <TableRow key={expense.id}>
-                        <TableCell>
-                          {expense.expense_categories.name}
-                          {expense.is_residential && (
-                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Residencial
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatCurrency(expense.amount)}</TableCell>
-                        <TableCell>{formatDate(expense.payment_date)}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {expense.description || '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(expense)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(expense.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Mobile Floating Action Button */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={openCreateDialog}
-              className="fixed bottom-6 right-4 z-50 md:hidden h-14 w-14 rounded-full shadow-lg"
-              size="icon"
-            >
-              <Plus className="w-6 h-6" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingExpense ? "Editar Despesa" : "Nova Despesa"}
-              </DialogTitle>
-            </DialogHeader>
-            <ExpenseForm 
-              expense={editingExpense} 
-              onClose={handleFormClose}
-            />
-          </DialogContent>
-        </Dialog>
-      </SignedIn>
-      <SignedOut>
-        <RedirectToHome />
-      </SignedOut>
+      {/* Mobile Floating Action Button */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogTrigger asChild>
+          <Button 
+            onClick={openCreateDialog}
+            className="fixed bottom-6 right-4 z-50 md:hidden h-14 w-14 rounded-full shadow-lg"
+            size="icon"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingExpense ? "Editar Despesa" : "Nova Despesa"}
+            </DialogTitle>
+          </DialogHeader>
+          <ExpenseForm 
+            expense={editingExpense} 
+            onClose={handleFormClose}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-const RedirectToHome = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    navigate("/");
-  }, [navigate]);
-
-  return null;
 };
 
 export default Expenses;
