@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,22 +14,7 @@ import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/Pay
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
-
-interface PaymentWithPatient {
-  id: string;
-  patient_id: string;
-  amount: number;
-  due_date: string;
-  status: 'draft' | 'paid' | 'overdue' | 'cancelled';
-  payment_url?: string;
-  created_at: string;
-  paid_date?: string;
-  payer_cpf?: string;
-  description?: string;
-  patients: {
-    full_name: string;
-  };
-}
+import { PaymentWithPatient } from "@/types/payment";
 
 type SortField = 'amount' | 'due_date' | 'patient_name' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -80,6 +66,19 @@ const Payments = () => {
     },
     enabled: !!user,
     retry: 1
+  });
+
+  const { data: patients = [] } = useQuery({
+    queryKey: ['patients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('id, full_name')
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
   });
 
   // Filter and sort payments with proper null checks
@@ -240,6 +239,7 @@ const Payments = () => {
               <PaymentAdvancedFilter 
                 onFilterChange={handleFilterChange}
                 currentFilters={filters}
+                patients={patients}
               />
             </div>
             
