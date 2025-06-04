@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,12 +17,13 @@ import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
-  amount: z.string().min(1, "Valor é obrigatório"),
+  amount: z.number().min(0.01, "Valor deve ser maior que zero"),
   payment_date: z.string().min(1, "Data de pagamento é obrigatória"),
-  penalty_interest: z.string().optional(),
+  penalty_interest: z.number().min(0, "Multa/Juros deve ser maior ou igual a zero"),
   description: z.string().optional(),
   is_residential: z.boolean().default(false),
   competency: z.string().optional(),
+  residential_adjusted_amount: z.number().optional(),
 });
 
 interface ExpenseFormProps {
@@ -74,12 +76,13 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       category_id: expense?.category_id || "",
-      amount: expense?.amount?.toString() || "",
+      amount: expense?.amount || 0,
       payment_date: expense?.payment_date || "",
-      penalty_interest: expense?.penalty_interest?.toString() || "0",
+      penalty_interest: expense?.penalty_interest || 0,
       description: expense?.description || "",
       is_residential: expense?.is_residential || false,
       competency: expense?.competency || "",
+      residential_adjusted_amount: expense?.residential_adjusted_amount || 0,
     },
   });
 
@@ -96,15 +99,13 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
       
       const expenseData = {
         category_id: values.category_id,
-        amount: parseFloat(values.amount),
+        amount: values.amount,
         payment_date: values.payment_date,
-        penalty_interest: parseFloat(values.penalty_interest || "0"),
+        penalty_interest: values.penalty_interest,
         description: values.description || null,
         is_residential: values.is_residential,
         competency: values.competency || null,
-        residential_adjusted_amount: values.is_residential && selectedCategory?.is_residential 
-          ? parseFloat(values.amount) * 0.2 
-          : null,
+        residential_adjusted_amount: values.residential_adjusted_amount || null,
       };
 
       console.log('Dados a serem salvos:', expenseData);
@@ -192,11 +193,12 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
 
   // Calcular automaticamente o valor residencial ajustado
   useEffect(() => {
-    if (watchIsResidential && selectedCategory?.is_residential && watchAmount) {
-      const adjustedAmount = parseFloat(watchAmount) * 0.2;
-      console.log(`Valor residencial ajustado: ${adjustedAmount}`);
+    if (selectedCategory?.is_residential) {
+      const adjusted = watchIsResidential ? Number(watchAmount) * 0.2 : Number(watchAmount);
+      form.setValue('residential_adjusted_amount', adjusted);
+      console.log(`Valor residencial ajustado: ${adjusted}`);
     }
-  }, [watchIsResidential, watchAmount, selectedCategory]);
+  }, [watchIsResidential, watchAmount, selectedCategory, form]);
 
   return (
     <div className="space-y-6">
@@ -250,7 +252,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormControl>
                   <CurrencyInput
                     value={field.value}
-                    onChange={(value) => field.onChange(value.toString())}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage />
@@ -281,7 +283,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormControl>
                   <CurrencyInput
                     value={field.value}
-                    onChange={(value) => field.onChange(value.toString())}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage />

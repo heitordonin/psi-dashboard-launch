@@ -2,7 +2,7 @@ import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExpenseWithCategory } from "@/types/expense";
@@ -10,11 +10,22 @@ import { ExpenseForm } from "@/components/ExpenseForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
+
+type SortField = 'amount' | 'payment_date';
+type SortDirection = 'asc' | 'desc';
 
 const Expenses = () => {
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseWithCategory | null>(null);
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filters, setFilters] = useState({
+    categories: [] as string[],
+    startDate: "",
+    endDate: "",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -44,6 +55,61 @@ const Expenses = () => {
       }
     }
   });
+
+  // Filter and sort expenses
+  const filteredAndSortedExpenses = expenses?.filter(expense => {
+    // Filter by categories
+    if (filters.categories.length > 0 && !filters.categories.includes(expense.category_id)) {
+      return false;
+    }
+    
+    // Filter by date range
+    if (filters.startDate && expense.payment_date < filters.startDate) {
+      return false;
+    }
+    
+    if (filters.endDate && expense.payment_date > filters.endDate) {
+      return false;
+    }
+    
+    return true;
+  })?.sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aValue, bValue;
+    
+    if (sortField === 'amount') {
+      aValue = a.amount;
+      bValue = b.amount;
+    } else if (sortField === 'payment_date') {
+      aValue = new Date(a.payment_date).getTime();
+      bValue = new Date(b.payment_date).getTime();
+    } else {
+      return 0;
+    }
+    
+    if (sortDirection === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4" />;
+    }
+    return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+  };
 
   // Log de erros para debug
   useEffect(() => {
@@ -113,6 +179,10 @@ const Expenses = () => {
     setIsFormOpen(true);
   };
 
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -146,6 +216,10 @@ const Expenses = () => {
                 <Button onClick={() => navigate('/dashboard')} variant="outline">
                   Voltar ao Dashboard
                 </Button>
+                <AdvancedExpenseFilter 
+                  onFilterChange={handleFilterChange}
+                  currentFilters={filters}
+                />
                 {/* Desktop New Expense Button */}
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                   <DialogTrigger asChild>
@@ -196,7 +270,7 @@ const Expenses = () => {
                     Tentar novamente
                   </Button>
                 </div>
-              ) : !expenses || expenses.length === 0 ? (
+              ) : !filteredAndSortedExpenses || filteredAndSortedExpenses.length === 0 ? (
                 <div className="p-8 text-center">
                   <p className="text-gray-500 mb-4">Nenhuma despesa encontrada</p>
                   <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -223,20 +297,32 @@ const Expenses = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Código</TableHead>
                       <TableHead>Categoria</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Data</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('amount')}
+                        >
+                          Valor {getSortIcon('amount')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('payment_date')}
+                        >
+                          Data {getSortIcon('payment_date')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {expenses.map((expense) => (
+                    {filteredAndSortedExpenses.map((expense) => (
                       <TableRow key={expense.id}>
-                        <TableCell className="font-mono text-sm">
-                          {expense.expense_categories.code}
-                        </TableCell>
                         <TableCell>
                           {expense.expense_categories.name}
                           {expense.is_residential && (

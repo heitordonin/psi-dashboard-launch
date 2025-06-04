@@ -1,49 +1,44 @@
 
 import * as React from "react";
-import { Input } from "@/components/ui/input";
+import CurrencyInputField from 'react-currency-input-field';
 import { cn } from "@/lib/utils";
-import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 
-interface CurrencyInputProps extends Omit<React.ComponentProps<"input">, 'value' | 'onChange'> {
+interface CurrencyInputProps {
   value?: string | number;
   onChange?: (value: number) => void;
+  className?: string;
+  placeholder?: string;
+  disabled?: boolean;
 }
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ className, value, onChange, ...props }, ref) => {
-    const { value: displayValue, handleChange, getNumericValue } = useCurrencyInput(value);
-
-    React.useEffect(() => {
-      if (typeof value === 'number' && value !== getNumericValue()) {
-        handleChange(value.toLocaleString('pt-BR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }));
-      }
-    }, [value]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleChange(e.target.value);
+  ({ className, value, onChange, placeholder = "0,00", disabled = false, ...props }, ref) => {
+    const handleValueChange = (value: string | undefined) => {
       if (onChange) {
-        const numericValue = getNumericValue();
+        const numericValue = value ? parseFloat(value) : 0;
         onChange(numericValue);
       }
     };
 
     return (
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-          R$
-        </span>
-        <Input
-          {...props}
-          ref={ref}
-          value={displayValue}
-          onChange={handleInputChange}
-          className={cn("pl-10", className)}
-          placeholder="0,00"
-        />
-      </div>
+      <CurrencyInputField
+        {...props}
+        ref={ref}
+        value={value}
+        onValueChange={handleValueChange}
+        placeholder={placeholder}
+        prefix="R$ "
+        decimalSeparator=","
+        groupSeparator="."
+        decimalsLimit={2}
+        allowDecimals={true}
+        allowNegativeValue={false}
+        disabled={disabled}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+      />
     );
   }
 );
