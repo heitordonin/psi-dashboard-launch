@@ -51,6 +51,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
       
+      // Don't include owner_id - let Supabase set it automatically via auth.uid() default
       const { error } = await supabase
         .from('invoice_descriptions')
         .insert([{ 
