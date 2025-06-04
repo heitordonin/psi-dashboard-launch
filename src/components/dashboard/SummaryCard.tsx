@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,12 +38,6 @@ export function SummaryCard({ data, isLoading }: SummaryCardProps) {
       count: data.receivedCount,
       total: data.receivedTotal,
       color: "text-green-600"
-    },
-    {
-      label: "Confirmadas",
-      count: data.confirmedCount,
-      total: data.confirmedTotal,
-      color: "text-blue-600"
     },
     {
       label: "Aguardando pag.",
