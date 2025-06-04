@@ -214,9 +214,14 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
+      // Parse currency values properly
+      const parsedAmount = typeof formData.amount === 'string' 
+        ? parseFloat(formData.amount.toString().replace(/\./g, "").replace(",", ".")) 
+        : Number(formData.amount);
+
       const paymentData = {
         patient_id: formData.patient_id,
-        amount: Number(formData.amount),
+        amount: parsedAmount,
         due_date: isAlreadyReceived ? receivedDate : formData.due_date,
         status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -171,7 +170,27 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
       return;
     }
 
-    mutation.mutate(values);
+    // Parse currency values properly
+    const parsedAmount = typeof values.amount === 'string' 
+      ? parseFloat(values.amount.toString().replace(/\./g, "").replace(",", ".")) 
+      : Number(values.amount);
+    
+    const parsedPenaltyInterest = typeof values.penalty_interest === 'string' 
+      ? parseFloat(values.penalty_interest.toString().replace(/\./g, "").replace(",", ".")) 
+      : Number(values.penalty_interest);
+    
+    const parsedResidentialAmount = typeof values.residential_adjusted_amount === 'string' 
+      ? parseFloat(values.residential_adjusted_amount.toString().replace(/\./g, "").replace(",", ".")) 
+      : Number(values.residential_adjusted_amount || 0);
+
+    const submissionValues = {
+      ...values,
+      amount: parsedAmount,
+      penalty_interest: parsedPenaltyInterest,
+      residential_adjusted_amount: parsedResidentialAmount
+    };
+
+    mutation.mutate(submissionValues);
   };
 
   const handleCategoryChange = (categoryId: string) => {
