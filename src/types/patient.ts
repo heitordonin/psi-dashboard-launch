@@ -10,4 +10,5 @@ export interface Patient {
   is_payment_from_abroad: boolean;
   created_at: string;
   updated_at: string;
+  owner_id?: string;
 }

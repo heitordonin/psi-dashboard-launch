@@ -7,34 +7,53 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Info, Settings, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import PaymentFormWrapper from "@/components/payments/PaymentFormWrapper";
+import { Plus, Edit, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { PaymentFormWrapper } from "@/components/payments/PaymentFormWrapper";
+import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
-import { PaymentWithPatient } from "@/types/payment";
-import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
-import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
 
-type SortField = 'amount' | 'due_date' | 'patient_name';
+interface PaymentWithPatient {
+  id: string;
+  patient_id: string;
+  amount: number;
+  due_date: string;
+  status: 'draft' | 'paid' | 'overdue' | 'cancelled';
+  payment_url?: string;
+  created_at: string;
+  paid_date?: string;
+  payer_cpf?: string;
+  description?: string;
+  patients: {
+    full_name: string;
+  };
+}
+
+type SortField = 'amount' | 'due_date' | 'patient_name' | 'status';
 type SortDirection = 'asc' | 'desc';
 
 const Payments = () => {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | undefined>();
   const [deletingPayment, setDeletingPayment] = useState<PaymentWithPatient | undefined>();
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filters, setFilters] = useState<PaymentFilters>({
     patientId: "",
+    status: "",
     startDate: "",
-    endDate: "",
-    status: ""
+    endDate: ""
   });
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['payments'],
@@ -45,9 +64,11 @@ const Payments = () => {
         .from('payments')
         .select(`
           *,
-          patients!inner(full_name)
+          patients (
+            full_name
+          )
         `)
-        .order('created_at', { ascending: false });
+        .order('due_date', { ascending: false });
         
       if (error) {
         console.error('Payments - Erro ao buscar pagamentos:', error);
@@ -61,27 +82,18 @@ const Payments = () => {
     retry: 1
   });
 
-  const { data: patients = [] } = useQuery({
-    queryKey: ['patients'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('id, full_name')
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user
-  });
-
-  // Filter and sort payments
+  // Filter and sort payments with proper null checks
   const filteredAndSortedPayments = payments?.filter(payment => {
-    // Filter by patient
+    if (!payment) return false;
+
     if (filters.patientId && payment.patient_id !== filters.patientId) {
       return false;
     }
     
-    // Filter by date range
+    if (filters.status && payment.status !== filters.status) {
+      return false;
+    }
+    
     if (filters.startDate && payment.due_date < filters.startDate) {
       return false;
     }
@@ -90,14 +102,9 @@ const Payments = () => {
       return false;
     }
     
-    // Filter by status
-    if (filters.status && payment.status !== filters.status) {
-      return false;
-    }
-    
     return true;
   })?.sort((a, b) => {
-    if (!sortField) return 0;
+    if (!sortField || !a || !b) return 0;
     
     let aValue, bValue;
     
@@ -108,8 +115,11 @@ const Payments = () => {
       aValue = new Date(a.due_date).getTime();
       bValue = new Date(b.due_date).getTime();
     } else if (sortField === 'patient_name') {
-      aValue = a.patients.full_name.toLowerCase();
-      bValue = b.patients.full_name.toLowerCase();
+      aValue = a.patients?.full_name?.toLowerCase() || '';
+      bValue = b.patients?.full_name?.toLowerCase() || '';
+    } else if (sortField === 'status') {
+      aValue = a.status;
+      bValue = b.status;
     } else {
       return 0;
     }
@@ -119,23 +129,7 @@ const Payments = () => {
     } else {
       return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     }
-  });
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4" />;
-    }
-    return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
-  };
+  }) || [];
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -156,6 +150,22 @@ const Payments = () => {
       toast.error('Erro ao excluir cobrança: ' + error.message);
     }
   });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4" />;
+    }
+    return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+  };
 
   const handleDelete = (payment: PaymentWithPatient) => {
     setDeletingPayment(payment);
@@ -197,14 +207,20 @@ const Payments = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Allow editing and deleting for payments created with "Value already received"
-  const canEdit = (payment: PaymentWithPatient) => {
-    return payment.status === 'draft' || payment.status === 'pending' || payment.status === 'paid';
-  };
-  
-  const canDelete = (payment: PaymentWithPatient) => {
+  const canEditOrDelete = (payment: PaymentWithPatient) => {
     return payment.status === 'draft' || payment.status === 'paid';
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <p className="mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -212,7 +228,7 @@ const Payments = () => {
         <div className="flex flex-col gap-6 mb-6">
           <h1 className="text-3xl font-bold">Cobranças</h1>
           
-          {/* Mobile-first responsive button layout - removed logout button */}
+          {/* Mobile-first responsive button layout */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:flex-wrap sm:items-center">
             <div className="flex gap-2 order-1 sm:order-1">
               <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none">
@@ -221,20 +237,9 @@ const Payments = () => {
             </div>
             
             <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDescriptionsOpen(true)}
-                className="flex-1 sm:flex-none"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Descrições padrão</span>
-                <span className="sm:hidden">Descrições</span>
-              </Button>
-              
               <PaymentAdvancedFilter 
                 onFilterChange={handleFilterChange}
                 currentFilters={filters}
-                patients={patients}
               />
             </div>
             
@@ -274,40 +279,34 @@ const Payments = () => {
                   filteredAndSortedPayments?.map((payment) => (
                     <Card key={payment.id}>
                       <CardContent className="text-sm p-4">
-                        <p><strong>Paciente:</strong> {payment.patients.full_name}</p>
+                        <p><strong>Paciente:</strong> {payment.patients?.full_name || '-'}</p>
                         <p><strong>Valor:</strong> {formatCurrency(payment.amount)}</p>
                         <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
-                        <p><strong>Data Recebimento:</strong> {payment.paid_date ? formatDate(payment.paid_date) : '-'}</p>
+                        <p><strong>Status:</strong> <PaymentStatusBadge status={payment.status} /></p>
                         <p><strong>Descrição:</strong> {payment.description || '-'}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <strong>Status:</strong>
-                          <PaymentStatusBadge status={payment.status} />
-                          {payment.status === 'draft' && (
-                            <div className="group relative">
-                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                Cobrança salva. Envio ao paciente será habilitado em breve.
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        {payment.paid_date && (
+                          <p><strong>Data do Pagamento:</strong> {formatDate(payment.paid_date)}</p>
+                        )}
                         <div className="flex justify-end gap-2 mt-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditDialog(payment)}
-                            disabled={!canEdit(payment)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(payment)}
-                            disabled={!canDelete(payment) || deleteMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {canEditOrDelete(payment) && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEditDialog(payment)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDelete(payment)}
+                                disabled={deleteMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -347,9 +346,17 @@ const Payments = () => {
                           Vencimento {getSortIcon('due_date')}
                         </Button>
                       </TableHead>
-                      <TableHead>Data Recebimento</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="h-auto p-0 font-medium hover:bg-transparent"
+                          onClick={() => handleSort('status')}
+                        >
+                          Status {getSortIcon('status')}
+                        </Button>
+                      </TableHead>
                       <TableHead>Descrição</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Data Pagamento</TableHead>
                       <TableHead className="w-24">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -363,45 +370,40 @@ const Payments = () => {
                     ) : (
                       filteredAndSortedPayments?.map((payment) => (
                         <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.patients.full_name}</TableCell>
+                          <TableCell className="font-medium">
+                            {payment.patients?.full_name || '-'}
+                          </TableCell>
                           <TableCell>{formatCurrency(payment.amount)}</TableCell>
                           <TableCell>{formatDate(payment.due_date)}</TableCell>
                           <TableCell>
+                            <PaymentStatusBadge status={payment.status} />
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {payment.description || '-'}
+                          </TableCell>
+                          <TableCell>
                             {payment.paid_date ? formatDate(payment.paid_date) : '-'}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">{payment.description || '-'}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <PaymentStatusBadge status={payment.status} />
-                              {payment.status === 'draft' && (
-                                <div className="group relative">
-                                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    Cobrança salva. Envio ao paciente será habilitado em breve.
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEditDialog(payment)}
-                                disabled={!canEdit(payment)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDelete(payment)}
-                                disabled={!canDelete(payment) || deleteMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                            {canEditOrDelete(payment) && (
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditDialog(payment)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDelete(payment)}
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -414,17 +416,12 @@ const Payments = () => {
         </div>
       </div>
 
-      <InvoiceDescriptionsManager 
-        isOpen={isDescriptionsOpen}
-        onClose={() => setIsDescriptionsOpen(false)}
-      />
-
       <DeleteConfirmationDialog
         isOpen={!!deletingPayment}
         onClose={() => setDeletingPayment(undefined)}
         onConfirm={confirmDelete}
         title="Excluir Cobrança"
-        description={`Tem certeza que deseja excluir a cobrança de ${deletingPayment?.patients.full_name}?`}
+        description={`Tem certeza que deseja excluir esta cobrança do paciente ${deletingPayment?.patients?.full_name || 'desconhecido'}?`}
         isLoading={deleteMutation.isPending}
       />
     </div>

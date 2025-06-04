@@ -94,21 +94,13 @@ const Expenses = () => {
     retry: 1
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['expense-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expense_categories')
-        .select('*')
-        .order('name');
-      if (error) throw error;
-      return data as ExpenseCategory[];
-    },
-    enabled: !!user
-  });
-
-  // Filter and sort expenses
+  // Filter and sort expenses with proper null checks
   const filteredAndSortedExpenses = expenses?.filter(expense => {
+    // Add null checks for expense and its properties
+    if (!expense || !expense.expense_categories) {
+      return false;
+    }
+
     // Filter by category
     if (filters.categoryId && expense.expense_categories.id !== filters.categoryId) {
       return false;
@@ -135,7 +127,7 @@ const Expenses = () => {
     
     return true;
   })?.sort((a, b) => {
-    if (!sortField) return 0;
+    if (!sortField || !a || !b) return 0;
     
     let aValue, bValue;
     
@@ -146,8 +138,8 @@ const Expenses = () => {
       aValue = new Date(a.payment_date).getTime();
       bValue = new Date(b.payment_date).getTime();
     } else if (sortField === 'category_name') {
-      aValue = a.expense_categories.name.toLowerCase();
-      bValue = b.expense_categories.name.toLowerCase();
+      aValue = a.expense_categories?.name?.toLowerCase() || '';
+      bValue = b.expense_categories?.name?.toLowerCase() || '';
     } else {
       return 0;
     }
@@ -157,7 +149,7 @@ const Expenses = () => {
     } else {
       return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     }
-  });
+  }) || [];
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -274,8 +266,6 @@ const Expenses = () => {
               <AdvancedExpenseFilter 
                 onFilterChange={handleFilterChange}
                 currentFilters={filters}
-                categories={categories}
-                expenses={expenses}
               />
             </div>
             
@@ -315,7 +305,7 @@ const Expenses = () => {
                   filteredAndSortedExpenses?.map((expense) => (
                     <Card key={expense.id}>
                       <CardContent className="text-sm p-4">
-                        <p><strong>Categoria:</strong> {expense.expense_categories.name}</p>
+                        <p><strong>Categoria:</strong> {expense.expense_categories?.name || '-'}</p>
                         <p><strong>Valor:</strong> {formatCurrency(expense.amount)}</p>
                         {expense.is_residential && expense.residential_adjusted_amount && (
                           <p><strong>Valor Ajustado:</strong> {formatCurrency(expense.residential_adjusted_amount)}</p>
@@ -400,8 +390,8 @@ const Expenses = () => {
                       filteredAndSortedExpenses?.map((expense) => (
                         <TableRow key={expense.id}>
                           <TableCell className="font-medium">
-                            <span>{expense.expense_categories.name}</span>
-                            {expense.expense_categories.is_revenue && (
+                            <span>{expense.expense_categories?.name || '-'}</span>
+                            {expense.expense_categories?.is_revenue && (
                               <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                                 Receita
                               </span>
@@ -473,7 +463,7 @@ const Expenses = () => {
         onClose={() => setDeletingExpense(undefined)}
         onConfirm={confirmDelete}
         title="Excluir Despesa"
-        description={`Tem certeza que deseja excluir esta despesa da categoria ${deletingExpense?.expense_categories.name}?`}
+        description={`Tem certeza que deseja excluir esta despesa da categoria ${deletingExpense?.expense_categories?.name || 'desconhecida'}?`}
         isLoading={deleteMutation.isPending}
       />
     </div>

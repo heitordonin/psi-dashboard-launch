@@ -9,12 +9,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
 interface DeleteConfirmationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
   title: string;
   description: string;
   onConfirm: () => void;
@@ -22,22 +23,15 @@ interface DeleteConfirmationDialogProps {
 }
 
 export const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
+  isOpen,
+  onClose,
   title,
   description,
   onConfirm,
   isLoading = false
 }) => {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={isLoading}
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-red-600">
@@ -49,7 +43,7 @@ export const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> =
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel className="mt-0">
+          <AlertDialogCancel className="mt-0" onClick={onClose}>
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
