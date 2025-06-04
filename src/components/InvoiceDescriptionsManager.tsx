@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +31,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+
+  console.log('InvoiceDescriptionsManager - Estado de autenticação:', { isAuthenticated, authLoading });
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
@@ -203,8 +206,14 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
           <DialogHeader>
             <DialogTitle>Gerenciar Descrições Padrão</DialogTitle>
           </DialogHeader>
-          <div className="p-8 text-center text-red-500">
-            Você precisa estar autenticado para gerenciar descrições.
+          <div className="p-8 text-center">
+            <div className="text-red-500 mb-4">
+              Você precisa estar autenticado para gerenciar descrições.
+            </div>
+            <div className="text-sm text-gray-600">
+              <p>Status de autenticação: {isAuthenticated ? 'Autenticado' : 'Não autenticado'}</p>
+              <p>Carregando: {authLoading ? 'Sim' : 'Não'}</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

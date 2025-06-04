@@ -28,6 +28,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const configureSupabaseAuth = async () => {
+      console.log('Configurando autenticação Supabase...');
+      console.log('isLoaded:', isLoaded, 'isSignedIn:', isSignedIn);
+      
       if (isLoaded) {
         if (isSignedIn) {
           try {
@@ -37,12 +40,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             if (token) {
               // Set the auth token in Supabase
-              await supabase.auth.setSession({
+              const { data, error } = await supabase.auth.setSession({
                 access_token: token,
                 refresh_token: 'placeholder', // Clerk handles refresh
               });
-              console.log('Token configurado no Supabase');
-              setIsAuthenticated(true);
+              
+              if (error) {
+                console.error('Erro ao configurar sessão no Supabase:', error);
+                setIsAuthenticated(false);
+              } else {
+                console.log('Sessão configurada no Supabase com sucesso:', data);
+                setIsAuthenticated(true);
+              }
             } else {
               console.error('Não foi possível obter o token do Clerk');
               setIsAuthenticated(false);
@@ -53,6 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else {
           // User is not signed in, clear Supabase session
+          console.log('Usuário não autenticado, limpando sessão Supabase');
           await supabase.auth.signOut();
           setIsAuthenticated(false);
         }
