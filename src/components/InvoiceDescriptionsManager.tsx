@@ -51,18 +51,11 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
       
-      // Verificar se o usuário está autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
-      
       const { error } = await supabase
         .from('invoice_descriptions')
         .insert([{ 
           subject: data.subject, 
-          text: data.text,
-          owner_id: user.id
+          text: data.text
         }]);
       if (error) {
         console.error('Erro ao criar descrição:', error);
