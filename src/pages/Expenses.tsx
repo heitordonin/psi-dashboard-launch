@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -139,30 +138,6 @@ const Expenses = () => {
       console.log('ID da despesa:', id);
       console.log('Usuário autenticado:', user?.id);
       
-      // Verificar se a despesa existe e pertence ao usuário antes de excluir
-      const { data: expenseCheck, error: checkError } = await supabase
-        .from('expenses')
-        .select('id, owner_id')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Erro ao verificar despesa:', checkError);
-        throw new Error(`Erro ao verificar despesa: ${checkError.message}`);
-      }
-
-      if (!expenseCheck) {
-        console.error('Despesa não encontrada');
-        throw new Error('Despesa não encontrada');
-      }
-
-      if (expenseCheck.owner_id !== user?.id) {
-        console.error('Usuário não tem permissão para excluir esta despesa');
-        throw new Error('Você não tem permissão para excluir esta despesa');
-      }
-
-      console.log('Verificação concluída, procedendo com a exclusão...');
-
       const { error: deleteError } = await supabase
         .from('expenses')
         .delete()
@@ -173,46 +148,15 @@ const Expenses = () => {
         throw new Error(`Erro ao excluir despesa: ${deleteError.message}`);
       }
 
-      // Verificar se a exclusão foi bem-sucedida
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('expenses')
-        .select('id')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (verifyError && verifyError.code !== 'PGRST116') { // PGRST116 = não encontrado (esperado)
-        console.error('Erro ao verificar exclusão:', verifyError);
-        throw new Error(`Erro ao verificar exclusão: ${verifyError.message}`);
-      }
-
-      if (verifyData) {
-        console.error('Despesa ainda existe após exclusão');
-        throw new Error('Falha na exclusão: despesa ainda existe no banco de dados');
-      }
-
-      console.log('=== EXCLUSÃO CONFIRMADA ===');
+      console.log('=== EXCLUSÃO CONCLUÍDA ===');
       return id;
     },
     onSuccess: (deletedId) => {
       console.log('=== SUCESSO NA EXCLUSÃO ===');
       console.log('ID excluído:', deletedId);
       
-      // Remover do cache local imediatamente
-      queryClient.setQueryData(['expenses'], (oldData: ExpenseWithCategory[] | undefined) => {
-        if (!oldData) {
-          console.log('Cache estava vazio');
-          return [];
-        }
-        
-        const beforeCount = oldData.length;
-        const filteredData = oldData.filter(expense => expense.id !== deletedId);
-        const afterCount = filteredData.length;
-        
-        console.log(`Cache atualizado: ${beforeCount} -> ${afterCount} despesas`);
-        console.log('Despesa removida do cache local');
-        
-        return filteredData;
-      });
+      // Invalidar a query para recarregar os dados
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
       
       toast({
         title: "Despesa excluída",
@@ -230,9 +174,6 @@ const Expenses = () => {
         description: error.message || "Não foi possível excluir a despesa.",
         variant: "destructive",
       });
-      
-      // Em caso de erro, recarregar os dados para garantir consistência
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
     }
   });
 
