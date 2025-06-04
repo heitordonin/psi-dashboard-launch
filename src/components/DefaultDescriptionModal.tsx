@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Edit, Trash2 } from "lucide-react";
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface InvoiceDescription {
   id: string;
@@ -28,10 +29,16 @@ export const DefaultDescriptionModal = ({
   onSelectDescription,
   onManageDescriptions 
 }: DefaultDescriptionModalProps) => {
+  const { ensureSupabaseAuth } = useSupabaseAuth();
+
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
       console.log('Buscando descrições padrão...');
+      
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
+      
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')

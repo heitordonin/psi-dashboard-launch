@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
 import { useAuth } from '@clerk/clerk-react';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface InvoiceDescription {
   id: string;
@@ -29,7 +30,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
-  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { ensureSupabaseAuth } = useSupabaseAuth();
 
   console.log('InvoiceDescriptionsManager - Estado Clerk:', { isSignedIn, isLoaded });
 
@@ -38,18 +40,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     queryFn: async () => {
       console.log('Carregando descrições...');
       
-      // Configura o cliente Supabase com o token do Clerk se disponível
-      try {
-        const token = await getToken({ template: 'supabase' });
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: 'placeholder',
-          });
-        }
-      } catch (error) {
-        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
-      }
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
@@ -70,22 +62,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
       
-      if (!isSignedIn) {
-        throw new Error('Usuário não autenticado');
-      }
-      
-      // Tenta configurar o token do Supabase
-      try {
-        const token = await getToken({ template: 'supabase' });
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: 'placeholder',
-          });
-        }
-      } catch (error) {
-        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
-      }
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
       
       const { error } = await supabase
         .from('invoice_descriptions')
@@ -114,17 +92,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (data: { id: string; subject: string; text: string }) => {
       console.log('Atualizando descrição:', data);
       
-      try {
-        const token = await getToken({ template: 'supabase' });
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: 'placeholder',
-          });
-        }
-      } catch (error) {
-        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
-      }
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
       
       const { error } = await supabase
         .from('invoice_descriptions')
@@ -151,17 +120,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (id: string) => {
       console.log('Excluindo descrição:', id);
       
-      try {
-        const token = await getToken({ template: 'supabase' });
-        if (token) {
-          await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: 'placeholder',
-          });
-        }
-      } catch (error) {
-        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
-      }
+      // Garante que o token está configurado antes da requisição
+      await ensureSupabaseAuth();
       
       const { error } = await supabase
         .from('invoice_descriptions')
