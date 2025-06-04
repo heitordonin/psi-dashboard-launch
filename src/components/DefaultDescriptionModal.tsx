@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -34,23 +33,32 @@ export const DefaultDescriptionModal = ({
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
-      console.log('Buscando descrições padrão...');
+      console.log('DefaultDescriptionModal - Buscando descrições padrão...');
       
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
+      // Garantir que o token JWT do Clerk está configurado no Supabase
+      try {
+        await ensureSupabaseAuth();
+        console.log('DefaultDescriptionModal - Token Supabase configurado com sucesso');
+      } catch (authError) {
+        console.error('DefaultDescriptionModal - Erro na autenticação:', authError);
+        throw new Error('Falha na autenticação: ' + authError.message);
+      }
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
         .order('created_at', { ascending: false });
+        
       if (error) {
-        console.error('Erro ao buscar descrições:', error);
+        console.error('DefaultDescriptionModal - Erro ao buscar descrições:', error);
         throw error;
       }
-      console.log('Descrições encontradas:', data);
+      
+      console.log('DefaultDescriptionModal - Descrições encontradas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && isAuthenticated
+    enabled: isOpen && isAuthenticated,
+    retry: 1
   });
 
   const handleSelectDescription = (description: InvoiceDescription) => {

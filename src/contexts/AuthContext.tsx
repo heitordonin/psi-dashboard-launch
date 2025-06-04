@@ -32,46 +32,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabaseToken, setSupabaseToken] = useState<string | null>(null);
 
   const ensureSupabaseAuth = async () => {
-    console.log('ensureSupabaseAuth - Verificando autenticação...');
+    console.log('AuthContext - ensureSupabaseAuth iniciado');
     
     if (!isLoaded) {
-      console.log('ensureSupabaseAuth - Clerk ainda não carregou');
+      console.log('AuthContext - Clerk ainda não carregou');
       throw new Error('Autenticação ainda não carregada');
     }
 
     if (!isSignedIn) {
-      console.log('ensureSupabaseAuth - Usuário não autenticado no Clerk');
+      console.log('AuthContext - Usuário não autenticado no Clerk');
       throw new Error('Usuário não autenticado');
     }
 
     try {
-      console.log('ensureSupabaseAuth - Obtendo token do Supabase...');
+      console.log('AuthContext - Obtendo token do Clerk com template supabase...');
       const token = await getToken({ template: 'supabase' });
       
       if (!token) {
-        console.error('ensureSupabaseAuth - Token do Supabase não disponível');
+        console.error('AuthContext - Token do Supabase não disponível');
         throw new Error('Token do Supabase não disponível');
       }
 
-      console.log('ensureSupabaseAuth - Token obtido, configurando no cliente Supabase');
+      console.log('AuthContext - Token obtido, configurando no cliente Supabase');
       
-      // Configura o token no cliente Supabase
+      // Configurar o token no cliente Supabase usando setAuth
+      supabase.realtime.setAuth(token);
+      
+      // Para requisições REST, usar setSession
       await supabase.auth.setSession({
         access_token: token,
-        refresh_token: 'placeholder', // Clerk gerencia o refresh
+        refresh_token: 'dummy-refresh-token', // Clerk gerencia refresh
       });
 
       setSupabaseToken(token);
-      console.log('ensureSupabaseAuth - Token configurado com sucesso');
+      
+      // Verificar se o JWT contém custom:sub
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('AuthContext - JWT payload verificado:', {
+          sub: payload.sub,
+          'custom:sub': payload['custom:sub'],
+          aud: payload.aud,
+          role: payload.role
+        });
+      } catch (parseError) {
+        console.error('AuthContext - Erro ao verificar JWT:', parseError);
+      }
+      
+      console.log('AuthContext - Token configurado com sucesso');
       
     } catch (error) {
-      console.error('ensureSupabaseAuth - Erro:', error);
+      console.error('AuthContext - Erro:', error);
       throw error;
     }
   };
 
   useEffect(() => {
-    console.log('AuthProvider - Estado do Clerk:', { isLoaded, isSignedIn });
+    console.log('AuthContext - Estado do Clerk mudou:', { isLoaded, isSignedIn });
     
     const setupAuth = async () => {
       if (isLoaded) {
@@ -80,14 +97,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await ensureSupabaseAuth();
             setIsAuthenticated(true);
           } catch (error) {
-            console.error('AuthProvider - Erro na configuração:', error);
+            console.error('AuthContext - Erro na configuração:', error);
             setIsAuthenticated(false);
             setSupabaseToken(null);
           }
         } else {
           setIsAuthenticated(false);
           setSupabaseToken(null);
-          // Limpa a sessão do Supabase quando não está autenticado
+          // Limpar a sessão do Supabase quando não está autenticado
           await supabase.auth.signOut();
         }
         setIsLoading(false);
@@ -95,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     setupAuth();
-  }, [isSignedIn, isLoaded, getToken]);
+  }, [isSignedIn, isLoaded]);
 
   return (
     <AuthContext.Provider value={{ 

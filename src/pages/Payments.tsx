@@ -23,6 +23,28 @@ const Payments = () => {
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['payments'],
     queryFn: async () => {
+      console.log('Payments - Buscando pagamentos...');
+      
+      // Tentar obter token do Clerk se disponível
+      try {
+        const { useAuth } = await import('@clerk/clerk-react');
+        const { getToken, isSignedIn } = useAuth();
+        
+        if (isSignedIn) {
+          const token = await getToken({ template: 'supabase' });
+          if (token) {
+            console.log('Payments - Configurando token Supabase para busca de payments');
+            supabase.realtime.setAuth(token);
+            await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: 'dummy-refresh-token',
+            });
+          }
+        }
+      } catch (authError) {
+        console.warn('Payments - Não foi possível configurar token:', authError);
+      }
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -30,15 +52,47 @@ const Payments = () => {
           patients!inner(full_name)
         `)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+        
+      if (error) {
+        console.error('Payments - Erro ao buscar pagamentos:', error);
+        throw error;
+      }
+      
+      console.log('Payments - Pagamentos encontrados:', data);
       return data as PaymentWithPatient[];
-    }
+    },
+    retry: 1
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Payments - Deletando pagamento:', id);
+      
+      // Tentar obter token do Clerk se disponível
+      try {
+        const { useAuth } = await import('@clerk/clerk-react');
+        const { getToken, isSignedIn } = useAuth();
+        
+        if (isSignedIn) {
+          const token = await getToken({ template: 'supabase' });
+          if (token) {
+            console.log('Payments - Configurando token Supabase para deletar payment');
+            supabase.realtime.setAuth(token);
+            await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: 'dummy-refresh-token',
+            });
+          }
+        }
+      } catch (authError) {
+        console.warn('Payments - Não foi possível configurar token para delete:', authError);
+      }
+      
       const { error } = await supabase.from('payments').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Payments - Erro ao deletar:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });

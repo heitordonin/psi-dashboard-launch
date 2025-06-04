@@ -29,22 +29,30 @@ export const useSupabaseAuth = () => {
 
       console.log('useSupabaseAuth - Token obtido:', token.substring(0, 20) + '...');
       
-      // Configura o token no cliente Supabase para esta requisição
+      // Configurar o token diretamente no cabeçalho Authorization do cliente Supabase
+      supabase.realtime.setAuth(token);
+      
+      // Para queries REST, configure o token usando o método correto
       await supabase.auth.setSession({
         access_token: token,
-        refresh_token: 'placeholder', // Clerk gerencia o refresh
+        refresh_token: 'dummy-refresh-token', // Clerk gerencia o refresh
       });
 
       console.log('useSupabaseAuth - Token configurado no cliente Supabase');
       
-      // Verifica se o token está funcionando
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('useSupabaseAuth - Erro ao verificar usuário:', error);
-        throw new Error('Token inválido: ' + error.message);
+      // Verificar se o token contém o custom:sub claim
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('useSupabaseAuth - JWT payload:', payload);
+        
+        if (payload['custom:sub']) {
+          console.log('useSupabaseAuth - custom:sub encontrado:', payload['custom:sub']);
+        } else {
+          console.warn('useSupabaseAuth - custom:sub não encontrado no JWT. Verifique o template do Clerk.');
+        }
+      } catch (parseError) {
+        console.error('useSupabaseAuth - Erro ao fazer parse do JWT:', parseError);
       }
-      
-      console.log('useSupabaseAuth - Usuário autenticado no Supabase:', user?.id);
       
     } catch (error) {
       console.error('useSupabaseAuth - Erro ao configurar autenticação:', error);

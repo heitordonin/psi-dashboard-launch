@@ -48,22 +48,31 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
-      console.log('Buscando pacientes...');
+      console.log('PaymentFormWrapper - Buscando pacientes...');
       
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
+      // Garantir que o token JWT do Clerk está configurado no Supabase
+      try {
+        await ensureSupabaseAuth();
+        console.log('PaymentFormWrapper - Token Supabase configurado para busca de pacientes');
+      } catch (authError) {
+        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
+        throw new Error('Falha na autenticação: ' + authError.message);
+      }
       
       const { data, error } = await supabase
         .from('patients')
         .select('id, full_name, guardian_cpf')
         .order('full_name');
+        
       if (error) {
-        console.error('Erro ao buscar pacientes:', error);
+        console.error('PaymentFormWrapper - Erro ao buscar pacientes:', error);
         throw error;
       }
-      console.log('Pacientes encontrados:', data);
+      
+      console.log('PaymentFormWrapper - Pacientes encontrados:', data);
       return data as Patient[];
-    }
+    },
+    retry: 1
   });
 
   const createMutation = useMutation({
@@ -76,14 +85,20 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       payer_cpf?: string | null;
       description?: string | null;
     }) => {
-      console.log('Criando cobrança com dados:', data);
+      console.log('PaymentFormWrapper - Criando cobrança com dados:', data);
       
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
+      // Garantir que o token JWT do Clerk está configurado no Supabase
+      try {
+        await ensureSupabaseAuth();
+        console.log('PaymentFormWrapper - Token Supabase configurado para criar cobrança');
+      } catch (authError) {
+        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
+        throw new Error('Falha na autenticação: ' + authError.message);
+      }
       
       const { error } = await supabase.from('payments').insert(data);
       if (error) {
-        console.error('Erro ao criar cobrança:', error);
+        console.error('PaymentFormWrapper - Erro ao criar cobrança:', error);
         throw error;
       }
     },
@@ -93,7 +108,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       onClose();
     },
     onError: (error: any) => {
-      console.error('Erro na mutação de criação:', error);
+      console.error('PaymentFormWrapper - Erro na mutação de criação:', error);
       toast.error('Erro ao criar cobrança: ' + error.message);
     }
   });
@@ -108,17 +123,23 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       payer_cpf?: string | null;
       description?: string | null;
     }) => {
-      console.log('Atualizando cobrança com dados:', data);
+      console.log('PaymentFormWrapper - Atualizando cobrança com dados:', data);
       
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
+      // Garantir que o token JWT do Clerk está configurado no Supabase
+      try {
+        await ensureSupabaseAuth();
+        console.log('PaymentFormWrapper - Token Supabase configurado para atualizar cobrança');
+      } catch (authError) {
+        console.error('PaymentFormWrapper - Erro na autenticação:', authError);
+        throw new Error('Falha na autenticação: ' + authError.message);
+      }
       
       const { error } = await supabase
         .from('payments')
         .update(data)
         .eq('id', payment!.id);
       if (error) {
-        console.error('Erro ao atualizar cobrança:', error);
+        console.error('PaymentFormWrapper - Erro ao atualizar cobrança:', error);
         throw error;
       }
     },
@@ -128,7 +149,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       onClose();
     },
     onError: (error: any) => {
-      console.error('Erro na mutação de atualização:', error);
+      console.error('PaymentFormWrapper - Erro na mutação de atualização:', error);
       toast.error('Erro ao atualizar cobrança: ' + error.message);
     }
   });
@@ -216,7 +237,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
         description: formData.description?.trim() || null
       };
       
-      console.log('Enviando dados do pagamento:', paymentData);
+      console.log('PaymentFormWrapper - Enviando dados do pagamento:', paymentData);
       
       if (payment) {
         updateMutation.mutate(paymentData);
