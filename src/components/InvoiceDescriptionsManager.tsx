@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
-import { useAuthContext } from "@/contexts/AuthContext";
+import { useAuth } from '@clerk/clerk-react';
 
 interface InvoiceDescription {
   id: string;
@@ -30,15 +29,27 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const { isSignedIn, isLoaded, getToken } = useAuth();
 
-  console.log('InvoiceDescriptionsManager - Estado de autenticação:', { isAuthenticated, authLoading });
+  console.log('InvoiceDescriptionsManager - Estado Clerk:', { isSignedIn, isLoaded });
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
       console.log('Carregando descrições...');
-      console.log('Usuário autenticado:', isAuthenticated);
+      
+      // Configura o cliente Supabase com o token do Clerk se disponível
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: 'placeholder',
+          });
+        }
+      } catch (error) {
+        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
+      }
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
@@ -52,19 +63,30 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && isAuthenticated && !authLoading
+    enabled: isOpen && isSignedIn && isLoaded
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
-      console.log('Status de autenticação:', { isAuthenticated, authLoading });
       
-      if (!isAuthenticated) {
+      if (!isSignedIn) {
         throw new Error('Usuário não autenticado');
       }
       
-      // Don't include owner_id - let Supabase set it automatically via auth.uid() default
+      // Tenta configurar o token do Supabase
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: 'placeholder',
+          });
+        }
+      } catch (error) {
+        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
+      }
+      
       const { error } = await supabase
         .from('invoice_descriptions')
         .insert([{ 
@@ -91,6 +113,19 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; subject: string; text: string }) => {
       console.log('Atualizando descrição:', data);
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: 'placeholder',
+          });
+        }
+      } catch (error) {
+        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
+      }
+      
       const { error } = await supabase
         .from('invoice_descriptions')
         .update({ subject: data.subject, text: data.text })
@@ -115,6 +150,19 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log('Excluindo descrição:', id);
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (token) {
+          await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: 'placeholder',
+          });
+        }
+      } catch (error) {
+        console.log('Token do Supabase não disponível, usando auth básico do Clerk');
+      }
+      
       const { error } = await supabase
         .from('invoice_descriptions')
         .delete()
@@ -186,7 +234,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -199,7 +247,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -211,8 +259,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
               Você precisa estar autenticado para gerenciar descrições.
             </div>
             <div className="text-sm text-gray-600">
-              <p>Status de autenticação: {isAuthenticated ? 'Autenticado' : 'Não autenticado'}</p>
-              <p>Carregando: {authLoading ? 'Sim' : 'Não'}</p>
+              <p>Status de autenticação: {isSignedIn ? 'Autenticado' : 'Não autenticado'}</p>
+              <p>Carregando: {!isLoaded ? 'Sim' : 'Não'}</p>
             </div>
           </div>
         </DialogContent>
