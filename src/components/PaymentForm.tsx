@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,6 +78,14 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       }
     }
   };
+
+  // Efeito para definir data de recebimento automaticamente quando "já recebido" for marcado
+  useEffect(() => {
+    if (isAlreadyReceived && !receivedDate) {
+      const today = new Date().toISOString().split('T')[0];
+      setReceivedDate(today);
+    }
+  }, [isAlreadyReceived, receivedDate]);
 
   const validateCpf = (cpf: string) => {
     // Remove caracteres não numéricos
@@ -211,8 +218,15 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       }
     }
 
-    if (isAlreadyReceived && !receivedDate) {
-      newErrors.receivedDate = 'Data do recebimento é obrigatória quando valor já foi recebido';
+    if (isAlreadyReceived) {
+      if (!receivedDate) {
+        newErrors.receivedDate = 'Data do recebimento é obrigatória quando valor já foi recebido';
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        if (receivedDate > today) {
+          newErrors.receivedDate = 'Data do recebimento não pode ser maior que hoje';
+        }
+      }
     }
     
     setErrors(newErrors);
@@ -340,6 +354,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
               type="date"
               value={receivedDate}
               onChange={(e) => setReceivedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
               className={errors.receivedDate ? 'border-red-500' : ''}
             />
             {errors.receivedDate && <p className="text-red-500 text-sm mt-1">{errors.receivedDate}</p>}

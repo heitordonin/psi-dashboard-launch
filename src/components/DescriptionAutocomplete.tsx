@@ -43,9 +43,9 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
         desc.text.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
     } else {
-      setShowSuggestions(false);
+      // Mostrar todas as descrições quando o campo estiver vazio
+      setFilteredSuggestions(descriptions);
     }
   }, [value, descriptions]);
 
@@ -60,9 +60,7 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
   };
 
   const handleInputFocus = () => {
-    if (value.length > 0 && filteredSuggestions.length > 0) {
-      setShowSuggestions(true);
-    }
+    setShowSuggestions(true);
   };
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -88,7 +86,7 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       {isError && <p className="text-amber-600 text-sm mt-1">Erro ao carregar sugestões</p>}
       
-      {showSuggestions && (
+      {showSuggestions && filteredSuggestions.length > 0 && (
         <div 
           data-suggestions-container
           className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto"
