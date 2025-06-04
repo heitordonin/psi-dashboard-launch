@@ -50,6 +50,7 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
   }, [value, descriptions]);
 
   const handleSelectSuggestion = (suggestion: InvoiceDescription) => {
+    console.log('Selecionando sugestão:', suggestion.text);
     onChange(suggestion.text);
     setShowSuggestions(false);
   };
@@ -64,9 +65,12 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
     }
   };
 
-  const handleInputBlur = () => {
-    // Delay hiding suggestions to allow for selection
-    setTimeout(() => setShowSuggestions(false), 200);
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Só esconde as sugestões se o foco não foi para uma sugestão
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!relatedTarget || !relatedTarget.closest('[data-suggestions-container]')) {
+      setTimeout(() => setShowSuggestions(false), 100);
+    }
   };
 
   return (
@@ -85,15 +89,19 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
       {isError && <p className="text-amber-600 text-sm mt-1">Erro ao carregar sugestões</p>}
       
       {showSuggestions && (
-        <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
+        <div 
+          data-suggestions-container
+          className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto"
+        >
           {filteredSuggestions.map((suggestion) => (
-            <div
+            <button
               key={suggestion.id}
-              className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-              onMouseDown={() => handleSelectSuggestion(suggestion)}
+              type="button"
+              className="w-full px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm text-left"
+              onClick={() => handleSelectSuggestion(suggestion)}
             >
               {suggestion.text}
-            </div>
+            </button>
           ))}
         </div>
       )}
