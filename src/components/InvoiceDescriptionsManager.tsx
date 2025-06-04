@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Edit, Trash2 } from "lucide-react";
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface InvoiceDescription {
   id: string;
@@ -29,17 +29,14 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const [formData, setFormData] = useState({ subject: '', text: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
-  const { ensureSupabaseAuth, isAuthenticated } = useSupabaseAuth();
+  const { user } = useAuth();
 
-  console.log('InvoiceDescriptionsManager - Status autenticação:', isAuthenticated);
+  console.log('InvoiceDescriptionsManager - Status autenticação:', !!user);
 
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
       console.log('Carregando descrições...');
-      
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
@@ -53,15 +50,12 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
     },
-    enabled: isOpen && isAuthenticated
+    enabled: isOpen && !!user
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: { subject: string; text: string }) => {
       console.log('Criando descrição:', data);
-      
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
       
       const { error } = await supabase
         .from('invoice_descriptions')
@@ -90,9 +84,6 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     mutationFn: async (data: { id: string; subject: string; text: string }) => {
       console.log('Atualizando descrição:', data);
       
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
-      
       const { error } = await supabase
         .from('invoice_descriptions')
         .update({ subject: data.subject, text: data.text })
@@ -117,9 +108,6 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log('Excluindo descrição:', id);
-      
-      // Garante que o token está configurado antes da requisição
-      await ensureSupabaseAuth();
       
       const { error } = await supabase
         .from('invoice_descriptions')
@@ -192,7 +180,7 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
