@@ -29,8 +29,15 @@ interface PaymentFormWrapperProps {
   onClose: () => void;
 }
 
+interface FormData {
+  patient_id: string;
+  amount: string | number;
+  due_date: string;
+  description: string;
+}
+
 export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     patient_id: payment?.patient_id || '',
     amount: payment?.amount || 0,
     due_date: payment?.due_date || '',
@@ -215,9 +222,9 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
     
     if (Object.keys(newErrors).length === 0) {
       // Parse currency values properly
-      const parsedAmount = typeof formData.amount === 'string' 
-        ? parseFloat(formData.amount.toString().replace(/\./g, "").replace(",", ".")) 
-        : Number(formData.amount);
+      const parsedAmount = Number(
+        String(formData.amount).replace(/\./g, "").replace(",", ".")
+      );
 
       const paymentData = {
         patient_id: formData.patient_id,
@@ -298,8 +305,8 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
         <div>
           <Label htmlFor="amount">Valor *</Label>
           <CurrencyInput
-            value={formData.amount}
-            onChange={(value) => setFormData({ ...formData, amount: value })}
+            value={formData.amount ?? ""}
+            onChange={(value) => setFormData({ ...formData, amount: value || 0 })}
             className={errors.amount ? 'border-red-500' : ''}
           />
           {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}

@@ -16,13 +16,19 @@ import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
-  amount: z.number().min(0.01, "Valor deve ser maior que zero"),
+  amount: z.union([z.string(), z.number()]).refine(val => {
+    const num = typeof val === 'string' ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : val;
+    return num > 0;
+  }, "Valor deve ser maior que zero"),
   payment_date: z.string().min(1, "Data de pagamento é obrigatória"),
-  penalty_interest: z.number().min(0, "Multa/Juros deve ser maior ou igual a zero"),
+  penalty_interest: z.union([z.string(), z.number()]).refine(val => {
+    const num = typeof val === 'string' ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : val;
+    return num >= 0;
+  }, "Multa/Juros deve ser maior ou igual a zero"),
   description: z.string().optional(),
   is_residential: z.boolean().default(false),
   competency: z.string().optional(),
-  residential_adjusted_amount: z.number().optional(),
+  residential_adjusted_amount: z.union([z.string(), z.number()]).optional(),
 });
 
 interface ExpenseFormProps {
@@ -171,17 +177,17 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     }
 
     // Parse currency values properly
-    const parsedAmount = typeof values.amount === 'string' 
-      ? parseFloat(values.amount.toString().replace(/\./g, "").replace(",", ".")) 
-      : Number(values.amount);
+    const parsedAmount = Number(
+      String(values.amount).replace(/\./g, "").replace(",", ".")
+    );
     
-    const parsedPenaltyInterest = typeof values.penalty_interest === 'string' 
-      ? parseFloat(values.penalty_interest.toString().replace(/\./g, "").replace(",", ".")) 
-      : Number(values.penalty_interest);
+    const parsedPenaltyInterest = Number(
+      String(values.penalty_interest ?? 0).replace(/\./g, "").replace(",", ".")
+    );
     
-    const parsedResidentialAmount = typeof values.residential_adjusted_amount === 'string' 
-      ? parseFloat(values.residential_adjusted_amount.toString().replace(/\./g, "").replace(",", ".")) 
-      : Number(values.residential_adjusted_amount || 0);
+    const parsedResidentialAmount = Number(
+      String(values.residential_adjusted_amount ?? 0).replace(/\./g, "").replace(",", ".")
+    );
 
     const submissionValues = {
       ...values,
@@ -272,8 +278,8 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormControl>
                   <CurrencyInput
                     name="amount"
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={field.value ?? ""}
+                    onChange={(val) => field.onChange(val ?? "")}
                   />
                 </FormControl>
                 <FormMessage />
@@ -304,8 +310,8 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 <FormControl>
                   <CurrencyInput
                     name="penalty_interest"
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={field.value ?? ""}
+                    onChange={(val) => field.onChange(val ?? "")}
                   />
                 </FormControl>
                 <FormMessage />
