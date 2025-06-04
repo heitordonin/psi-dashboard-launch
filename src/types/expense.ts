@@ -1,4 +1,3 @@
-
 export interface ExpenseCategory {
   id: string;
   code: string;
@@ -6,7 +5,7 @@ export interface ExpenseCategory {
   is_residential: boolean;
   is_revenue: boolean;
   requires_competency: boolean;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface Expense {
