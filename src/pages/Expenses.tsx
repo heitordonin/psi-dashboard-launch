@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 
 type SortField = 'amount' | 'payment_date';
 type SortDirection = 'asc' | 'desc';
@@ -133,24 +134,8 @@ const Expenses = () => {
 
   const deleteExpenseMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('Excluindo despesa:', id);
+      console.log('Iniciando exclusão da despesa:', id);
       
-      // Verificar se a despesa existe antes de tentar excluir
-      const { data: existingExpense, error: checkError } = await supabase
-        .from('expenses')
-        .select('id')
-        .eq('id', id)
-        .single();
-
-      if (checkError) {
-        console.error('Erro ao verificar despesa:', checkError);
-        throw new Error('Despesa não encontrada');
-      }
-
-      if (!existingExpense) {
-        throw new Error('Despesa não encontrada');
-      }
-
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -158,12 +143,14 @@ const Expenses = () => {
 
       if (error) {
         console.error('Erro ao excluir despesa:', error);
-        throw error;
+        throw new Error(`Erro ao excluir despesa: ${error.message}`);
       }
 
       console.log('Despesa excluída com sucesso');
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
+      console.log('Exclusão bem-sucedida, atualizando cache:', deletedId);
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast({
         title: "Despesa excluída",
@@ -173,8 +160,8 @@ const Expenses = () => {
     onError: (error: any) => {
       console.error('Erro na exclusão:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir despesa: " + error.message,
+        title: "Erro ao excluir",
+        description: error.message || "Não foi possível excluir a despesa.",
         variant: "destructive",
       });
     }
@@ -185,16 +172,9 @@ const Expenses = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    const expense = expenses?.find(e => e.id === id);
-    const confirmMessage = expense 
-      ? `Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}?`
-      : "Tem certeza que deseja excluir esta despesa?";
-      
-    if (window.confirm(confirmMessage)) {
-      console.log('Iniciando exclusão da despesa:', id);
-      deleteExpenseMutation.mutate(id);
-    }
+  const handleDelete = async (expense: ExpenseWithCategory) => {
+    console.log('Confirmando exclusão da despesa:', expense.id);
+    deleteExpenseMutation.mutate(expense.id);
   };
 
   const handleFormClose = () => {
@@ -388,17 +368,16 @@ const Expenses = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => openEditDialog(expense)}
+                            onClick={() => handleEdit(expense)}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(expense.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <DeleteConfirmationDialog
+                            title="Confirmar exclusão"
+                            description={`Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}? Esta ação não pode ser desfeita.`}
+                            onConfirm={() => handleDelete(expense)}
+                            isLoading={deleteExpenseMutation.isPending}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
