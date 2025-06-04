@@ -58,7 +58,7 @@ const Dashboard = () => {
                 <h2 className="text-xl font-semibold">Cobranças</h2>
               </div>
               <p className="text-gray-600 mb-4">Gerencie cobranças e pagamentos</p>
-              <Button onClick={() => navigate('/cobrancas')} className="w-full">
+              <Button onClick={() => navigate('/payments')} className="w-full">
                 Acessar Cobranças
               </Button>
             </div>
@@ -69,7 +69,7 @@ const Dashboard = () => {
                 <h2 className="text-xl font-semibold">Despesas</h2>
               </div>
               <p className="text-gray-600 mb-4">Gerencie despesas do consultório</p>
-              <Button onClick={() => navigate('/despesas')} className="w-full">
+              <Button onClick={() => navigate('/expenses')} className="w-full">
                 Acessar Despesas
               </Button>
             </div>

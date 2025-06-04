@@ -30,21 +30,24 @@ function App() {
                 <Dashboard />
               </ProtectedRoute>
             } />
-            <Route path="/pacientes" element={
+            <Route path="/patients" element={
               <ProtectedRoute>
                 <Patients />
               </ProtectedRoute>
             } />
-            <Route path="/cobrancas" element={
+            <Route path="/pacientes" element={<Navigate to="/patients" replace />} />
+            <Route path="/payments" element={
               <ProtectedRoute>
                 <Payments />
               </ProtectedRoute>
             } />
-            <Route path="/despesas" element={
+            <Route path="/cobrancas" element={<Navigate to="/payments" replace />} />
+            <Route path="/expenses" element={
               <ProtectedRoute>
                 <Expenses />
               </ProtectedRoute>
             } />
+            <Route path="/despesas" element={<Navigate to="/expenses" replace />} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>

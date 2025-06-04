@@ -134,6 +134,23 @@ const Expenses = () => {
   const deleteExpenseMutation = useMutation({
     mutationFn: async (id: string) => {
       console.log('Excluindo despesa:', id);
+      
+      // Verificar se a despesa existe antes de tentar excluir
+      const { data: existingExpense, error: checkError } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('id', id)
+        .single();
+
+      if (checkError) {
+        console.error('Erro ao verificar despesa:', checkError);
+        throw new Error('Despesa não encontrada');
+      }
+
+      if (!existingExpense) {
+        throw new Error('Despesa não encontrada');
+      }
+
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -143,6 +160,8 @@ const Expenses = () => {
         console.error('Erro ao excluir despesa:', error);
         throw error;
       }
+
+      console.log('Despesa excluída com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -151,7 +170,7 @@ const Expenses = () => {
         description: "A despesa foi excluída com sucesso.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro na exclusão:', error);
       toast({
         title: "Erro",
@@ -166,8 +185,14 @@ const Expenses = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta despesa?")) {
+  const handleDelete = async (id: string) => {
+    const expense = expenses?.find(e => e.id === id);
+    const confirmMessage = expense 
+      ? `Tem certeza que deseja excluir a despesa "${expense.expense_categories?.name}" no valor de ${formatCurrency(expense.amount)}?`
+      : "Tem certeza que deseja excluir esta despesa?";
+      
+    if (window.confirm(confirmMessage)) {
+      console.log('Iniciando exclusão da despesa:', id);
       deleteExpenseMutation.mutate(id);
     }
   };
