@@ -27,7 +27,7 @@ interface PaymentFormWrapperProps {
 export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps) => {
   const [formData, setFormData] = useState({
     patient_id: payment?.patient_id || '',
-    amount: payment?.amount || '',
+    amount: payment?.amount?.toString() || '',
     due_date: payment?.due_date || '',
     description: payment?.description || ''
   });
