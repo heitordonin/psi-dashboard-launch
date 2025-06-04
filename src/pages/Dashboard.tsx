@@ -85,7 +85,10 @@ const Dashboard = () => {
         overdueCount: totals.overdueCount,
         overdueTotal: totals.overdueTotal,
         expenseCount: expenses?.length || 0,
-        expenseTotal
+        expenseTotal,
+        // Include optional properties for backward compatibility
+        confirmedCount: 0,
+        confirmedTotal: 0
       };
     },
     enabled: !!user?.id
@@ -199,7 +202,9 @@ const Dashboard = () => {
             overdueCount: 0,
             overdueTotal: 0,
             expenseCount: 0,
-            expenseTotal: 0
+            expenseTotal: 0,
+            confirmedCount: 0,
+            confirmedTotal: 0
           }}
           isLoading={summaryLoading}
         />
