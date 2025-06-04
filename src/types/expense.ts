@@ -19,6 +19,7 @@ export interface Expense {
   is_residential: boolean;
   residential_adjusted_amount?: number;
   competency?: string;
+  owner_id?: string;
   created_at: string;
 }
 
