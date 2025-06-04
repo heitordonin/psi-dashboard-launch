@@ -7,14 +7,15 @@ import { Calendar } from "lucide-react";
 interface SummaryData {
   receivedCount: number;
   receivedTotal: number;
-  confirmedCount: number;
-  confirmedTotal: number;
   pendingCount: number;
   pendingTotal: number;
   overdueCount: number;
   overdueTotal: number;
   expenseCount: number;
   expenseTotal: number;
+  // These metrics are no longer used but keep them optional for backward-compat
+  confirmedCount?: number;
+  confirmedTotal?: number;
 }
 
 interface SummaryCardProps {
