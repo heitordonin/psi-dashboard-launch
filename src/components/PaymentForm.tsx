@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -198,7 +199,7 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
       }
     }
 
-    if (!formData.description.trim()) {
+    if (!formData.description || !formData.description.trim()) {
       newErrors.description = 'Descrição é obrigatória';
     }
 
@@ -224,8 +225,10 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
         status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isAlreadyReceived ? receivedDate : null,
         payer_cpf: paymentTitular === 'other' ? payerCpf.replace(/\D/g, '') : null,
-        description: formData.description || null
+        description: formData.description?.trim() || null
       };
+      
+      console.log('Enviando dados do pagamento:', paymentData);
       
       if (payment) {
         updateMutation.mutate(paymentData);

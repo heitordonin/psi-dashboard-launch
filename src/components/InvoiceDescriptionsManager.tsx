@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 
 interface InvoiceDescription {
   id: string;
@@ -30,21 +30,30 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
   const { data: descriptions = [], isLoading } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
+      console.log('Carregando descrições...');
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao carregar descrições:', error);
+        throw error;
+      }
+      console.log('Descrições carregadas:', data);
       return data as InvoiceDescription[];
     }
   });
 
   const createMutation = useMutation({
     mutationFn: async (text: string) => {
+      console.log('Criando descrição:', text);
       const { error } = await supabase
         .from('invoice_descriptions')
         .insert([{ text }]);
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar descrição:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
@@ -53,7 +62,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       setEditingDescription(null);
     },
     onError: (error: any) => {
-      if (error.message?.includes('duplicate key')) {
+      console.error('Erro na criação:', error);
+      if (error.message?.includes('duplicate key') || error.message?.includes('unique')) {
         toast.error('Esta descrição já existe!');
       } else {
         toast.error('Erro ao criar descrição: ' + error.message);
@@ -63,11 +73,15 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, text }: { id: string; text: string }) => {
+      console.log('Atualizando descrição:', { id, text });
       const { error } = await supabase
         .from('invoice_descriptions')
         .update({ text })
         .eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar descrição:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
@@ -76,7 +90,8 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
       setEditingDescription(null);
     },
     onError: (error: any) => {
-      if (error.message?.includes('duplicate key')) {
+      console.error('Erro na atualização:', error);
+      if (error.message?.includes('duplicate key') || error.message?.includes('unique')) {
         toast.error('Esta descrição já existe!');
       } else {
         toast.error('Erro ao atualizar descrição: ' + error.message);
@@ -86,17 +101,22 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('Excluindo descrição:', id);
       const { error } = await supabase
         .from('invoice_descriptions')
         .delete()
         .eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao excluir descrição:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
       toast.success('Descrição excluída com sucesso!');
     },
     onError: (error: any) => {
+      console.error('Erro na exclusão:', error);
       toast.error('Erro ao excluir descrição: ' + error.message);
     }
   });

@@ -20,14 +20,19 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<InvoiceDescription[]>([]);
 
-  const { data: descriptions = [] } = useQuery({
+  const { data: descriptions = [], isError } = useQuery({
     queryKey: ['invoice-descriptions'],
     queryFn: async () => {
+      console.log('Buscando descrições padrão...');
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
         .order('text');
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar descrições:', error);
+        throw error;
+      }
+      console.log('Descrições encontradas:', data);
       return data as InvoiceDescription[];
     }
   });
@@ -77,6 +82,7 @@ export const DescriptionAutocomplete = ({ value, onChange, error }: DescriptionA
         className={error ? 'border-red-500' : ''}
       />
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+      {isError && <p className="text-amber-600 text-sm mt-1">Erro ao carregar sugestões</p>}
       
       {showSuggestions && (
         <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
