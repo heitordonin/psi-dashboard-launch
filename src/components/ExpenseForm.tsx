@@ -192,12 +192,12 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   const watchIsResidential = form.watch("is_residential");
   const watchAmount = form.watch("amount");
 
-  // Calcular automaticamente o valor residencial ajustado
+  // Fix: Calcular automaticamente o valor residencial ajustado com 20%
   useEffect(() => {
     if (selectedCategory?.is_residential) {
-      const adjusted = watchIsResidential ? Number(watchAmount) * 0.2 : Number(watchAmount);
+      const adjusted = watchIsResidential ? Number(watchAmount) * 0.20 : Number(watchAmount);
       form.setValue('residential_adjusted_amount', adjusted);
-      console.log(`Valor residencial ajustado: ${adjusted}`);
+      console.log(`Valor residencial ajustado: ${adjusted} (20% aplicado: ${watchIsResidential})`);
     }
   }, [watchIsResidential, watchAmount, selectedCategory, form]);
 

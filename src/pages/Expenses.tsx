@@ -401,7 +401,16 @@ const Expenses = () => {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>{formatCurrency(expense.amount)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span>{formatCurrency(expense.amount)}</span>
+                            {expense.is_residential && expense.residential_adjusted_amount && (
+                              <span className="text-xs text-gray-500">
+                                Ajustado: {formatCurrency(expense.residential_adjusted_amount)}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{formatDate(expense.payment_date)}</TableCell>
                         <TableCell className="max-w-xs truncate">
                           {expense.description || '-'}

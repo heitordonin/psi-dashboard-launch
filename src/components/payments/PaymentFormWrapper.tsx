@@ -173,6 +173,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       newErrors.amount = 'Valor deve ser maior que R$ 1,00';
     }
     
+    // For received payments, we don't need a future due date
     if (!isAlreadyReceived) {
       if (!formData.due_date) {
         newErrors.due_date = 'Data de vencimento é obrigatória';
@@ -255,6 +256,7 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
           receivedDate={receivedDate}
           setReceivedDate={setReceivedDate}
           errors={errors}
+          isEditing={!!payment}
         />
 
         <div>

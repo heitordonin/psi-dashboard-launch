@@ -10,6 +10,7 @@ interface ReceivedCheckboxProps {
   receivedDate: string;
   setReceivedDate: (value: string) => void;
   errors: Record<string, string>;
+  isEditing?: boolean;
 }
 
 export const ReceivedCheckbox = ({
@@ -17,7 +18,8 @@ export const ReceivedCheckbox = ({
   setIsAlreadyReceived,
   receivedDate,
   setReceivedDate,
-  errors
+  errors,
+  isEditing = false
 }: ReceivedCheckboxProps) => {
   useEffect(() => {
     if (isAlreadyReceived && !receivedDate) {
@@ -34,7 +36,9 @@ export const ReceivedCheckbox = ({
           checked={isAlreadyReceived}
           onCheckedChange={(checked) => setIsAlreadyReceived(checked === true)}
         />
-        <Label htmlFor="already-received">Valor já recebido?</Label>
+        <Label htmlFor="already-received">
+          {isEditing ? "Pagamento foi recebido?" : "Valor já recebido?"}
+        </Label>
       </div>
 
       {isAlreadyReceived && (
