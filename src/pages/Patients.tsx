@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
+
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 interface Patient {
   id: string;
@@ -263,8 +264,15 @@ const Patients = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | undefined>();
   const queryClient = useQueryClient();
+  const { user, isLoading } = useAuth();
 
-  const { data: patients = [], isLoading } = useQuery({
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
+
+  const { data: patients = [], isLoading: patientsLoading } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -273,7 +281,8 @@ const Patients = () => {
         .order('full_name');
       if (error) throw error;
       return data as Patient[];
-    }
+    },
+    enabled: !!user
   });
 
   const deleteMutation = useMutation({
@@ -311,106 +320,106 @@ const Patients = () => {
     setEditingPatient(undefined);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <p className="mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <SignedIn>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Pacientes</h1>
-            <div className="space-x-2">
-              <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                Voltar
-              </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Paciente
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <PatientForm patient={editingPatient} onClose={closeDialog} />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {isLoading ? (
-              <div className="p-8 text-center">Carregando...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome Completo</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {patients.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                        Nenhum paciente cadastrado
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    patients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell className="font-medium">{patient.full_name}</TableCell>
-                        <TableCell>{formatCPF(patient.cpf)}</TableCell>
-                        <TableCell>{patient.phone || '-'}</TableCell>
-                        <TableCell>{patient.email || '-'}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(patient)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(patient)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Pacientes</h1>
+          <div className="space-x-2">
+            <Button variant="outline" onClick={() => navigate('/dashboard')}>
+              Voltar
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreateDialog}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Paciente
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
+                  </DialogTitle>
+                </DialogHeader>
+                <PatientForm patient={editingPatient} onClose={closeDialog} />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
-      </SignedIn>
-      <SignedOut>
-        <RedirectToHome />
-      </SignedOut>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {patientsLoading ? (
+            <div className="p-8 text-center">Carregando...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome Completo</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="w-24">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {patients.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      Nenhum paciente cadastrado
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  patients.map((patient) => (
+                    <TableRow key={patient.id}>
+                      <TableCell className="font-medium">{patient.full_name}</TableCell>
+                      <TableCell>{formatCPF(patient.cpf)}</TableCell>
+                      <TableCell>{patient.phone || '-'}</TableCell>
+                      <TableCell>{patient.email || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(patient)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(patient)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </div>
     </div>
   );
-};
-
-const RedirectToHome = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    navigate("/");
-  }, [navigate]);
-
-  return null;
 };
 
 export default Patients;
