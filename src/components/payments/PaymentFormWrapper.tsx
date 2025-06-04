@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -172,13 +173,18 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
       return;
     }
     
+    // Parse currency value properly
+    const parsedAmount = Number(
+      String(formData.amount).replace(/\./g, "").replace(",", ".")
+    );
+    
     const newErrors: Record<string, string> = {};
     
     if (!formData.patient_id) {
       newErrors.patient_id = 'Paciente é obrigatório';
     }
     
-    if (!formData.amount || Number(formData.amount) < 1) {
+    if (!parsedAmount || parsedAmount < 1) {
       newErrors.amount = 'Valor deve ser maior que R$ 1,00';
     }
     
@@ -221,11 +227,6 @@ export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-      // Parse currency values properly
-      const parsedAmount = Number(
-        String(formData.amount).replace(/\./g, "").replace(",", ".")
-      );
-
       const paymentData = {
         patient_id: formData.patient_id,
         amount: parsedAmount,
