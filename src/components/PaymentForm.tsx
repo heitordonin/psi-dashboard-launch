@@ -1,16 +1,19 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Payment } from "@/types/payment";
-import { DescriptionAutocomplete } from "./DescriptionAutocomplete";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
+import { DefaultDescriptionModal } from "./DefaultDescriptionModal";
+import { InvoiceDescriptionsManager } from "./InvoiceDescriptionsManager";
 
 interface Patient {
   id: string;
@@ -35,6 +38,8 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
   const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>('patient');
   const [payerCpf, setPayerCpf] = useState(payment?.payer_cpf || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDefaultDescriptions, setShowDefaultDescriptions] = useState(false);
+  const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
   
   const queryClient = useQueryClient();
   
@@ -252,124 +257,162 @@ export const PaymentForm = ({ payment, onClose }: PaymentFormProps) => {
     }
   };
 
+  const handleSelectDescription = (description: string) => {
+    setFormData({ ...formData, description });
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="patient_id">Paciente *</Label>
-        <Select
-          value={formData.patient_id}
-          onValueChange={handlePatientChange}
-        >
-          <SelectTrigger className={errors.patient_id ? 'border-red-500' : ''}>
-            <SelectValue placeholder="Selecione um paciente" />
-          </SelectTrigger>
-          <SelectContent>
-            {patients.map((patient) => (
-              <SelectItem key={patient.id} value={patient.id}>
-                {patient.full_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="amount">Valor *</Label>
-        <CurrencyInput
-          value={formData.amount}
-          onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
-          className={errors.amount ? 'border-red-500' : ''}
-        />
-        {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="due_date">Data de Vencimento *</Label>
-        <Input
-          id="due_date"
-          type="date"
-          value={formData.due_date}
-          onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-          className={errors.due_date ? 'border-red-500' : ''}
-        />
-        {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
-      </div>
-
-      <DescriptionAutocomplete
-        value={formData.description}
-        onChange={(value) => setFormData({ ...formData, description: value })}
-        error={errors.description}
-      />
-
-      <div>
-        <Label>Quem é o titular do pagamento? *</Label>
-        <RadioGroup
-          value={paymentTitular}
-          onValueChange={handleTitularChange}
-          className="mt-2"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="patient" id="patient" />
-            <Label htmlFor="patient">Paciente</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="other" id="other" />
-            <Label htmlFor="other">Outro CPF</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      {paymentTitular === 'other' && (
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="payer_cpf">CPF do Titular *</Label>
+          <Label htmlFor="patient_id">Paciente *</Label>
+          <Select
+            value={formData.patient_id}
+            onValueChange={handlePatientChange}
+          >
+            <SelectTrigger className={errors.patient_id ? 'border-red-500' : ''}>
+              <SelectValue placeholder="Selecione um paciente" />
+            </SelectTrigger>
+            <SelectContent>
+              {patients.map((patient) => (
+                <SelectItem key={patient.id} value={patient.id}>
+                  {patient.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="amount">Valor *</Label>
+          <CurrencyInput
+            value={formData.amount}
+            onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
+            className={errors.amount ? 'border-red-500' : ''}
+          />
+          {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="due_date">Data de Vencimento *</Label>
           <Input
-            id="payer_cpf"
-            type="text"
-            value={formatCpf(payerCpf)}
-            onChange={(e) => setPayerCpf(e.target.value)}
-            placeholder="000.000.000-00"
-            maxLength={14}
-            className={errors.payerCpf ? 'border-red-500' : ''}
+            id="due_date"
+            type="date"
+            value={formData.due_date}
+            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+            className={errors.due_date ? 'border-red-500' : ''}
           />
-          {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="already-received"
-            checked={isAlreadyReceived}
-            onCheckedChange={(checked) => setIsAlreadyReceived(checked === true)}
-          />
-          <Label htmlFor="already-received">Valor já recebido?</Label>
+          {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
         </div>
 
-        {isAlreadyReceived && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="description">Descrição *</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDefaultDescriptions(true)}
+            >
+              Usar descrição padrão
+            </Button>
+          </div>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Digite a descrição da cobrança"
+            className={errors.description ? 'border-red-500' : ''}
+            rows={3}
+          />
+          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+        </div>
+
+        <div>
+          <Label>Quem é o titular do pagamento? *</Label>
+          <RadioGroup
+            value={paymentTitular}
+            onValueChange={handleTitularChange}
+            className="mt-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="patient" id="patient" />
+              <Label htmlFor="patient">Paciente</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="other" id="other" />
+              <Label htmlFor="other">Outro CPF</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {paymentTitular === 'other' && (
           <div>
-            <Label htmlFor="received_date">Data do Recebimento *</Label>
+            <Label htmlFor="payer_cpf">CPF do Titular *</Label>
             <Input
-              id="received_date"
-              type="date"
-              value={receivedDate}
-              onChange={(e) => setReceivedDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className={errors.receivedDate ? 'border-red-500' : ''}
+              id="payer_cpf"
+              type="text"
+              value={formatCpf(payerCpf)}
+              onChange={(e) => setPayerCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              className={errors.payerCpf ? 'border-red-500' : ''}
             />
-            {errors.receivedDate && <p className="text-red-500 text-sm mt-1">{errors.receivedDate}</p>}
+            {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
           </div>
         )}
-      </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-          {payment ? 'Atualizar' : 'Criar'} Cobrança
-        </Button>
-      </div>
-    </form>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="already-received"
+              checked={isAlreadyReceived}
+              onCheckedChange={(checked) => setIsAlreadyReceived(checked === true)}
+            />
+            <Label htmlFor="already-received">Valor já recebido?</Label>
+          </div>
+
+          {isAlreadyReceived && (
+            <div>
+              <Label htmlFor="received_date">Data do Recebimento *</Label>
+              <Input
+                id="received_date"
+                type="date"
+                value={receivedDate}
+                onChange={(e) => setReceivedDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className={errors.receivedDate ? 'border-red-500' : ''}
+              />
+              {errors.receivedDate && <p className="text-red-500 text-sm mt-1">{errors.receivedDate}</p>}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            {payment ? 'Atualizar' : 'Criar'} Cobrança
+          </Button>
+        </div>
+      </form>
+
+      <DefaultDescriptionModal
+        isOpen={showDefaultDescriptions}
+        onClose={() => setShowDefaultDescriptions(false)}
+        onSelectDescription={handleSelectDescription}
+        onManageDescriptions={() => {
+          setShowDefaultDescriptions(false);
+          setShowDescriptionsManager(true);
+        }}
+      />
+
+      <InvoiceDescriptionsManager
+        isOpen={showDescriptionsManager}
+        onClose={() => setShowDescriptionsManager(false)}
+      />
+    </>
   );
 };

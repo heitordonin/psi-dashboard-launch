@@ -90,16 +90,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          owner_id: string | null
           text: string
         }
         Insert: {
           created_at?: string
           id?: string
+          owner_id?: string | null
           text: string
         }
         Update: {
           created_at?: string
           id?: string
+          owner_id?: string | null
           text?: string
         }
         Relationships: []
