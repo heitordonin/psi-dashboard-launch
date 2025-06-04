@@ -138,17 +138,33 @@ const Expenses = () => {
       console.log('ID da despesa:', id);
       console.log('Usuário autenticado:', user?.id);
       
-      const { error: deleteError } = await supabase
+      const { error: deleteError, status } = await supabase
         .from('expenses')
         .delete()
         .eq('id', id);
 
+      console.log('Supabase delete status:', status, deleteError);
+
       if (deleteError) {
         console.error('Erro ao excluir despesa:', deleteError);
+        
+        // Check for authentication/authorization errors
+        if (status === 401 || status === 403) {
+          const errorMessage = deleteError.message || 'Erro de autorização';
+          const errorDetails = deleteError.details || 'Verifique se você tem permissão para excluir esta despesa';
+          throw new Error(`${errorMessage}: ${errorDetails}`);
+        }
+        
         throw new Error(`Erro ao excluir despesa: ${deleteError.message}`);
       }
 
-      console.log('=== EXCLUSÃO CONCLUÍDA ===');
+      // Only show success if status is 204 (successful deletion)
+      if (status !== 204) {
+        console.error('Status inesperado:', status);
+        throw new Error(`Status de resposta inesperado: ${status}`);
+      }
+
+      console.log('=== EXCLUSÃO CONCLUÍDA COM SUCESSO ===');
       return id;
     },
     onSuccess: (deletedId) => {
@@ -160,7 +176,7 @@ const Expenses = () => {
       
       toast({
         title: "Despesa excluída",
-        description: "A despesa foi excluída com sucesso.",
+        description: "Despesa excluída com sucesso.",
       });
       
       console.log('=== PROCESSO DE EXCLUSÃO CONCLUÍDO ===');

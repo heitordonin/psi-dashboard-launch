@@ -106,6 +106,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
         is_residential: values.is_residential,
         competency: values.competency || null,
         residential_adjusted_amount: values.residential_adjusted_amount || null,
+        // Don't send owner_id - let Supabase fill it via default auth.uid()
       };
 
       console.log('Dados a serem salvos:', expenseData);

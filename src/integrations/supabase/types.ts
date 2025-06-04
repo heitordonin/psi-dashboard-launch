@@ -48,7 +48,7 @@ export type Database = {
           description: string | null
           id: string
           is_residential: boolean
-          owner_id: string | null
+          owner_id: string
           payment_date: string
           penalty_interest: number
           residential_adjusted_amount: number | null
@@ -61,7 +61,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_residential?: boolean
-          owner_id?: string | null
+          owner_id?: string
           payment_date: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
@@ -74,7 +74,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_residential?: boolean
-          owner_id?: string | null
+          owner_id?: string
           payment_date?: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
