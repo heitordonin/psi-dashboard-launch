@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,7 +51,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
         .from('patients')
         .select('*')
         .eq('owner_id', user.id)
-        .order('name');
+        .order('full_name');
       
       if (error) throw error;
       return data;
@@ -65,13 +66,13 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       const paymentData = {
         ...data,
         owner_id: user.id,
-        status: isReceived ? 'paid' : 'pending',
+        status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         guardian_name: isGuardianPayer ? guardianName : null,
       };
 
       const { data: result, error } = await supabase
         .from('payments')
-        .insert([paymentData])
+        .insert(paymentData)
         .select()
         .single();
 
@@ -95,7 +96,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       
       const paymentData = {
         ...data,
-        status: isReceived ? 'paid' : 'pending',
+        status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         guardian_name: isGuardianPayer ? guardianName : null,
       };
 
@@ -156,18 +157,19 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
     <form onSubmit={handleSubmit} className="space-y-6">
       <PatientAndPayer
         patients={patients}
-        selectedPatientId={formData.patient_id}
-        onPatientChange={(value) => setFormData(prev => ({ ...prev, patient_id: value }))}
-        isGuardianPayer={isGuardianPayer}
-        guardianName={guardianName}
-        onGuardianNameChange={setGuardianName}
-        onGuardianToggle={setIsGuardianPayer}
+        formData={formData}
+        setFormData={setFormData}
+        paymentTitular="patient"
+        setPaymentTitular={() => {}}
+        payerCpf=""
+        setPayerCpf={() => {}}
+        errors={{}}
+        validateCpf={() => true}
       />
 
       <div className="space-y-2">
         <Label htmlFor="amount">Valor *</Label>
         <CurrencyInput
-          id="amount"
           value={formData.amount}
           onValueChange={(value) => setFormData(prev => ({ ...prev, amount: value || '' }))}
           placeholder="R$ 0,00"
@@ -198,8 +200,11 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       </div>
 
       <ReceivedCheckbox
-        isReceived={isReceived}
-        onReceivedChange={setIsReceived}
+        isAlreadyReceived={isReceived}
+        setIsAlreadyReceived={setIsReceived}
+        receivedDate=""
+        setReceivedDate={() => {}}
+        errors={{}}
       />
 
       <div className="flex gap-3 pt-4">

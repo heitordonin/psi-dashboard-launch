@@ -21,9 +21,9 @@ const Patients = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
+  const [deletePatient, setDeletePatient] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [filters, setFilters] = useState({
     ageRange: { min: "", max: "" },
     guardianRequired: ""
@@ -44,7 +44,7 @@ const Patients = () => {
         .from('patients')
         .select('*')
         .eq('owner_id', user.id)
-        .order('name');
+        .order('full_name');
       
       if (error) throw error;
       return data;
@@ -73,26 +73,15 @@ const Patients = () => {
   });
 
   const filteredPatients = patients.filter(patient => {
-    const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.cpf?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+                         patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesAgeRange = (() => {
-      if (!filters.ageRange.min && !filters.ageRange.max) return true;
-      if (!patient.birth_date) return false;
-      
-      const age = new Date().getFullYear() - new Date(patient.birth_date).getFullYear();
-      const minAge = filters.ageRange.min ? parseInt(filters.ageRange.min) : 0;
-      const maxAge = filters.ageRange.max ? parseInt(filters.ageRange.max) : 150;
-      
-      return age >= minAge && age <= maxAge;
-    })();
+    const matchesGuardianFilter = filters.guardianRequired === "" || 
+      (filters.guardianRequired === "yes" && patient.has_financial_guardian) ||
+      (filters.guardianRequired === "no" && !patient.has_financial_guardian);
 
-    const matchesGuardianRequired = filters.guardianRequired === "" || 
-                                   (filters.guardianRequired === "yes" && patient.guardian_name) ||
-                                   (filters.guardianRequired === "no" && !patient.guardian_name);
-
-    return matchesSearch && matchesAgeRange && matchesGuardianRequired;
+    return matchesSearch && matchesGuardianFilter;
   });
 
   const handleEditPatient = (patient: Patient) => {
@@ -166,7 +155,7 @@ const Patients = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por nome, CPF ou telefone..."
+                        placeholder="Buscar por nome, CPF ou email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -185,7 +174,7 @@ const Patients = () => {
                   {showFilters && (
                     <div className="mt-4 pt-4 border-t">
                       <PatientAdvancedFilter
-                        filters={filters}
+                        currentFilters={filters}
                         onFiltersChange={setFilters}
                       />
                     </div>
@@ -218,34 +207,34 @@ const Patients = () => {
                   filteredPatients.map((patient) => (
                     <Card key={patient.id} className="hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{patient.name}</CardTitle>
+                        <CardTitle className="text-lg">{patient.full_name}</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-2 text-sm text-gray-600 mb-4">
-                          {patient.cpf && <p>CPF: {patient.cpf}</p>}
+                          <p>CPF: {patient.cpf}</p>
+                          {patient.email && <p>Email: {patient.email}</p>}
                           {patient.phone && <p>Telefone: {patient.phone}</p>}
-                          {patient.birth_date && (
-                            <p>Idade: {new Date().getFullYear() - new Date(patient.birth_date).getFullYear()} anos</p>
+                          {patient.has_financial_guardian && (
+                            <p className="text-orange-600">Tem responsável financeiro</p>
                           )}
-                          {patient.guardian_name && <p>Responsável: {patient.guardian_name}</p>}
                         </div>
                         
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => handleEditPatient(patient)}
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEditPatient(patient)}
                             className="flex-1"
                           >
+                            <Edit className="w-4 h-4 mr-1" />
                             Editar
                           </Button>
                           <Button
-                            onClick={() => handleDeletePatient(patient)}
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeletePatient(patient)}
                           >
-                            Excluir
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </CardContent>
@@ -279,7 +268,7 @@ const Patients = () => {
               onClose={() => setDeletePatient(null)}
               onConfirm={confirmDelete}
               title="Excluir Paciente"
-              description={`Tem certeza de que deseja excluir o paciente "${deletePatient?.name}"? Esta ação não pode ser desfeita.`}
+              description={`Tem certeza de que deseja excluir ${deletePatient?.full_name}? Esta ação não pode ser desfeita.`}
               isLoading={deletePatientMutation.isPending}
             />
           </div>

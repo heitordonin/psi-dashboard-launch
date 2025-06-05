@@ -9,6 +9,7 @@ export interface Payment {
   payment_url?: string;
   paid_date?: string;
   payer_cpf?: string;
+  guardian_name?: string;
   created_at: string;
 }
 

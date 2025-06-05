@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Search, Filter } from "lucide-react";
+import { Plus, FileText, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,9 @@ const Expenses = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [deleteExpense, setDeleteExpense] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [deleteExpense, setDeleteExpense] = useState<Expense | null>(null);
   const [filters, setFilters] = useState({
     category: "",
     dateRange: { start: "", end: "" },
@@ -43,7 +43,12 @@ const Expenses = () => {
       
       const { data, error } = await supabase
         .from('expenses')
-        .select('*')
+        .select(`
+          *,
+          expense_categories (
+            name
+          )
+        `)
         .eq('owner_id', user.id)
         .order('payment_date', { ascending: false });
       
@@ -74,10 +79,12 @@ const Expenses = () => {
   });
 
   const filteredExpenses = expenses.filter(expense => {
-    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const categoryName = expense.expense_categories?.name || '';
+    const matchesSearch = categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.competency?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = filters.category === "" || expense.category === filters.category;
+    const matchesCategory = filters.category === "" || expense.category_id === filters.category;
     
     const matchesDateRange = (() => {
       if (!filters.dateRange.start && !filters.dateRange.end) return true;
@@ -173,7 +180,7 @@ const Expenses = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por descrição ou categoria..."
+                        placeholder="Buscar por categoria, descrição ou competência..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -192,7 +199,7 @@ const Expenses = () => {
                   {showFilters && (
                     <div className="mt-4 pt-4 border-t">
                       <AdvancedExpenseFilter
-                        filters={filters}
+                        currentFilters={filters}
                         onFiltersChange={setFilters}
                       />
                     </div>
@@ -218,41 +225,43 @@ const Expenses = () => {
                     </p>
                     <Button onClick={() => setShowForm(true)} variant="outline">
                       <Plus className="w-4 h-4 mr-2" />
-                      Registrar primeira despesa
+                      Criar primeira despesa
                     </Button>
                   </div>
                 ) : (
                   filteredExpenses.map((expense) => (
                     <Card key={expense.id} className="hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{expense.description}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {expense.expense_categories?.name || 'Categoria não encontrada'}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-2 text-sm text-gray-600 mb-4">
                           <p className="font-medium text-lg text-gray-900">
                             R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
-                          <p>Categoria: {expense.category}</p>
                           <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
-                          {expense.notes && <p>Observações: {expense.notes}</p>}
+                          {expense.description && <p>Descrição: {expense.description}</p>}
+                          {expense.competency && <p>Competência: {expense.competency}</p>}
                         </div>
                         
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => handleEditExpense(expense)}
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEditExpense(expense)}
                             className="flex-1"
                           >
+                            <Edit className="w-4 h-4 mr-1" />
                             Editar
                           </Button>
                           <Button
-                            onClick={() => handleDeleteExpense(expense)}
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteExpense(expense)}
                           >
-                            Excluir
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </CardContent>
