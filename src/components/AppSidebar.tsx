@@ -67,13 +67,11 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">DP</span>
-          </div>
-          <div>
-            <h2 className="font-semibold text-gray-900">Declara Psi</h2>
-            <p className="text-xs text-gray-600">Gestão Psicológica</p>
-          </div>
+          <img 
+            src="/lovable-uploads/a7b373c2-b3b0-4d71-b13a-3714f2afaa0c.png" 
+            alt="Declara Psi" 
+            className="h-10 w-auto"
+          />
         </div>
       </SidebarHeader>
 

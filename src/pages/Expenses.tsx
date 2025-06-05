@@ -1,244 +1,128 @@
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2, Settings, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { ExpenseForm } from "@/components/ExpenseForm";
-import { AdvancedExpenseFilter, ExpenseFilters } from "@/components/AdvancedExpenseFilter";
-import { InvoiceDescriptionsManager } from "@/components/InvoiceDescriptionsManager";
-import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { Plus, FileText, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
-
-interface ExpenseCategory {
-  id: string;
-  name: string;
-  code: string;
-  is_residential: boolean;
-  is_revenue: boolean;
-  requires_competency: boolean;
-}
-
-interface ExpenseWithCategory {
-  id: string;
-  category_id: string;
-  amount: number;
-  payment_date: string;
-  description?: string;
-  competency?: string;
-  is_residential: boolean;
-  residential_adjusted_amount?: number;
-  penalty_interest: number;
-  created_at: string;
-  expense_categories: ExpenseCategory;
-}
-
-type SortField = 'amount' | 'payment_date' | 'category_name';
-type SortDirection = 'asc' | 'desc';
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExpenseForm } from "@/components/ExpenseForm";
+import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { toast } from "sonner";
+import type { Expense } from "@/types/expense";
 
 const Expenses = () => {
   const navigate = useNavigate();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDescriptionsOpen, setIsDescriptionsOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<ExpenseWithCategory | undefined>();
-  const [deletingExpense, setDeletingExpense] = useState<ExpenseWithCategory | undefined>();
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [filters, setFilters] = useState<ExpenseFilters>({
-    categoryId: "",
-    startDate: "",
-    endDate: "",
-    isResidential: "",
-    competency: ""
-  });
+  const { user, isLoading } = useAuth();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [deleteExpense, setDeleteExpense] = useState<Expense | null>(null);
+  const [filters, setFilters] = useState({
+    category: "",
+    dateRange: { start: "", end: "" },
+    amountRange: { min: "", max: "" }
+  });
 
   useEffect(() => {
-    if (!user) {
+    if (!isLoading && !user) {
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [user, isLoading, navigate]);
 
-  const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ['expenses'],
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ['expenses', user?.id],
     queryFn: async () => {
-      console.log('Expenses - Buscando despesas para usuário:', user?.id);
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('expenses')
-        .select(`
-          id,
-          category_id,
-          amount,
-          payment_date,
-          description,
-          competency,
-          is_residential,
-          residential_adjusted_amount,
-          penalty_interest,
-          created_at,
-          expense_categories (
-            id,
-            name,
-            code,
-            is_residential,
-            is_revenue,
-            requires_competency
-          )
-        `)
+        .select('*')
+        .eq('owner_id', user.id)
         .order('payment_date', { ascending: false });
-        
-      if (error) {
-        console.error('Expenses - Erro ao buscar despesas:', error);
-        throw error;
-      }
       
-      console.log('Expenses - Despesas encontradas:', data);
-      return data as ExpenseWithCategory[];
+      if (error) throw error;
+      return data;
     },
-    enabled: !!user,
-    retry: 1
+    enabled: !!user?.id
   });
 
-  // Filter and sort expenses with proper null checks
-  const filteredAndSortedExpenses = expenses?.filter(expense => {
-    // Add null checks for expense and its properties
-    if (!expense || !expense.expense_categories) {
-      return false;
-    }
-
-    // Filter by category
-    if (filters.categoryId && expense.expense_categories.id !== filters.categoryId) {
-      return false;
-    }
-    
-    // Filter by date range
-    if (filters.startDate && expense.payment_date < filters.startDate) {
-      return false;
-    }
-    
-    if (filters.endDate && expense.payment_date > filters.endDate) {
-      return false;
-    }
-    
-    // Filter by residential
-    if (filters.isResidential !== "" && expense.is_residential.toString() !== filters.isResidential) {
-      return false;
-    }
-    
-    // Filter by competency
-    if (filters.competency && expense.competency !== filters.competency) {
-      return false;
-    }
-    
-    return true;
-  })?.sort((a, b) => {
-    if (!sortField || !a || !b) return 0;
-    
-    let aValue, bValue;
-    
-    if (sortField === 'amount') {
-      aValue = a.amount;
-      bValue = b.amount;
-    } else if (sortField === 'payment_date') {
-      aValue = new Date(a.payment_date).getTime();
-      bValue = new Date(b.payment_date).getTime();
-    } else if (sortField === 'category_name') {
-      aValue = a.expense_categories?.name?.toLowerCase() || '';
-      bValue = b.expense_categories?.name?.toLowerCase() || '';
-    } else {
-      return 0;
-    }
-    
-    if (sortDirection === 'asc') {
-      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-    } else {
-      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-    }
-  }) || [];
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4" />;
-    }
-    return sortDirection === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
-  };
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('Expenses - Deletando despesa:', id);
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseId);
       
-      const { error } = await supabase.from('expenses').delete().eq('id', id);
-      if (error) {
-        console.error('Expenses - Erro ao deletar:', error);
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toast.success('Despesa excluída com sucesso!');
-      setDeletingExpense(undefined);
+      setDeleteExpense(null);
     },
-    onError: (error: any) => {
-      toast.error('Erro ao excluir despesa: ' + error.message);
+    onError: (error) => {
+      console.error('Error deleting expense:', error);
+      toast.error('Erro ao excluir despesa');
     }
   });
 
-  const handleDelete = (expense: ExpenseWithCategory) => {
-    setDeletingExpense(expense);
+  const filteredExpenses = expenses.filter(expense => {
+    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.category.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = filters.category === "" || expense.category === filters.category;
+    
+    const matchesDateRange = (() => {
+      if (!filters.dateRange.start && !filters.dateRange.end) return true;
+      const expenseDate = new Date(expense.payment_date);
+      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
+      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+      
+      if (startDate && expenseDate < startDate) return false;
+      if (endDate && expenseDate > endDate) return false;
+      return true;
+    })();
+
+    const matchesAmountRange = (() => {
+      if (!filters.amountRange.min && !filters.amountRange.max) return true;
+      const amount = Number(expense.amount);
+      const minAmount = filters.amountRange.min ? Number(filters.amountRange.min) : 0;
+      const maxAmount = filters.amountRange.max ? Number(filters.amountRange.max) : Infinity;
+      
+      return amount >= minAmount && amount <= maxAmount;
+    })();
+
+    return matchesSearch && matchesCategory && matchesDateRange && matchesAmountRange;
+  });
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setShowForm(true);
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    setDeleteExpense(expense);
   };
 
   const confirmDelete = () => {
-    if (deletingExpense) {
-      deleteMutation.mutate(deletingExpense.id);
+    if (deleteExpense) {
+      deleteExpenseMutation.mutate(deleteExpense.id);
     }
   };
 
-  const openEditDialog = (expense: ExpenseWithCategory) => {
-    setEditingExpense(expense);
-    setIsDialogOpen(true);
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingExpense(null);
   };
 
-  const openCreateDialog = () => {
-    setEditingExpense(undefined);
-    setIsDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setIsDialogOpen(false);
-    setEditingExpense(undefined);
-  };
-
-  const handleFilterChange = (newFilters: ExpenseFilters) => {
-    setFilters(newFilters);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
-  if (!user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -249,101 +133,126 @@ const Expenses = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col gap-6 mb-6">
-          <h1 className="text-3xl font-bold">Despesas</h1>
-          
-          {/* Mobile-first responsive button layout */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:flex-wrap sm:items-center">
-            <div className="flex gap-2 order-1 sm:order-1">
-              <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex-1 sm:flex-none">
-                Voltar
-              </Button>
-            </div>
-            
-            <div className="flex gap-2 order-3 sm:order-2 sm:ml-auto">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDescriptionsOpen(true)}
-                className="flex-1 sm:flex-none"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Descrições padrão</span>
-                <span className="sm:hidden">Descrições</span>
-              </Button>
-              
-              <AdvancedExpenseFilter 
-                onFilterChange={handleFilterChange}
-                currentFilters={filters}
-              />
-            </div>
-            
-            <div className="order-2 sm:order-3">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openCreateDialog} className="w-full sm:w-auto">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Despesa
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingExpense ? 'Editar Despesa' : 'Nova Despesa'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <ExpenseForm expense={editingExpense} onClose={closeDialog} />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
+  if (!user) {
+    return null;
+  }
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {isLoading ? (
-            <div className="p-8 text-center">Carregando...</div>
-          ) : (
-            <>
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4 p-4">
-                {filteredAndSortedExpenses?.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    Nenhuma despesa encontrada
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <div className="bg-indigo-700 px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                  <div>
+                    <h1 className="text-xl font-semibold text-white">Despesas</h1>
+                    <p className="text-sm text-indigo-100">Gerencie suas despesas</p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-white text-indigo-700 hover:bg-gray-100"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Despesa
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="container mx-auto px-4 py-6 space-y-6">
+              {/* Search and Filters */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Buscar por descrição ou categoria..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="sm:w-auto"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filtros
+                    </Button>
+                  </div>
+
+                  {showFilters && (
+                    <div className="mt-4 pt-4 border-t">
+                      <AdvancedExpenseFilter
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Expenses List */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {expensesLoading ? (
+                  <div className="col-span-full text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Carregando despesas...</p>
+                  </div>
+                ) : filteredExpenses.length === 0 ? (
+                  <div className="col-span-full text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-2">
+                      {searchTerm || Object.values(filters).some(f => f) 
+                        ? 'Nenhuma despesa encontrada com os filtros aplicados' 
+                        : 'Nenhuma despesa cadastrada'
+                      }
+                    </p>
+                    <Button onClick={() => setShowForm(true)} variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Registrar primeira despesa
+                    </Button>
                   </div>
                 ) : (
-                  filteredAndSortedExpenses?.map((expense) => (
-                    <Card key={expense.id}>
-                      <CardContent className="text-sm p-4">
-                        <p><strong>Categoria:</strong> {expense.expense_categories?.name || '-'}</p>
-                        <p><strong>Valor:</strong> {formatCurrency(expense.amount)}</p>
-                        {expense.is_residential && expense.residential_adjusted_amount && (
-                          <p><strong>Valor Ajustado:</strong> {formatCurrency(expense.residential_adjusted_amount)}</p>
-                        )}
-                        <p><strong>Data:</strong> {formatDate(expense.payment_date)}</p>
-                        <p><strong>Descrição:</strong> {expense.description || '-'}</p>
-                        {expense.competency && (
-                          <p><strong>Competência:</strong> {expense.competency}</p>
-                        )}
-                        {expense.is_residential && (
-                          <p><strong>Residencial:</strong> Sim</p>
-                        )}
-                        <div className="flex justify-end gap-2 mt-3">
+                  filteredExpenses.map((expense) => (
+                    <Card key={expense.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{expense.description}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 text-sm text-gray-600 mb-4">
+                          <p className="font-medium text-lg text-gray-900">
+                            R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p>Categoria: {expense.category}</p>
+                          <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
+                          {expense.notes && <p>Observações: {expense.notes}</p>}
+                        </div>
+                        
+                        <div className="flex gap-2">
                           <Button
-                            size="sm"
+                            onClick={() => handleEditExpense(expense)}
                             variant="outline"
-                            onClick={() => openEditDialog(expense)}
+                            size="sm"
+                            className="flex-1"
                           >
-                            <Edit className="w-4 h-4" />
+                            Editar
                           </Button>
                           <Button
-                            size="sm"
+                            onClick={() => handleDeleteExpense(expense)}
                             variant="outline"
-                            onClick={() => handleDelete(expense)}
-                            disabled={deleteMutation.isPending}
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            Excluir
                           </Button>
                         </div>
                       </CardContent>
@@ -351,133 +260,39 @@ const Expenses = () => {
                   ))
                 )}
               </div>
+            </div>
 
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                          onClick={() => handleSort('category_name')}
-                        >
-                          Categoria {getSortIcon('category_name')}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                          onClick={() => handleSort('amount')}
-                        >
-                          Valor {getSortIcon('amount')}
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 font-medium hover:bg-transparent"
-                          onClick={() => handleSort('payment_date')}
-                        >
-                          Data {getSortIcon('payment_date')}
-                        </Button>
-                      </TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Competência</TableHead>
-                      <TableHead>Residencial</TableHead>
-                      <TableHead className="w-24">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAndSortedExpenses?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          Nenhuma despesa encontrada
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAndSortedExpenses?.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell className="font-medium">
-                            <span>{expense.expense_categories?.name || '-'}</span>
-                            {expense.expense_categories?.is_revenue && (
-                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                Receita
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span>{formatCurrency(expense.amount)}</span>
-                              {expense.is_residential && expense.residential_adjusted_amount && (
-                                <span className="text-xs text-gray-500">
-                                  Ajustado: {formatCurrency(expense.residential_adjusted_amount)}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{formatDate(expense.payment_date)}</TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {expense.description || '-'}
-                          </TableCell>
-                          <TableCell>{expense.competency || '-'}</TableCell>
-                          <TableCell>
-                            {expense.is_residential ? (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                Sim
-                              </span>
-                            ) : (
-                              <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                                Não
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openEditDialog(expense)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDelete(expense)}
-                                disabled={deleteMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            {/* Form Modal */}
+            {showForm && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <h2 className="text-xl font-semibold mb-4">
+                      {editingExpense ? 'Editar Despesa' : 'Nova Despesa'}
+                    </h2>
+                    <ExpenseForm
+                      expense={editingExpense}
+                      onSave={handleFormClose}
+                      onCancel={handleFormClose}
+                    />
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
+
+            {/* Delete Confirmation */}
+            <DeleteConfirmationDialog
+              isOpen={!!deleteExpense}
+              onClose={() => setDeleteExpense(null)}
+              onConfirm={confirmDelete}
+              title="Excluir Despesa"
+              description={`Tem certeza de que deseja excluir esta despesa? Esta ação não pode ser desfeita.`}
+              isLoading={deleteExpenseMutation.isPending}
+            />
+          </div>
+        </SidebarInset>
       </div>
-
-      <InvoiceDescriptionsManager 
-        isOpen={isDescriptionsOpen}
-        onClose={() => setIsDescriptionsOpen(false)}
-      />
-
-      <DeleteConfirmationDialog
-        isOpen={!!deletingExpense}
-        onClose={() => setDeletingExpense(undefined)}
-        onConfirm={confirmDelete}
-        title="Excluir Despesa"
-        description={`Tem certeza que deseja excluir esta despesa da categoria ${deletingExpense?.expense_categories?.name || 'desconhecida'}?`}
-        isLoading={deleteMutation.isPending}
-      />
-    </div>
+    </SidebarProvider>
   );
 };
 

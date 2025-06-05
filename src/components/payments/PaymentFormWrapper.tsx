@@ -1,34 +1,17 @@
-
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Payment } from "@/types/payment";
-import { PatientAndPayer } from "./PatientAndPayer";
-import { GuardianToggle } from "./GuardianToggle";
-import { ReceivedCheckbox } from "./ReceivedCheckbox";
-import { PaymentButtons } from "./PaymentButtons";
-import { CurrencyInput } from "@/components/ui/currency-input";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { DefaultDescriptionModal } from "../DefaultDescriptionModal";
-import { InvoiceDescriptionsManager } from "../InvoiceDescriptionsManager";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-
-interface Patient {
-  id: string;
-  full_name: string;
-  guardian_cpf?: string;
-  is_payment_from_abroad?: boolean;
-}
-
-interface PaymentFormWrapperProps {
-  payment?: Payment;
-  onClose: () => void;
-}
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { PatientAndPayer } from './PatientAndPayer';
+import { GuardianToggle } from './GuardianToggle';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { ReceivedCheckbox } from './ReceivedCheckbox';
+import type { Payment } from '@/types/payment';
 
 interface FormData {
   patient_id: string;
@@ -37,342 +20,205 @@ interface FormData {
   description: string;
 }
 
-export const PaymentFormWrapper = ({ payment, onClose }: PaymentFormWrapperProps) => {
+interface PaymentFormWrapperProps {
+  payment?: Payment;
+  onSave?: () => void;
+  onCancel?: () => void;
+}
+
+export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWrapperProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
   const [formData, setFormData] = useState<FormData>({
     patient_id: payment?.patient_id || '',
-    amount: payment?.amount || 0,
+    amount: payment?.amount || '',
     due_date: payment?.due_date || '',
-    description: payment?.description || ''
+    description: payment?.description || '',
   });
-  const [isAlreadyReceived, setIsAlreadyReceived] = useState(payment?.status === 'paid');
-  const [receivedDate, setReceivedDate] = useState(payment?.paid_date || '');
-  const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>('patient');
-  const [payerCpf, setPayerCpf] = useState(payment?.payer_cpf || '');
-  const [isIncomeFromAbroad, setIsIncomeFromAbroad] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showDefaultDescriptions, setShowDefaultDescriptions] = useState(false);
-  const [showDescriptionsManager, setShowDescriptionsManager] = useState(false);
-  
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  
+
+  const [isGuardianPayer, setIsGuardianPayer] = useState(false);
+  const [guardianName, setGuardianName] = useState(payment?.guardian_name || '');
+  const [isReceived, setIsReceived] = useState(payment?.status === 'paid');
+
   const { data: patients = [] } = useQuery({
-    queryKey: ['patients'],
+    queryKey: ['patients', user?.id],
     queryFn: async () => {
-      console.log('PaymentFormWrapper - Buscando pacientes para usuário:', user?.id);
+      if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('patients')
-        .select('id, full_name, guardian_cpf, is_payment_from_abroad')
-        .order('full_name');
-        
-      if (error) {
-        console.error('PaymentFormWrapper - Erro ao buscar pacientes:', error);
-        throw error;
-      }
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('name');
       
-      console.log('PaymentFormWrapper - Pacientes encontrados:', data);
-      return data as Patient[];
+      if (error) throw error;
+      return data;
     },
-    enabled: !!user,
-    retry: 1
+    enabled: !!user?.id
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: { 
-      patient_id: string; 
-      amount: number; 
-      due_date: string; 
-      status: 'draft' | 'pending' | 'paid' | 'failed';
-      paid_date?: string | null;
-      payer_cpf?: string | null;
-      description?: string | null;
-      owner_id: string;
-    }) => {
-      console.log('PaymentFormWrapper - Criando cobrança com dados:', data);
+  const createPaymentMutation = useMutation({
+    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string; }) => {
+      if (!user?.id) throw new Error('User not authenticated');
       
-      const { error } = await supabase.from('payments').insert(data);
-      if (error) {
-        console.error('PaymentFormWrapper - Erro ao criar cobrança:', error);
-        throw error;
-      }
+      const paymentData = {
+        ...data,
+        owner_id: user.id,
+        status: isReceived ? 'paid' : 'pending',
+        guardian_name: isGuardianPayer ? guardianName : null,
+      };
+
+      const { data: result, error } = await supabase
+        .from('payments')
+        .insert([paymentData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança criada com sucesso!');
-      onClose();
+      onSave?.();
     },
-    onError: (error: any) => {
-      console.error('PaymentFormWrapper - Erro na mutação de criação:', error);
-      toast.error('Erro ao criar cobrança: ' + error.message);
+    onError: (error) => {
+      console.error('Error creating payment:', error);
+      toast.error('Erro ao criar cobrança');
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: { 
-      patient_id: string; 
-      amount: number; 
-      due_date: string; 
-      status: 'draft' | 'pending' | 'paid' | 'failed';
-      paid_date?: string | null;
-      payer_cpf?: string | null;
-      description?: string | null;
-    }) => {
-      console.log('PaymentFormWrapper - Atualizando cobrança com dados:', data);
+  const updatePaymentMutation = useMutation({
+    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string; }) => {
+      if (!payment?.id) throw new Error('Payment ID not found');
       
-      const { error } = await supabase
+      const paymentData = {
+        ...data,
+        status: isReceived ? 'paid' : 'pending',
+        guardian_name: isGuardianPayer ? guardianName : null,
+      };
+
+      const { data: result, error } = await supabase
         .from('payments')
-        .update(data)
-        .eq('id', payment!.id);
-      if (error) {
-        console.error('PaymentFormWrapper - Erro ao atualizar cobrança:', error);
-        throw error;
-      }
+        .update(paymentData)
+        .eq('id', payment.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança atualizada com sucesso!');
-      onClose();
+      onSave?.();
     },
-    onError: (error: any) => {
-      console.error('PaymentFormWrapper - Erro na mutação de atualização:', error);
-      toast.error('Erro ao atualizar cobrança: ' + error.message);
+    onError: (error) => {
+      console.error('Error updating payment:', error);
+      toast.error('Erro ao atualizar cobrança');
     }
   });
-
-  const validateCpf = (cpf: string) => {
-    const cleanCpf = cpf.replace(/\D/g, '');
-    
-    if (cleanCpf.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-    
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(cleanCpf[i]) * (10 - i);
-    }
-    let digit = 11 - (sum % 11);
-    if (digit >= 10) digit = 0;
-    if (digit !== parseInt(cleanCpf[9])) return false;
-    
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(cleanCpf[i]) * (11 - i);
-    }
-    digit = 11 - (sum % 11);
-    if (digit >= 10) digit = 0;
-    if (digit !== parseInt(cleanCpf[10])) return false;
-    
-    return true;
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast.error('Usuário não autenticado');
+    if (!formData.patient_id || !formData.amount || !formData.due_date) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
-    
-    // Parse currency value properly
-    const parsedAmount = Number(
-      String(formData.amount).replace(/\./g, "").replace(",", ".")
-    );
-    
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.patient_id) {
-      newErrors.patient_id = 'Paciente é obrigatório';
-    }
-    
-    if (!parsedAmount || parsedAmount < 1) {
-      newErrors.amount = 'Valor deve ser maior que R$ 1,00';
-    }
-    
-    // For received payments, we don't need a future due date
-    if (!isAlreadyReceived) {
-      if (!formData.due_date) {
-        newErrors.due_date = 'Data de vencimento é obrigatória';
-      } else {
-        const today = new Date().toISOString().split('T')[0];
-        if (formData.due_date < today) {
-          newErrors.due_date = 'Data de vencimento deve ser hoje ou no futuro';
-        }
-      }
+
+    // Convert amount to number
+    const numericAmount = typeof formData.amount === 'string' 
+      ? parseFloat(formData.amount.replace(/[^\d,.-]/g, '').replace(',', '.'))
+      : formData.amount;
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast.error('Valor deve ser um número válido maior que zero');
+      return;
     }
 
-    if (!formData.description || !formData.description.trim()) {
-      newErrors.description = 'Descrição é obrigatória';
-    }
+    const submitData = {
+      patient_id: formData.patient_id,
+      amount: numericAmount,
+      due_date: formData.due_date,
+      description: formData.description,
+    };
 
-    // Only validate CPF if income is NOT from abroad
-    if (!isIncomeFromAbroad && paymentTitular === 'other') {
-      if (!payerCpf.trim()) {
-        newErrors.payerCpf = 'CPF do titular é obrigatório';
-      } else if (!validateCpf(payerCpf)) {
-        newErrors.payerCpf = 'CPF inválido';
-      }
-    }
-
-    if (isAlreadyReceived) {
-      if (!receivedDate) {
-        newErrors.receivedDate = 'Data do recebimento é obrigatória quando valor já foi recebido';
-      } else {
-        const today = new Date().toISOString().split('T')[0];
-        if (receivedDate > today) {
-          newErrors.receivedDate = 'Data do recebimento não pode ser maior que hoje';
-        }
-      }
-    }
-    
-    setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length === 0) {
-      const paymentData = {
-        patient_id: formData.patient_id,
-        amount: parsedAmount,
-        due_date: isAlreadyReceived ? receivedDate : formData.due_date,
-        status: (isAlreadyReceived ? 'paid' : 'draft') as 'draft' | 'pending' | 'paid' | 'failed',
-        paid_date: isAlreadyReceived ? receivedDate : null,
-        payer_cpf: (!isIncomeFromAbroad && paymentTitular === 'other') ? payerCpf.replace(/\D/g, '') : null,
-        description: formData.description?.trim() || null
-      };
-      
-      console.log('PaymentFormWrapper - Enviando dados do pagamento:', paymentData);
-      
-      if (payment) {
-        updateMutation.mutate(paymentData);
-      } else {
-        createMutation.mutate({ ...paymentData, owner_id: user.id });
-      }
+    if (payment) {
+      updatePaymentMutation.mutate(submitData);
+    } else {
+      createPaymentMutation.mutate(submitData);
     }
   };
-
-  const handleSelectDescription = (description: string) => {
-    setFormData({ ...formData, description });
-  };
-
-  const selectedPatient = patients.find(p => p.id === formData.patient_id);
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <PatientAndPayer
-          patients={patients}
-          formData={formData}
-          setFormData={setFormData}
-          paymentTitular={paymentTitular}
-          setPaymentTitular={setPaymentTitular}
-          payerCpf={payerCpf}
-          setPayerCpf={setPayerCpf}
-          errors={errors}
-          validateCpf={validateCpf}
-        />
-
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="income_from_abroad"
-              checked={isIncomeFromAbroad}
-              onCheckedChange={setIsIncomeFromAbroad}
-            />
-            <Label htmlFor="income_from_abroad">Esta renda vem do exterior?</Label>
-          </div>
-        </div>
-
-        {!isIncomeFromAbroad && !selectedPatient?.is_payment_from_abroad && (
-          <PatientAndPayer
-            patients={patients}
-            formData={formData}
-            setFormData={setFormData}
-            paymentTitular={paymentTitular}
-            setPaymentTitular={setPaymentTitular}
-            payerCpf={payerCpf}
-            setPayerCpf={setPayerCpf}
-            errors={errors}
-            validateCpf={validateCpf}
-            showCpfSection={true}
-          />
-        )}
-
-        <ReceivedCheckbox
-          isAlreadyReceived={isAlreadyReceived}
-          setIsAlreadyReceived={setIsAlreadyReceived}
-          receivedDate={receivedDate}
-          setReceivedDate={setReceivedDate}
-          errors={errors}
-          isEditing={!!payment}
-        />
-
-        <div>
-          <Label htmlFor="amount">Valor *</Label>
-          <CurrencyInput
-            value={formData.amount ?? ""}
-            onChange={(value) => setFormData({ ...formData, amount: value || 0 })}
-            className={errors.amount ? 'border-red-500' : ''}
-          />
-          {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-        </div>
-
-        {!isAlreadyReceived && (
-          <div>
-            <Label htmlFor="due_date">Data de Vencimento *</Label>
-            <Input
-              id="due_date"
-              type="date"
-              value={formData.due_date}
-              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-              className={errors.due_date ? 'border-red-500' : ''}
-            />
-            {errors.due_date && <p className="text-red-500 text-sm mt-1">{errors.due_date}</p>}
-          </div>
-        )}
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <Label htmlFor="description">Descrição *</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDefaultDescriptions(true)}
-            >
-              Usar descrição padrão
-            </Button>
-          </div>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Digite a descrição da cobrança"
-            className={errors.description ? 'border-red-500' : ''}
-            rows={3}
-          />
-          {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-        </div>
-
-        <PaymentButtons
-          onClose={onClose}
-          isLoading={createMutation.isPending || updateMutation.isPending}
-          isEditing={!!payment}
-        />
-      </form>
-
-      <DefaultDescriptionModal
-        isOpen={showDefaultDescriptions}
-        onClose={() => setShowDefaultDescriptions(false)}
-        onSelectDescription={handleSelectDescription}
-        onManageDescriptions={() => {
-          setShowDefaultDescriptions(false);
-          setShowDescriptionsManager(true);
-        }}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <PatientAndPayer
+        patients={patients}
+        selectedPatientId={formData.patient_id}
+        onPatientChange={(value) => setFormData(prev => ({ ...prev, patient_id: value }))}
+        isGuardianPayer={isGuardianPayer}
+        guardianName={guardianName}
+        onGuardianNameChange={setGuardianName}
+        onGuardianToggle={setIsGuardianPayer}
       />
 
-      <InvoiceDescriptionsManager
-        isOpen={showDescriptionsManager}
-        onClose={() => setShowDescriptionsManager(false)}
+      <div className="space-y-2">
+        <Label htmlFor="amount">Valor *</Label>
+        <CurrencyInput
+          id="amount"
+          value={formData.amount}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, amount: value || '' }))}
+          placeholder="R$ 0,00"
+          className="w-full"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="due_date">Data de Vencimento *</Label>
+        <Input
+          id="due_date"
+          type="date"
+          value={formData.due_date}
+          onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+          className="w-full"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Descrição da cobrança..."
+          className="w-full"
+        />
+      </div>
+
+      <ReceivedCheckbox
+        isReceived={isReceived}
+        onReceivedChange={setIsReceived}
       />
-    </>
+
+      <div className="flex gap-3 pt-4">
+        <Button 
+          type="submit" 
+          disabled={createPaymentMutation.isPending || updatePaymentMutation.isPending}
+          className="flex-1"
+        >
+          {createPaymentMutation.isPending || updatePaymentMutation.isPending 
+            ? 'Salvando...' 
+            : payment ? 'Atualizar' : 'Criar Cobrança'
+          }
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+        )}
+      </div>
+    </form>
   );
-};
-
-export default PaymentFormWrapper;
+}
