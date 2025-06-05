@@ -30,9 +30,6 @@ const Expenses = () => {
     endDate: "",
     isResidential: "",
     competency: "",
-    category: "",
-    dateRange: { start: "", end: "" },
-    amountRange: { min: "", max: "" }
   });
 
   useEffect(() => {
@@ -89,29 +86,27 @@ const Expenses = () => {
     const matchesSearch = categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          expense.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = filters.category === "" || categoryName === filters.category;
+    const matchesCategory = filters.categoryId === "" || expense.category_id === filters.categoryId;
     
     const matchesDateRange = (() => {
-      if (!filters.dateRange.start && !filters.dateRange.end) return true;
+      if (!filters.startDate && !filters.endDate) return true;
       const expenseDate = new Date(expense.payment_date);
-      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
-      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+      const startDate = filters.startDate ? new Date(filters.startDate) : null;
+      const endDate = filters.endDate ? new Date(filters.endDate) : null;
       
       if (startDate && expenseDate < startDate) return false;
       if (endDate && expenseDate > endDate) return false;
       return true;
     })();
 
-    const matchesAmountRange = (() => {
-      if (!filters.amountRange.min && !filters.amountRange.max) return true;
-      const amount = Number(expense.amount);
-      const minAmount = filters.amountRange.min ? Number(filters.amountRange.min) : 0;
-      const maxAmount = filters.amountRange.max ? Number(filters.amountRange.max) : Infinity;
-      
-      return amount >= minAmount && amount <= maxAmount;
-    })();
+    const matchesResidential = filters.isResidential === "" || 
+      (filters.isResidential === "true" && expense.is_residential) ||
+      (filters.isResidential === "false" && !expense.is_residential);
 
-    return matchesSearch && matchesCategory && matchesDateRange && matchesAmountRange;
+    const matchesCompetency = filters.competency === "" || 
+      expense.competency?.toLowerCase().includes(filters.competency.toLowerCase());
+
+    return matchesSearch && matchesCategory && matchesDateRange && matchesResidential && matchesCompetency;
   });
 
   const handleEditExpense = (expense: Expense) => {
@@ -205,7 +200,7 @@ const Expenses = () => {
                     <div className="mt-4 pt-4 border-t">
                       <AdvancedExpenseFilter
                         currentFilters={filters}
-                        onFiltersChange={setFilters}
+                        onFilterChange={setFilters}
                       />
                     </div>
                   )}

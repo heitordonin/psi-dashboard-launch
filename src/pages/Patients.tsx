@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -84,7 +83,10 @@ const Patients = () => {
       (filters.guardianRequired === "yes" && patient.has_financial_guardian) ||
       (filters.guardianRequired === "no" && !patient.has_financial_guardian);
 
-    return matchesSearch && matchesGuardianFilter;
+    const matchesPatientId = filters.patientId === "" || patient.id === filters.patientId;
+    const matchesCpf = filters.cpfSearch === "" || patient.cpf?.toLowerCase().includes(filters.cpfSearch.toLowerCase());
+
+    return matchesSearch && matchesGuardianFilter && matchesPatientId && matchesCpf;
   });
 
   const handleEditPatient = (patient: Patient) => {
@@ -178,7 +180,8 @@ const Patients = () => {
                     <div className="mt-4 pt-4 border-t">
                       <PatientAdvancedFilter
                         currentFilters={filters}
-                        onFiltersChange={setFilters}
+                        onFilterChange={setFilters}
+                        patients={patients}
                       />
                     </div>
                   )}

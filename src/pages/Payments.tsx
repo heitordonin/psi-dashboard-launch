@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,9 +27,10 @@ const Payments = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [deletePayment, setDeletePayment] = useState<PaymentWithPatient | null>(null);
   const [filters, setFilters] = useState({
-    status: "",
-    dateRange: { start: "", end: "" },
-    amountRange: { min: "", max: "" }
+    patientId: "",
+    startDate: "",
+    endDate: "",
+    status: ""
   });
 
   useEffect(() => {
@@ -57,6 +57,23 @@ const Payments = () => {
       
       if (error) throw error;
       return data as PaymentWithPatient[];
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: patients = [] } = useQuery({
+    queryKey: ['patients', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('patients')
+        .select('id, full_name')
+        .eq('owner_id', user.id)
+        .order('full_name');
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!user?.id
   });
@@ -107,28 +124,20 @@ const Payments = () => {
                          payment.guardian_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filters.status === "" || payment.status === filters.status;
+    const matchesPatient = filters.patientId === "" || payment.patient_id === filters.patientId;
     
     const matchesDateRange = (() => {
-      if (!filters.dateRange.start && !filters.dateRange.end) return true;
+      if (!filters.startDate && !filters.endDate) return true;
       const paymentDate = new Date(payment.due_date);
-      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
-      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+      const startDate = filters.startDate ? new Date(filters.startDate) : null;
+      const endDate = filters.endDate ? new Date(filters.endDate) : null;
       
       if (startDate && paymentDate < startDate) return false;
       if (endDate && paymentDate > endDate) return false;
       return true;
     })();
 
-    const matchesAmountRange = (() => {
-      if (!filters.amountRange.min && !filters.amountRange.max) return true;
-      const amount = Number(payment.amount);
-      const minAmount = filters.amountRange.min ? Number(filters.amountRange.min) : 0;
-      const maxAmount = filters.amountRange.max ? Number(filters.amountRange.max) : Infinity;
-      
-      return amount >= minAmount && amount <= maxAmount;
-    })();
-
-    return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange;
+    return matchesSearch && matchesStatus && matchesPatient && matchesDateRange;
   });
 
   const handleEditPayment = (payment: PaymentWithPatient) => {
@@ -226,7 +235,8 @@ const Payments = () => {
                     <div className="mt-4 pt-4 border-t">
                       <PaymentAdvancedFilter
                         currentFilters={filters}
-                        onFiltersChange={setFilters}
+                        onFilterChange={setFilters}
+                        patients={patients}
                       />
                     </div>
                   )}

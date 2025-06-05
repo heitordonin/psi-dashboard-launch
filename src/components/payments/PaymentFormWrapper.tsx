@@ -16,7 +16,7 @@ import type { Payment } from '@/types/payment';
 
 interface FormData {
   patient_id: string;
-  amount: string;
+  amount: number;
   due_date: string;
   description: string;
 }
@@ -33,7 +33,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
   
   const [formData, setFormData] = useState<FormData>({
     patient_id: payment?.patient_id || '',
-    amount: payment?.amount?.toString() || '',
+    amount: payment?.amount || 0,
     due_date: payment?.due_date || '',
     description: payment?.description || '',
   });
@@ -129,17 +129,14 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       return;
     }
 
-    // Convert amount to number
-    const numericAmount = parseFloat(formData.amount.replace(/[^\d,.-]/g, '').replace(',', '.'));
-
-    if (isNaN(numericAmount) || numericAmount <= 0) {
+    if (isNaN(formData.amount) || formData.amount <= 0) {
       toast.error('Valor deve ser um número válido maior que zero');
       return;
     }
 
     const submitData = {
       patient_id: formData.patient_id,
-      amount: numericAmount,
+      amount: formData.amount,
       due_date: formData.due_date,
       description: formData.description,
     };
@@ -169,7 +166,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
         <Label htmlFor="amount">Valor *</Label>
         <CurrencyInput
           value={formData.amount}
-          onChange={(value) => setFormData(prev => ({ ...prev, amount: value || '' }))}
+          onChange={(value) => setFormData(prev => ({ ...prev, amount: value || 0 }))}
           placeholder="R$ 0,00"
           className="w-full"
         />
