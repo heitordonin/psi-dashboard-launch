@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientForm } from "@/components/PatientForm";
-import { PatientAdvancedFilter } from "@/components/patients/PatientAdvancedFilter";
+import { PatientAdvancedFilter, type PatientFilters } from "@/components/patients/PatientAdvancedFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -24,9 +25,7 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    ageRange: { min: "", max: "" },
-    guardianRequired: "",
+  const [filters, setFilters] = useState<PatientFilters>({
     patientId: "",
     cpfSearch: ""
   });
@@ -79,14 +78,10 @@ const Patients = () => {
                          patient.cpf?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesGuardianFilter = filters.guardianRequired === "" || 
-      (filters.guardianRequired === "yes" && patient.has_financial_guardian) ||
-      (filters.guardianRequired === "no" && !patient.has_financial_guardian);
-
     const matchesPatientId = filters.patientId === "" || patient.id === filters.patientId;
     const matchesCpf = filters.cpfSearch === "" || patient.cpf?.toLowerCase().includes(filters.cpfSearch.toLowerCase());
 
-    return matchesSearch && matchesGuardianFilter && matchesPatientId && matchesCpf;
+    return matchesSearch && matchesPatientId && matchesCpf;
   });
 
   const handleEditPatient = (patient: Patient) => {
@@ -107,6 +102,10 @@ const Patients = () => {
   const handleFormClose = () => {
     setShowForm(false);
     setEditingPatient(null);
+  };
+
+  const handleFilterChange = (newFilters: PatientFilters) => {
+    setFilters(newFilters);
   };
 
   if (isLoading) {
@@ -180,7 +179,7 @@ const Patients = () => {
                     <div className="mt-4 pt-4 border-t">
                       <PatientAdvancedFilter
                         currentFilters={filters}
-                        onFilterChange={setFilters}
+                        onFilterChange={handleFilterChange}
                         patients={patients}
                       />
                     </div>
