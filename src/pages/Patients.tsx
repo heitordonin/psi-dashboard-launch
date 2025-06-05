@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, User, Search, Filter } from "lucide-react";
+import { Plus, User, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,14 @@ const Patients = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<any>(null);
-  const [deletePatient, setDeletePatient] = useState<any>(null);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     ageRange: { min: "", max: "" },
-    guardianRequired: ""
+    guardianRequired: "",
+    patientId: "",
+    cpfSearch: ""
   });
 
   useEffect(() => {
@@ -254,8 +257,7 @@ const Patients = () => {
                     </h2>
                     <PatientForm
                       patient={editingPatient}
-                      onSave={handleFormClose}
-                      onCancel={handleFormClose}
+                      onClose={handleFormClose}
                     />
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { Plus, Receipt, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,11 @@ const Expenses = () => {
   const [deleteExpense, setDeleteExpense] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
+    categoryId: "",
+    startDate: "",
+    endDate: "",
+    isResidential: "",
+    competency: "",
     category: "",
     dateRange: { start: "", end: "" },
     amountRange: { min: "", max: "" }
@@ -46,7 +51,8 @@ const Expenses = () => {
         .select(`
           *,
           expense_categories (
-            name
+            name,
+            code
           )
         `)
         .eq('owner_id', user.id)
@@ -81,10 +87,9 @@ const Expenses = () => {
   const filteredExpenses = expenses.filter(expense => {
     const categoryName = expense.expense_categories?.name || '';
     const matchesSearch = categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.competency?.toLowerCase().includes(searchTerm.toLowerCase());
+                         expense.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = filters.category === "" || expense.category_id === filters.category;
+    const matchesCategory = filters.category === "" || categoryName === filters.category;
     
     const matchesDateRange = (() => {
       if (!filters.dateRange.start && !filters.dateRange.end) return true;
@@ -180,7 +185,7 @@ const Expenses = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por categoria, descrição ou competência..."
+                        placeholder="Buscar por categoria ou descrição..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -216,7 +221,7 @@ const Expenses = () => {
                   </div>
                 ) : filteredExpenses.length === 0 ? (
                   <div className="col-span-full text-center py-8">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-2">
                       {searchTerm || Object.values(filters).some(f => f) 
                         ? 'Nenhuma despesa encontrada com os filtros aplicados' 
@@ -225,7 +230,7 @@ const Expenses = () => {
                     </p>
                     <Button onClick={() => setShowForm(true)} variant="outline">
                       <Plus className="w-4 h-4 mr-2" />
-                      Criar primeira despesa
+                      Cadastrar primeira despesa
                     </Button>
                   </div>
                 ) : (
@@ -243,7 +248,9 @@ const Expenses = () => {
                           </p>
                           <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
                           {expense.description && <p>Descrição: {expense.description}</p>}
-                          {expense.competency && <p>Competência: {expense.competency}</p>}
+                          {expense.is_residential && (
+                            <p className="text-green-600">Residencial</p>
+                          )}
                         </div>
                         
                         <div className="flex gap-2">
@@ -253,7 +260,6 @@ const Expenses = () => {
                             onClick={() => handleEditExpense(expense)}
                             className="flex-1"
                           >
-                            <Edit className="w-4 h-4 mr-1" />
                             Editar
                           </Button>
                           <Button
@@ -261,7 +267,7 @@ const Expenses = () => {
                             size="sm"
                             onClick={() => handleDeleteExpense(expense)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            Excluir
                           </Button>
                         </div>
                       </CardContent>
@@ -281,8 +287,7 @@ const Expenses = () => {
                     </h2>
                     <ExpenseForm
                       expense={editingExpense}
-                      onSave={handleFormClose}
-                      onCancel={handleFormClose}
+                      onClose={handleFormClose}
                     />
                   </div>
                 </div>

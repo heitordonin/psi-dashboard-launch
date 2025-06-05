@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +16,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { toast } from "sonner";
-import type { Payment } from "@/types/payment";
+import type { PaymentWithPatient } from "@/types/payment";
 
 const Payments = () => {
   const navigate = useNavigate();
@@ -23,9 +24,9 @@ const Payments = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [deletePayment, setDeletePayment] = useState<Payment | null>(null);
+  const [deletePayment, setDeletePayment] = useState<PaymentWithPatient | null>(null);
   const [filters, setFilters] = useState({
     status: "",
     dateRange: { start: "", end: "" },
@@ -48,15 +49,14 @@ const Payments = () => {
         .select(`
           *,
           patients (
-            name,
-            cpf
+            full_name
           )
         `)
         .eq('owner_id', user.id)
         .order('due_date', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as PaymentWithPatient[];
     },
     enabled: !!user?.id
   });
@@ -101,7 +101,7 @@ const Payments = () => {
   });
 
   const filteredPayments = payments.filter(payment => {
-    const patientName = payment.patients?.name || '';
+    const patientName = payment.patients?.full_name || '';
     const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.guardian_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -131,12 +131,12 @@ const Payments = () => {
     return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange;
   });
 
-  const handleEditPayment = (payment: Payment) => {
+  const handleEditPayment = (payment: PaymentWithPatient) => {
     setEditingPayment(payment);
     setShowForm(true);
   };
 
-  const handleDeletePayment = (payment: Payment) => {
+  const handleDeletePayment = (payment: PaymentWithPatient) => {
     setDeletePayment(payment);
   };
 
@@ -225,7 +225,7 @@ const Payments = () => {
                   {showFilters && (
                     <div className="mt-4 pt-4 border-t">
                       <PaymentAdvancedFilter
-                        filters={filters}
+                        currentFilters={filters}
                         onFiltersChange={setFilters}
                       />
                     </div>
@@ -261,7 +261,7 @@ const Payments = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <CardTitle className="text-lg">
-                              {payment.patients?.name || 'Paciente não encontrado'}
+                              {payment.patients?.full_name || 'Paciente não encontrado'}
                             </CardTitle>
                             {payment.guardian_name && (
                               <p className="text-sm text-gray-600">Resp: {payment.guardian_name}</p>
@@ -279,13 +279,32 @@ const Payments = () => {
                           {payment.description && <p>Descrição: {payment.description}</p>}
                         </div>
                         
-                        <PaymentButtons
-                          payment={payment}
-                          onEdit={() => handleEditPayment(payment)}
-                          onDelete={() => handleDeletePayment(payment)}
-                          onMarkAsPaid={() => handleMarkAsPaid(payment.id)}
-                          isMarkingAsPaid={markAsPaidMutation.isPending}
-                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPayment(payment)}
+                            className="flex-1"
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeletePayment(payment)}
+                          >
+                            Excluir
+                          </Button>
+                          {payment.status !== 'paid' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleMarkAsPaid(payment.id)}
+                              disabled={markAsPaidMutation.isPending}
+                            >
+                              Marcar como Pago
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))
