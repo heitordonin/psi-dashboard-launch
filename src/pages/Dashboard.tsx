@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu, Bell, User, CreditCard, Calculator, FileText } from "lucide-react";
@@ -166,30 +167,32 @@ const Dashboard = () => {
           </Button>
         </Card>
 
-        {/* Quick Action Tiles */}
-        <div className="grid grid-cols-4 gap-2 overflow-x-auto">
-          <QuickTile
-            icon={CreditCard}
-            label="Criar cobrança"
-            onClick={() => navigate('/payments')}
-          />
-          <QuickTile
-            icon={FileText}
-            label="Link pagamento"
-            onClick={() => {}}
-            disabled
-          />
-          <QuickTile
-            icon={Calculator}
-            label="Simular IR"
-            onClick={() => {}}
-            disabled
-          />
-          <QuickTile
-            icon={FileText}
-            label="Registrar despesa"
-            onClick={() => navigate('/expenses')}
-          />
+        {/* Quick Action Tiles - Made horizontally scrollable on mobile */}
+        <div className="overflow-x-auto">
+          <div className="flex gap-3 pb-2 min-w-max md:grid md:grid-cols-4 md:gap-4">
+            <QuickTile
+              icon={CreditCard}
+              label="Criar cobrança"
+              onClick={() => navigate('/payments')}
+            />
+            <QuickTile
+              icon={FileText}
+              label="Link pagamento"
+              onClick={() => {}}
+              disabled
+            />
+            <QuickTile
+              icon={Calculator}
+              label="Simular IR"
+              onClick={() => {}}
+              disabled
+            />
+            <QuickTile
+              icon={FileText}
+              label="Registrar despesa"
+              onClick={() => navigate('/expenses')}
+            />
+          </div>
         </div>
 
         {/* Summary Card */}
@@ -209,10 +212,10 @@ const Dashboard = () => {
           isLoading={summaryLoading}
         />
 
-        {/* Navigation Modules */}
-        <div className="bg-white p-6 rounded-lg">
+        {/* Navigation Modules - Made more responsive */}
+        <div className="bg-white p-4 md:p-6 rounded-lg">
           <h2 className="text-lg font-semibold mb-4 text-gray-900">Módulos</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
             <ModuleTile
               icon={User}
               color="indigo"
