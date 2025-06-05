@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Payments from "./pages/Payments";
 import Expenses from "./pages/Expenses";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import "./App.css";
 
@@ -48,6 +49,11 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/despesas" element={<Navigate to="/expenses" replace />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>

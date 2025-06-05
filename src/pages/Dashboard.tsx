@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu, Bell, User, CreditCard, Calculator, FileText } from "lucide-react";
@@ -10,6 +9,8 @@ import { QuickTile } from "@/components/dashboard/QuickTile";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -111,133 +112,133 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
-      <div className="bg-indigo-700 px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-indigo-600 cursor-not-allowed"
-            disabled
-          >
-            <Menu className="w-6 h-6" />
-          </Button>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-indigo-600 cursor-not-allowed"
-              disabled
-            >
-              <Bell className="w-6 h-6" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-indigo-600 cursor-not-allowed"
-              disabled
-            >
-              <User className="w-6 h-6" />
-            </Button>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="min-h-screen bg-gray-50">
+            {/* Top Bar */}
+            <div className="bg-indigo-700 px-4 py-4">
+              <div className="flex items-center justify-between">
+                <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-white hover:bg-indigo-600 cursor-not-allowed"
+                    disabled
+                  >
+                    <Bell className="w-6 h-6" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/profile')}
+                    className="text-white hover:bg-indigo-600"
+                  >
+                    <User className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-6 space-y-6">
+              {/* Referral Banner */}
+              <Card className="flex items-center gap-4 bg-indigo-50 p-4">
+                <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-indigo-900">Indique o Declara Psi</h3>
+                  <p className="text-sm text-indigo-800">
+                    Ganhe <strong>3 meses grátis</strong> ao indicar uma colega.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/referral')} 
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Indicar
+                </Button>
+              </Card>
+
+              {/* Quick Action Tiles - Made horizontally scrollable on mobile */}
+              <div className="overflow-x-auto">
+                <div className="flex gap-3 pb-2 min-w-max md:grid md:grid-cols-4 md:gap-4">
+                  <QuickTile
+                    icon={CreditCard}
+                    label="Criar cobrança"
+                    onClick={() => navigate('/payments')}
+                  />
+                  <QuickTile
+                    icon={FileText}
+                    label="Link pagamento"
+                    onClick={() => {}}
+                    disabled
+                  />
+                  <QuickTile
+                    icon={Calculator}
+                    label="Simular IR"
+                    onClick={() => {}}
+                    disabled
+                  />
+                  <QuickTile
+                    icon={FileText}
+                    label="Registrar despesa"
+                    onClick={() => navigate('/expenses')}
+                  />
+                </div>
+              </div>
+
+              {/* Summary Card */}
+              <SummaryCard 
+                data={summaryData || {
+                  receivedCount: 0,
+                  receivedTotal: 0,
+                  pendingCount: 0,
+                  pendingTotal: 0,
+                  overdueCount: 0,
+                  overdueTotal: 0,
+                  expenseCount: 0,
+                  expenseTotal: 0,
+                  confirmedCount: 0,
+                  confirmedTotal: 0
+                }}
+                isLoading={summaryLoading}
+              />
+
+              {/* Navigation Modules - Made more responsive */}
+              <div className="bg-white p-4 md:p-6 rounded-lg">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900">Módulos</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                  <ModuleTile
+                    icon={User}
+                    color="indigo"
+                    label="Pacientes"
+                    to="/patients"
+                  />
+                  <ModuleTile
+                    icon={CreditCard}
+                    color="green"
+                    label="Cobranças"
+                    to="/payments"
+                  />
+                  <ModuleTile
+                    icon={FileText}
+                    color="purple"
+                    label="Despesas"
+                    to="/expenses"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </SidebarInset>
       </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Referral Banner */}
-        <Card className="flex items-center gap-4 bg-indigo-50 p-4">
-          <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
-            <FileText className="w-6 h-6 text-indigo-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-medium text-indigo-900">Indique o Declara Psi</h3>
-            <p className="text-sm text-indigo-800">
-              Ganhe <strong>3 meses grátis</strong> ao indicar uma colega.
-            </p>
-          </div>
-          <Button 
-            onClick={() => navigate('/referral')} 
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700"
-          >
-            Indicar
-          </Button>
-        </Card>
-
-        {/* Quick Action Tiles - Made horizontally scrollable on mobile */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-3 pb-2 min-w-max md:grid md:grid-cols-4 md:gap-4">
-            <QuickTile
-              icon={CreditCard}
-              label="Criar cobrança"
-              onClick={() => navigate('/payments')}
-            />
-            <QuickTile
-              icon={FileText}
-              label="Link pagamento"
-              onClick={() => {}}
-              disabled
-            />
-            <QuickTile
-              icon={Calculator}
-              label="Simular IR"
-              onClick={() => {}}
-              disabled
-            />
-            <QuickTile
-              icon={FileText}
-              label="Registrar despesa"
-              onClick={() => navigate('/expenses')}
-            />
-          </div>
-        </div>
-
-        {/* Summary Card */}
-        <SummaryCard 
-          data={summaryData || {
-            receivedCount: 0,
-            receivedTotal: 0,
-            pendingCount: 0,
-            pendingTotal: 0,
-            overdueCount: 0,
-            overdueTotal: 0,
-            expenseCount: 0,
-            expenseTotal: 0,
-            confirmedCount: 0,
-            confirmedTotal: 0
-          }}
-          isLoading={summaryLoading}
-        />
-
-        {/* Navigation Modules - Made more responsive */}
-        <div className="bg-white p-4 md:p-6 rounded-lg">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900">Módulos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-            <ModuleTile
-              icon={User}
-              color="indigo"
-              label="Pacientes"
-              to="/patients"
-            />
-            <ModuleTile
-              icon={CreditCard}
-              color="green"
-              label="Cobranças"
-              to="/payments"
-            />
-            <ModuleTile
-              icon={FileText}
-              color="purple"
-              label="Despesas"
-              to="/expenses"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
