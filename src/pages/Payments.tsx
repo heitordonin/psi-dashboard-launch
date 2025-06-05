@@ -149,10 +149,6 @@ const Payments = () => {
     setDeletePayment(payment);
   };
 
-  const handleMarkAsPaid = (paymentId: string) => {
-    markAsPaidMutation.mutate(paymentId);
-  };
-
   const confirmDelete = () => {
     if (deletePayment) {
       deletePaymentMutation.mutate(deletePayment.id);
@@ -289,36 +285,24 @@ const Payments = () => {
                           {payment.description && <p>Descrição: {payment.description}</p>}
                         </div>
                         
-                        {/* Improved button layout with proper wrapping */}
-                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                          <div className="flex gap-2 flex-1 min-w-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditPayment(payment)}
-                              className="flex-1 sm:flex-none sm:min-w-[80px]"
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDeletePayment(payment)}
-                              className="flex-1 sm:flex-none sm:min-w-[80px]"
-                            >
-                              Excluir
-                            </Button>
-                          </div>
-                          {payment.status !== 'paid' && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleMarkAsPaid(payment.id)}
-                              disabled={markAsPaidMutation.isPending}
-                              className="w-full sm:w-auto sm:min-w-[140px]"
-                            >
-                              Marcar como Pago
-                            </Button>
-                          )}
+                        {/* Simplified button layout - only Edit and Delete */}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPayment(payment)}
+                            className="flex-1"
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeletePayment(payment)}
+                            className="flex-1"
+                          >
+                            Excluir
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

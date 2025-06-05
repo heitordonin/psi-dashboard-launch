@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PatientAndPayer } from './PatientAndPayer';
-import { GuardianToggle } from './GuardianToggle';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,9 +37,16 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
     description: payment?.description || '',
   });
 
-  const [isGuardianPayer, setIsGuardianPayer] = useState(false);
-  const [guardianName, setGuardianName] = useState(payment?.guardian_name || '');
   const [isReceived, setIsReceived] = useState(payment?.status === 'paid');
+  const [receivedDate, setReceivedDate] = useState(payment?.paid_date || '');
+
+  // Initialize received date when isReceived changes to true
+  useEffect(() => {
+    if (isReceived && !receivedDate) {
+      const today = new Date().toISOString().split('T')[0];
+      setReceivedDate(today);
+    }
+  }, [isReceived, receivedDate]);
 
   const { data: patients = [] } = useQuery({
     queryKey: ['patients', user?.id],
@@ -67,7 +73,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
         ...data,
         owner_id: user.id,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
-        guardian_name: isGuardianPayer ? guardianName : null,
+        paid_date: isReceived ? receivedDate : null,
       };
 
       const { data: result, error } = await supabase
@@ -97,7 +103,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       const paymentData = {
         ...data,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
-        guardian_name: isGuardianPayer ? guardianName : null,
+        paid_date: isReceived ? receivedDate : null,
       };
 
       const { data: result, error } = await supabase
@@ -131,6 +137,12 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
 
     if (isNaN(formData.amount) || formData.amount <= 0) {
       toast.error('Valor deve ser um número válido maior que zero');
+      return;
+    }
+
+    // Validate received date if payment is marked as received
+    if (isReceived && !receivedDate) {
+      toast.error('Data de recebimento é obrigatória quando o pagamento está marcado como recebido');
       return;
     }
 
@@ -197,9 +209,10 @@ export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWra
       <ReceivedCheckbox
         isAlreadyReceived={isReceived}
         setIsAlreadyReceived={setIsReceived}
-        receivedDate=""
-        setReceivedDate={() => {}}
+        receivedDate={receivedDate}
+        setReceivedDate={setReceivedDate}
         errors={{}}
+        isEditing={!!payment}
       />
 
       <div className="flex gap-3 pt-4">
