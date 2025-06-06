@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +74,8 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         owner_id: user.id,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
+        // Ensure due_date is not empty when creating
+        due_date: isReceived ? (data.due_date || receivedDate) : data.due_date,
       };
 
       const { data: result, error } = await supabase
@@ -131,7 +132,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
   
-    if (!formData.patient_id || !formData.amount || (!formData.due_date && !isReceived)) {
+    if (!formData.patient_id || !formData.amount) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -140,24 +141,24 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
       toast.error('Valor deve ser um número válido maior que zero');
       return;
     }
-  
-    // Se estiver marcado como recebido mas ainda não tiver data, atribui a data de hoje
-    const finalReceivedDate = isReceived
-      ? (receivedDate || new Date().toISOString().split('T')[0])
-      : null;
+
+    // Validate received date if payment is marked as received
+    if (isReceived && !receivedDate) {
+      toast.error('Data de recebimento é obrigatória');
+      return;
+    }
+
+    // Validate due date if payment is not received
+    if (!isReceived && !formData.due_date) {
+      toast.error('Data de vencimento é obrigatória');
+      return;
+    }
   
     const submitData = {
       patient_id: formData.patient_id,
       amount: formData.amount,
-      due_date: formData.due_date,
+      due_date: isReceived ? (formData.due_date || receivedDate) : formData.due_date,
       description: formData.description,
-    };
-  
-    const paymentData = {
-      ...submitData,
-      owner_id: user?.id,
-      status: isReceived ? 'paid' : 'pending',
-      paid_date: finalReceivedDate,
     };
   
     if (payment) {
@@ -190,7 +191,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         isEditing={!!payment}
       />
       
-      {!isReceived ? (
+      {!isReceived && (
         <div className="space-y-2">
           <Label htmlFor="due_date">Data de Vencimento *</Label>
           <Input
@@ -200,17 +201,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, due_date: e.target.value }))
             }
-            className="w-full"
-          />
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="received_date">Data do Recebimento *</Label>
-          <Input
-            id="received_date"
-            type="date"
-            value={receivedDate}
-            onChange={(e) => setReceivedDate(e.target.value)}
             className="w-full"
           />
         </div>
