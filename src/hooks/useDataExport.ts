@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 interface ExportOptions {
   format: 'csv' | 'excel';
+  userId?: string;
   dateRange?: {
     start: string;
     end: string;
@@ -49,7 +50,7 @@ export const useDataExport = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('patients')
         .select(`
           id,
@@ -61,24 +62,32 @@ export const useDataExport = () => {
           guardian_cpf,
           is_payment_from_abroad,
           created_at,
-          updated_at
+          updated_at,
+          owner_id
         `)
         .order('full_name');
+
+      if (options.userId) {
+        query = query.eq('owner_id', options.userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
       const headers = [
         'id', 'full_name', 'cpf', 'email', 'phone', 
         'has_financial_guardian', 'guardian_cpf', 'is_payment_from_abroad',
-        'created_at', 'updated_at'
+        'created_at', 'updated_at', 'owner_id'
       ];
 
       const csvContent = convertToCSV(data || [], headers);
       const timestamp = new Date().toISOString().split('T')[0];
+      const userSuffix = options.userId ? '_usuario_filtrado' : '_todos_usuarios';
       
       downloadFile(
         csvContent, 
-        `pacientes_${timestamp}.csv`, 
+        `pacientes_${timestamp}${userSuffix}.csv`, 
         'text/csv;charset=utf-8;'
       );
 
@@ -108,8 +117,13 @@ export const useDataExport = () => {
           payment_url,
           payer_cpf,
           created_at,
+          owner_id,
           patients!inner(full_name, cpf)
         `);
+
+      if (options.userId) {
+        query = query.eq('owner_id', options.userId);
+      }
 
       if (options.dateRange) {
         query = query
@@ -133,19 +147,22 @@ export const useDataExport = () => {
         payment_url: payment.payment_url,
         payer_cpf: payment.payer_cpf,
         created_at: payment.created_at,
+        owner_id: payment.owner_id,
       }));
 
       const headers = [
         'id', 'patient_name', 'patient_cpf', 'amount', 'due_date', 
-        'paid_date', 'status', 'description', 'payment_url', 'payer_cpf', 'created_at'
+        'paid_date', 'status', 'description', 'payment_url', 'payer_cpf', 
+        'created_at', 'owner_id'
       ];
 
       const csvContent = convertToCSV(flattenedData || [], headers);
       const timestamp = new Date().toISOString().split('T')[0];
+      const userSuffix = options.userId ? '_usuario_filtrado' : '_todos_usuarios';
       
       downloadFile(
         csvContent, 
-        `cobrancas_${timestamp}.csv`, 
+        `cobrancas_${timestamp}${userSuffix}.csv`, 
         'text/csv;charset=utf-8;'
       );
 
@@ -175,8 +192,13 @@ export const useDataExport = () => {
           is_residential,
           residential_adjusted_amount,
           created_at,
+          owner_id,
           expense_categories!inner(name, code)
         `);
+
+      if (options.userId) {
+        query = query.eq('owner_id', options.userId);
+      }
 
       if (options.dateRange) {
         query = query
@@ -200,20 +222,22 @@ export const useDataExport = () => {
         is_residential: expense.is_residential,
         residential_adjusted_amount: expense.residential_adjusted_amount,
         created_at: expense.created_at,
+        owner_id: expense.owner_id,
       }));
 
       const headers = [
         'id', 'category_name', 'category_code', 'amount', 'payment_date',
         'competency', 'description', 'penalty_interest', 'is_residential',
-        'residential_adjusted_amount', 'created_at'
+        'residential_adjusted_amount', 'created_at', 'owner_id'
       ];
 
       const csvContent = convertToCSV(flattenedData || [], headers);
       const timestamp = new Date().toISOString().split('T')[0];
+      const userSuffix = options.userId ? '_usuario_filtrado' : '_todos_usuarios';
       
       downloadFile(
         csvContent, 
-        `despesas_${timestamp}.csv`, 
+        `despesas_${timestamp}${userSuffix}.csv`, 
         'text/csv;charset=utf-8;'
       );
 

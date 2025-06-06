@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useDataExport } from '@/hooks/useDataExport';
+import { UserFilter } from '@/components/admin/UserFilter';
 import { Download, Users, CreditCard, FileText, Calendar } from 'lucide-react';
 
 const Admin = () => {
@@ -21,15 +22,24 @@ const Admin = () => {
     start: '',
     end: '',
   });
+  const [filteredUserId, setFilteredUserId] = useState<string | null>(null);
+  const [showAllUsers, setShowAllUsers] = useState(true);
 
-  // Estatísticas gerais
+  const handleFilterChange = (userId: string | null, showAll: boolean) => {
+    setFilteredUserId(userId);
+    setShowAllUsers(showAll);
+  };
+
+  // Estatísticas gerais com filtro de usuário
   const { data: stats } = useQuery({
-    queryKey: ['admin-stats'],
+    queryKey: ['admin-stats', filteredUserId, showAllUsers],
     queryFn: async () => {
+      const userFilter = showAllUsers ? {} : { owner_id: filteredUserId };
+
       const [patientsResult, paymentsResult, expensesResult] = await Promise.all([
-        supabase.from('patients').select('id', { count: 'exact' }),
-        supabase.from('payments').select('id, amount, status', { count: 'exact' }),
-        supabase.from('expenses').select('id, amount', { count: 'exact' }),
+        supabase.from('patients').select('id', { count: 'exact' }).match(userFilter),
+        supabase.from('payments').select('id, amount, status', { count: 'exact' }).match(userFilter),
+        supabase.from('expenses').select('id, amount', { count: 'exact' }).match(userFilter),
       ]);
 
       const totalRevenue = paymentsResult.data?.reduce((sum, payment) => 
@@ -51,27 +61,32 @@ const Admin = () => {
     enabled: !!isAdmin,
   });
 
-  // Dados de pacientes
+  // Dados de pacientes com filtro
   const { data: patients = [] } = useQuery({
-    queryKey: ['admin-patients'],
+    queryKey: ['admin-patients', filteredUserId, showAllUsers],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('patients')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      if (!showAllUsers && filteredUserId) {
+        query = query.eq('owner_id', filteredUserId);
+      }
       
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: !!isAdmin,
   });
 
-  // Dados de pagamentos
+  // Dados de pagamentos com filtro
   const { data: payments = [] } = useQuery({
-    queryKey: ['admin-payments'],
+    queryKey: ['admin-payments', filteredUserId, showAllUsers],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
         .select(`
           *,
@@ -79,7 +94,36 @@ const Admin = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(100);
+
+      if (!showAllUsers && filteredUserId) {
+        query = query.eq('owner_id', filteredUserId);
+      }
       
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!isAdmin,
+  });
+
+  // Dados de despesas com filtro
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['admin-expenses', filteredUserId, showAllUsers],
+    queryFn: async () => {
+      let query = supabase
+        .from('expenses')
+        .select(`
+          *,
+          expense_categories!inner(name, code)
+        `)
+        .order('payment_date', { ascending: false })
+        .limit(100);
+
+      if (!showAllUsers && filteredUserId) {
+        query = query.eq('owner_id', filteredUserId);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -106,6 +150,7 @@ const Admin = () => {
   const handleExport = (type: 'patients' | 'payments' | 'expenses') => {
     const options = {
       format: 'csv' as const,
+      userId: showAllUsers ? undefined : filteredUserId,
       ...(dateRange.start && dateRange.end && {
         dateRange: {
           start: dateRange.start,
@@ -140,6 +185,9 @@ const Admin = () => {
               </Badge>
             </div>
 
+            {/* Filtro de Usuário */}
+            <UserFilter onFilterChange={handleFilterChange} />
+
             {/* Estatísticas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <Card>
@@ -149,6 +197,9 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats?.totalPatients || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {showAllUsers ? 'Todos os usuários' : 'Usuário filtrado'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -159,6 +210,9 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats?.totalPayments || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {showAllUsers ? 'Todos os usuários' : 'Usuário filtrado'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -174,6 +228,9 @@ const Admin = () => {
                       currency: 'BRL',
                     })}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {showAllUsers ? 'Todos os usuários' : 'Usuário filtrado'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -189,6 +246,9 @@ const Admin = () => {
                       currency: 'BRL',
                     })}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {showAllUsers ? 'Todos os usuários' : 'Usuário filtrado'}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -246,6 +306,12 @@ const Admin = () => {
                     Exportar Despesas
                   </Button>
                 </div>
+
+                {!showAllUsers && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Os dados exportados serão filtrados para o usuário selecionado.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -260,7 +326,10 @@ const Admin = () => {
               <TabsContent value="patients">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Últimos Pacientes</CardTitle>
+                    <CardTitle>
+                      Últimos Pacientes 
+                      {!showAllUsers && ' (Filtrado)'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -296,7 +365,10 @@ const Admin = () => {
               <TabsContent value="payments">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Últimas Cobranças</CardTitle>
+                    <CardTitle>
+                      Últimas Cobranças
+                      {!showAllUsers && ' (Filtrado)'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -345,13 +417,45 @@ const Admin = () => {
               <TabsContent value="expenses">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Despesas (Dados limitados para proteção)</CardTitle>
+                    <CardTitle>
+                      Últimas Despesas
+                      {!showAllUsers && ' (Filtrado)'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">
-                      Por questões de segurança, os detalhes das despesas são limitados na visualização web.
-                      Use a funcionalidade de exportação para obter dados completos.
-                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Categoria</th>
+                            <th className="text-left p-2">Valor</th>
+                            <th className="text-left p-2">Data Pagamento</th>
+                            <th className="text-left p-2">Descrição</th>
+                            <th className="text-left p-2">Criado em</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {expenses.slice(0, 10).map((expense) => (
+                            <tr key={expense.id} className="border-b">
+                              <td className="p-2">{expense.expense_categories?.name}</td>
+                              <td className="p-2">
+                                {expense.amount.toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })}
+                              </td>
+                              <td className="p-2">
+                                {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
+                              </td>
+                              <td className="p-2">{expense.description || '-'}</td>
+                              <td className="p-2">
+                                {new Date(expense.created_at).toLocaleDateString('pt-BR')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
