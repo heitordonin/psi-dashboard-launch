@@ -211,8 +211,8 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         <CurrencyInput
           value={formData.amount}
           onChange={(value) => {
-            console.log('Currency input changed:', value); // Debug log
-            setFormData(prev => ({ ...prev, amount: value || 0 }));
+            console.log('Currency input changed:', value);
+            setFormData(prev => ({ ...prev, amount: value }));
           }}
           placeholder="R$ 0,00"
           className="w-full"
