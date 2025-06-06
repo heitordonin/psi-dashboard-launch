@@ -13,20 +13,24 @@ interface CurrencyInputProps {
 }
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ className, value, onChange, placeholder = "0,00", disabled = false, name, ...props }, ref) => {
+  ({ className, value, onChange, placeholder = "R$ 0,00", disabled = false, name, ...props }, ref) => {
     const handleValueChange = (value: string | undefined) => {
       if (onChange) {
+        // Convert the string value to number (react-currency-input-field already handles the conversion)
         const numericValue = value ? parseFloat(value) : 0;
         onChange(numericValue);
       }
     };
+
+    // Convert numeric value to string for the component
+    const displayValue = value ? value.toString() : undefined;
 
     return (
       <CurrencyInputField
         {...props}
         ref={ref}
         name={name}
-        value={value}
+        value={displayValue}
         onValueChange={handleValueChange}
         placeholder={placeholder}
         intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}
@@ -38,6 +42,11 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         allowDecimals={true}
         allowNegativeValue={false}
         disabled={disabled}
+        disableGroupSeparators={false}
+        transformRawValue={(rawValue) => {
+          // Ensure we're working with clean numeric values
+          return rawValue.replace(/[^\d,]/g, '').replace(',', '.');
+        }}
         className={cn(
           "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           className

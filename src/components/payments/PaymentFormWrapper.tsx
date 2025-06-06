@@ -210,7 +210,10 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         <Label htmlFor="amount">Valor *</Label>
         <CurrencyInput
           value={formData.amount}
-          onChange={(value) => setFormData(prev => ({ ...prev, amount: value || 0 }))}
+          onChange={(value) => {
+            console.log('Currency input changed:', value); // Debug log
+            setFormData(prev => ({ ...prev, amount: value || 0 }));
+          }}
           placeholder="R$ 0,00"
           className="w-full"
         />
