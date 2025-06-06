@@ -197,7 +197,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
           />
         </div>
       )}
-      
+
       <div className="space-y-2">
         <Label htmlFor="amount">Valor *</Label>
         <CurrencyInput
