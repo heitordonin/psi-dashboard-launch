@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, CreditCard, FileText, LogOut, Settings, X } from "lucide-react";
+import { User, CreditCard, FileText, LogOut, Settings, X, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { toast } from "sonner";
 import {
@@ -45,7 +45,7 @@ const menuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { setOpen } = useSidebar();
 
   const handleLogout = async () => {
@@ -120,6 +120,30 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administração</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === '/admin'}
+                  >
+                    <button
+                      onClick={() => navigate('/admin')}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Painel Admin</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel>Configurações</SidebarGroupLabel>
