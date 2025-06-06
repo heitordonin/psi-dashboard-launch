@@ -208,68 +208,62 @@ const Expenses = () => {
               </Card>
 
               {/* Expenses List */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {expensesLoading ? (
-                  <div className="col-span-full text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Carregando despesas...</p>
-                  </div>
-                ) : filteredExpenses.length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      {searchTerm || Object.values(filters).some(f => f) 
-                        ? 'Nenhuma despesa encontrada com os filtros aplicados' 
-                        : 'Nenhuma despesa cadastrada'
-                      }
-                    </p>
-                    <Button onClick={() => setShowForm(true)} variant="outline">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Cadastrar primeira despesa
-                    </Button>
-                  </div>
-                ) : (
-                  filteredExpenses.map((expense) => (
-                    <Card key={expense.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">
-                          {expense.expense_categories?.name || 'Categoria não encontrada'}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2 text-sm text-gray-600 mb-4">
-                          <p className="font-medium text-lg text-gray-900">
-                            R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
-                          {expense.description && <p>Descrição: {expense.description}</p>}
-                          {expense.is_residential && (
-                            <p className="text-green-600">Residencial</p>
-                          )}
+              <Card>
+                <CardContent className="p-0">
+                  {expensesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Carregando despesas...</p>
+                    </div>
+                  ) : filteredExpenses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">
+                        {searchTerm || Object.values(filters).some(f => f) 
+                          ? 'Nenhuma despesa encontrada com os filtros aplicados' 
+                          : 'Nenhuma despesa cadastrada'
+                        }
+                      </p>
+                      <Button onClick={() => setShowForm(true)} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Cadastrar primeira despesa
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col divide-y">
+                      {filteredExpenses.map((expense) => (
+                        <div key={expense.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-gray-900 truncate">
+                              {expense.expense_categories?.name || 'Categoria não encontrada'}
+                            </p>
+                            {expense.description && (
+                              <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
+                            </p>
+                            {expense.is_residential && (
+                              <p className="text-xs text-green-600 mt-1">Residencial</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 ml-4">
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-gray-900">
+                                R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                            <ActionDropdown
+                              onEdit={() => handleEditExpense(expense)}
+                              onDelete={() => handleDeleteExpense(expense)}
+                            />
+                          </div>
                         </div>
-                        
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditExpense(expense)}
-                            className="flex-1"
-                          >
-                            Editar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteExpense(expense)}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Form Modal */}

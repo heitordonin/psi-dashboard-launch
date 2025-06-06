@@ -102,7 +102,10 @@ const Payments = () => {
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'paid' })
+        .update({ 
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0]
+        })
         .eq('id', paymentId);
       
       if (error) throw error;
@@ -147,6 +150,10 @@ const Payments = () => {
 
   const handleDeletePayment = (payment: PaymentWithPatient) => {
     setDeletePayment(payment);
+  };
+
+  const handleMarkAsPaid = (payment: PaymentWithPatient) => {
+    markAsPaidMutation.mutate(payment.id);
   };
 
   const confirmDelete = () => {
@@ -240,75 +247,65 @@ const Payments = () => {
               </Card>
 
               {/* Payments List */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {paymentsLoading ? (
-                  <div className="col-span-full text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Carregando cobranças...</p>
-                  </div>
-                ) : filteredPayments.length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      {searchTerm || Object.values(filters).some(f => f) 
-                        ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
-                        : 'Nenhuma cobrança cadastrada'
-                      }
-                    </p>
-                    <Button onClick={() => setShowForm(true)} variant="outline">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar primeira cobrança
-                    </Button>
-                  </div>
-                ) : (
-                  filteredPayments.map((payment) => (
-                    <Card key={payment.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-lg">
+              <Card>
+                <CardContent className="p-0">
+                  {paymentsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Carregando cobranças...</p>
+                    </div>
+                  ) : filteredPayments.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">
+                        {searchTerm || Object.values(filters).some(f => f) 
+                          ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
+                          : 'Nenhuma cobrança cadastrada'
+                        }
+                      </p>
+                      <Button onClick={() => setShowForm(true)} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Criar primeira cobrança
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col divide-y">
+                      {filteredPayments.map((payment) => (
+                        <div key={payment.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-gray-900 truncate">
                               {payment.patients?.full_name || 'Paciente não encontrado'}
-                            </CardTitle>
+                            </p>
                             {payment.guardian_name && (
-                              <p className="text-sm text-gray-600">Resp: {payment.guardian_name}</p>
+                              <p className="text-xs text-gray-500 truncate">Resp: {payment.guardian_name}</p>
                             )}
+                            {payment.description && (
+                              <p className="text-xs text-gray-600 truncate mt-1">{payment.description}</p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Vencimento: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
+                            </p>
                           </div>
-                          <PaymentStatusBadge status={payment.status} />
+                          <div className="flex items-center gap-3 ml-4">
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-gray-900">
+                                R$ {Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                              <PaymentStatusBadge status={payment.status} />
+                            </div>
+                            <ActionDropdown
+                              onEdit={() => handleEditPayment(payment)}
+                              onDelete={() => handleDeletePayment(payment)}
+                              onMarkAsPaid={payment.status !== 'paid' ? () => handleMarkAsPaid(payment) : undefined}
+                              showMarkAsPaid={payment.status !== 'paid'}
+                            />
+                          </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2 text-sm text-gray-600 mb-4">
-                          <p className="font-medium text-lg text-gray-900">
-                            R$ {Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p>Vencimento: {new Date(payment.due_date).toLocaleDateString('pt-BR')}</p>
-                          {payment.description && <p>Descrição: {payment.description}</p>}
-                        </div>
-                        
-                        {/* Simplified button layout - only Edit and Delete */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditPayment(payment)}
-                            className="flex-1"
-                          >
-                            Editar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeletePayment(payment)}
-                            className="flex-1"
-                          >
-                            Excluir
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Form Modal */}
