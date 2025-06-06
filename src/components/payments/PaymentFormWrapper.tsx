@@ -195,18 +195,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
             }
             className="w-full"
           />
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="received_date">Data do Recebimento *</Label>
-          <Input
-            id="received_date"
-            type="date"
-            value={receivedDate}
-            onChange={(e) => setReceivedDate(e.target.value)}
-            className="w-full"
-          />
-        </div>
       )}
       
       <div className="space-y-2">
