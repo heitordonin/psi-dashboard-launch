@@ -183,7 +183,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         isEditing={!!payment}
       />
       
-      {!isReceived ? (
+      {!isReceived && (
         <div className="space-y-2">
           <Label htmlFor="due_date">Data de Vencimento *</Label>
           <Input
@@ -195,6 +195,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
             }
             className="w-full"
           />
+        </div>
       )}
       
       <div className="space-y-2">
