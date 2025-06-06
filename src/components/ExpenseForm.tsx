@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
@@ -38,6 +38,7 @@ interface ExpenseFormProps {
 }
 
 export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -66,7 +67,6 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     }
   });
 
-  // Log dos dados das categorias para debug
   useEffect(() => {
     if (categoriesError) {
       console.error('Erro nas categorias:', categoriesError);
@@ -103,7 +103,10 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       console.log('Salvando despesa com valores:', values);
       
-      // Parse currency values properly
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado');
+      }
+      
       const parsedAmount = Number(
         String(values.amount).replace(/\./g, "").replace(",", ".")
       );
@@ -125,7 +128,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
         is_residential: values.is_residential,
         competency: values.competency || null,
         residential_adjusted_amount: parsedResidentialAmount || null,
-        // Don't send owner_id - let Supabase fill it via default auth.uid()
+        owner_id: user.id
       };
 
       console.log('Dados a serem salvos:', expenseData);
@@ -172,7 +175,15 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Validar competência se necessário
+    if (!user?.id) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (selectedCategory?.requires_competency && !values.competency) {
       form.setError("competency", {
         type: "required",
@@ -181,7 +192,6 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
       return;
     }
 
-    // Validar formato da competência (MM/AAAA)
     if (values.competency && !/^\d{2}\/\d{4}$/.test(values.competency)) {
       form.setError("competency", {
         type: "pattern",
@@ -198,7 +208,6 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     setSelectedCategory(category || null);
     form.setValue("category_id", categoryId);
     
-    // Reset campos condicionais
     if (!category?.is_residential) {
       form.setValue("is_residential", false);
     }
@@ -211,16 +220,12 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   const watchIsResidential = form.watch("is_residential");
   const watchAmount = form.watch("amount");
 
-  // Calcular automaticamente o valor residencial ajustado sempre
   useEffect(() => {
-    // Sempre calcular o residential_adjusted_amount
     let adjustedAmount;
     
     if (selectedCategory?.is_residential && watchIsResidential) {
-      // Se a categoria permite residencial E o usuário marcou como residencial, aplicar 20%
       adjustedAmount = Number(watchAmount) * 0.20;
     } else {
-      // Para todos os outros casos, usar 100% do valor
       adjustedAmount = Number(watchAmount);
     }
     

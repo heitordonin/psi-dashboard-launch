@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Patient } from "@/types/patient";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 interface PatientFormProps {
   patient?: Patient;
@@ -16,6 +16,7 @@ interface PatientFormProps {
 }
 
 export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     full_name: patient?.full_name || '',
     cpf: patient?.cpf || '',
@@ -83,7 +84,10 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log('Criando paciente:', data);
-      const { error } = await supabase.from('patients').insert(data);
+      const { error } = await supabase.from('patients').insert({
+        ...data,
+        owner_id: user?.id
+      });
       if (error) {
         console.error('Erro ao criar paciente:', error);
         throw error;
@@ -133,6 +137,11 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
     
     const newErrors: Record<string, string> = {};
     
@@ -207,7 +216,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
               setFormData({ 
                 ...formData, 
                 is_payment_from_abroad: checked,
-                cpf: checked ? '' : formData.cpf // Clear CPF if from abroad
+                cpf: checked ? '' : formData.cpf
               });
             }}
           />
