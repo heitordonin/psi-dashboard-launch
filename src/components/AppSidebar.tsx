@@ -68,8 +68,8 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <img 
-            src="/lovable-uploads/a7b373c2-b3b0-4d71-b13a-3714f2afaa0c.png" 
-            alt="Declara Psi" 
+            src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
+            alt="Psiclo" 
             className="h-10 w-auto"
           />
         </div>
@@ -127,7 +127,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="" />
-            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs">
+            <AvatarFallback className="bg-psiclo-accent text-psiclo-primary text-xs">
               {getUserInitials()}
             </AvatarFallback>
           </Avatar>

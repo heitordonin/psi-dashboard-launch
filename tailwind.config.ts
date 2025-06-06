@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				/* Psiclo brand colors */
+				psiclo: {
+					primary: '#002471',
+					secondary: '#0033b8', 
+					accent: '#03f6f9'
 				}
 			},
 			borderRadius: {

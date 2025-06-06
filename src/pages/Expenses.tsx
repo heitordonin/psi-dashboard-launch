@@ -142,7 +142,7 @@ const Expenses = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-psiclo-primary"></div>
           <p className="mt-4">Carregando...</p>
         </div>
       </div>
@@ -160,19 +160,19 @@ const Expenses = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-indigo-700 px-4 py-4">
+            <div className="bg-psiclo-primary px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                  <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
                   <div>
                     <h1 className="text-xl font-semibold text-white">Despesas</h1>
-                    <p className="text-sm text-indigo-100">Gerencie suas despesas</p>
+                    <p className="text-sm text-psiclo-accent">Gerencie suas despesas</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-white text-indigo-700 hover:bg-gray-100"
+                  className="bg-white text-psiclo-primary hover:bg-gray-100"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nova Despesa
@@ -221,7 +221,7 @@ const Expenses = () => {
                 <CardContent className="p-0">
                   {expensesLoading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-psiclo-primary mx-auto"></div>
                       <p className="mt-4 text-gray-600">Carregando despesas...</p>
                     </div>
                   ) : filteredExpenses.length === 0 ? (

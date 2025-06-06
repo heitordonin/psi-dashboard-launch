@@ -100,7 +100,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-psiclo-primary"></div>
           <p className="mt-4">Carregando...</p>
         </div>
       </div>
@@ -118,15 +118,15 @@ const Dashboard = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Top Bar */}
-            <div className="bg-indigo-700 px-4 py-4">
+            <div className="bg-psiclo-primary px-4 py-4">
               <div className="flex items-center justify-between">
-                <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
                 
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-white hover:bg-indigo-600 cursor-not-allowed"
+                    className="text-white hover:bg-psiclo-secondary cursor-not-allowed"
                     disabled
                   >
                     <Bell className="w-6 h-6" />
@@ -135,7 +135,7 @@ const Dashboard = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => navigate('/profile')}
-                    className="text-white hover:bg-indigo-600"
+                    className="text-white hover:bg-psiclo-secondary"
                   >
                     <User className="w-6 h-6" />
                   </Button>
@@ -146,20 +146,20 @@ const Dashboard = () => {
             {/* Main Content */}
             <div className="container mx-auto px-4 py-6 space-y-6">
               {/* Referral Banner */}
-              <Card className="flex items-center gap-4 bg-indigo-50 p-4">
-                <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-indigo-600" />
+              <Card className="flex items-center gap-4 bg-psiclo-accent/10 p-4">
+                <div className="w-10 h-10 bg-psiclo-accent/20 rounded-full flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-psiclo-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-indigo-900">Indique o Declara Psi</h3>
-                  <p className="text-sm text-indigo-800">
+                  <h3 className="font-medium text-psiclo-primary">Indique o Psiclo</h3>
+                  <p className="text-sm text-psiclo-secondary">
                     Ganhe <strong>3 meses grátis</strong> ao indicar uma colega.
                   </p>
                 </div>
                 <Button 
                   onClick={() => navigate('/referral')} 
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-psiclo-primary hover:bg-psiclo-secondary"
                 >
                   Indicar
                 </Button>

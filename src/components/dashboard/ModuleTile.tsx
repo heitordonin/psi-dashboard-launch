@@ -11,7 +11,7 @@ interface ModuleTileProps {
 }
 
 const colorClasses = {
-  indigo: "bg-indigo-100 text-indigo-600 hover:bg-indigo-200",
+  indigo: "bg-psiclo-accent/10 text-psiclo-primary hover:bg-psiclo-accent/20",
   green: "bg-green-100 text-green-600 hover:bg-green-200",
   purple: "bg-purple-100 text-purple-600 hover:bg-purple-200"
 };
