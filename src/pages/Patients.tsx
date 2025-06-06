@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { PatientForm } from "@/components/PatientForm";
-import { PatientAdvancedFilter } from "@/components/patients/PatientAdvancedFilter";
+import { PatientAdvancedFilter, PatientFilters } from "@/components/patients/PatientAdvancedFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -26,9 +26,9 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    hasGuardian: "",
-    isFromAbroad: "",
+  const [filters, setFilters] = useState<PatientFilters>({
+    patientId: "",
+    cpfSearch: "",
   });
 
   useEffect(() => {
@@ -80,16 +80,15 @@ const Patients = () => {
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.phone?.includes(searchTerm);
     
-    const matchesGuardian = filters.hasGuardian === "" || 
-      (filters.hasGuardian === "true" && patient.has_financial_guardian) ||
-      (filters.hasGuardian === "false" && !patient.has_financial_guardian);
+    const matchesPatientId = !filters.patientId || patient.id === filters.patientId;
+    const matchesCpf = !filters.cpfSearch || patient.cpf.includes(filters.cpfSearch);
 
-    const matchesAbroad = filters.isFromAbroad === "" || 
-      (filters.isFromAbroad === "true" && patient.is_payment_from_abroad) ||
-      (filters.isFromAbroad === "false" && !patient.is_payment_from_abroad);
-
-    return matchesSearch && matchesGuardian && matchesAbroad;
+    return matchesSearch && matchesPatientId && matchesCpf;
   });
+
+  const handleFilterChange = (newFilters: PatientFilters) => {
+    setFilters(newFilters);
+  };
 
   const handleEditPatient = (patient: Patient) => {
     setEditingPatient(patient);
@@ -133,19 +132,19 @@ const Patients = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-psiclo-primary px-4 py-4">
+            <div className="bg-white border-b px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
+                  <SidebarTrigger className="text-gray-600 hover:text-gray-900" />
                   <div>
-                    <h1 className="text-xl font-semibold text-white">Pacientes</h1>
-                    <p className="text-sm text-psiclo-accent">Gerencie seus pacientes</p>
+                    <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
+                    <p className="text-sm text-gray-600">Gerencie seus pacientes</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-white text-psiclo-primary hover:bg-gray-100"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Paciente
@@ -168,24 +167,12 @@ const Patients = () => {
                         className="pl-10"
                       />
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="sm:w-auto"
-                    >
-                      <Filter className="w-4 h-4 mr-2" />
-                      Filtros
-                    </Button>
+                    <PatientAdvancedFilter
+                      currentFilters={filters}
+                      onFilterChange={handleFilterChange}
+                      patients={patients}
+                    />
                   </div>
-
-                  {showFilters && (
-                    <div className="mt-4 pt-4 border-t">
-                      <PatientAdvancedFilter
-                        currentFilters={filters}
-                        onFilterChange={setFilters}
-                      />
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -194,14 +181,14 @@ const Patients = () => {
                 <CardContent className="p-0">
                   {patientsLoading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-psiclo-primary mx-auto"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                       <p className="mt-4 text-gray-600">Carregando pacientes...</p>
                     </div>
                   ) : filteredPatients.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-2">
-                        {searchTerm || Object.values(filters).some(f => f) 
+                        {searchTerm || filters.patientId || filters.cpfSearch
                           ? 'Nenhum paciente encontrado com os filtros aplicados' 
                           : 'Nenhum paciente cadastrado'
                         }

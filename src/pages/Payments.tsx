@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentFormWrapper } from "@/components/payments/PaymentFormWrapper";
-import { PaymentAdvancedFilter } from "@/components/payments/PaymentAdvancedFilter";
+import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -27,12 +27,11 @@ const Payments = () => {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [deletePayment, setDeletePayment] = useState<Payment | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "",
+  const [filters, setFilters] = useState<PaymentFilters>({
+    patientId: "",
     startDate: "",
     endDate: "",
-    minAmount: "",
-    maxAmount: "",
+    status: "",
   });
 
   useEffect(() => {
@@ -40,6 +39,23 @@ const Payments = () => {
       navigate("/login");
     }
   }, [user, isLoading, navigate]);
+
+  const { data: patients = [] } = useQuery({
+    queryKey: ['patients', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('full_name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
 
   const { data: payments = [], isLoading: paymentsLoading } = useQuery({
     queryKey: ['payments', user?.id],
@@ -90,7 +106,8 @@ const Payments = () => {
                          payment.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.patients?.cpf?.includes(searchTerm);
     
-    const matchesStatus = filters.status === "" || payment.status === filters.status;
+    const matchesPatientId = !filters.patientId || payment.patient_id === filters.patientId;
+    const matchesStatus = !filters.status || payment.status === filters.status;
     
     const matchesDateRange = (() => {
       if (!filters.startDate && !filters.endDate) return true;
@@ -103,19 +120,12 @@ const Payments = () => {
       return true;
     })();
 
-    const matchesAmountRange = (() => {
-      if (!filters.minAmount && !filters.maxAmount) return true;
-      const amount = Number(payment.amount);
-      const minAmount = filters.minAmount ? Number(filters.minAmount) : null;
-      const maxAmount = filters.maxAmount ? Number(filters.maxAmount) : null;
-      
-      if (minAmount && amount < minAmount) return false;
-      if (maxAmount && amount > maxAmount) return false;
-      return true;
-    })();
-
-    return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange;
+    return matchesSearch && matchesPatientId && matchesStatus && matchesDateRange;
   });
+
+  const handleFilterChange = (newFilters: PaymentFilters) => {
+    setFilters(newFilters);
+  };
 
   const handleEditPayment = (payment: Payment) => {
     setEditingPayment(payment);
@@ -141,7 +151,7 @@ const Payments = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-psiclo-primary"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
           <p className="mt-4">Carregando...</p>
         </div>
       </div>
@@ -159,19 +169,19 @@ const Payments = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-psiclo-primary px-4 py-4">
+            <div className="bg-white border-b px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
+                  <SidebarTrigger className="text-gray-600 hover:text-gray-900" />
                   <div>
-                    <h1 className="text-xl font-semibold text-white">Cobranças</h1>
-                    <p className="text-sm text-psiclo-accent">Gerencie suas cobranças</p>
+                    <h1 className="text-xl font-semibold text-gray-900">Cobranças</h1>
+                    <p className="text-sm text-gray-600">Gerencie suas cobranças</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-white text-psiclo-primary hover:bg-gray-100"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nova Cobrança
@@ -194,24 +204,12 @@ const Payments = () => {
                         className="pl-10"
                       />
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="sm:w-auto"
-                    >
-                      <Filter className="w-4 h-4 mr-2" />
-                      Filtros
-                    </Button>
+                    <PaymentAdvancedFilter
+                      currentFilters={filters}
+                      onFilterChange={handleFilterChange}
+                      patients={patients}
+                    />
                   </div>
-
-                  {showFilters && (
-                    <div className="mt-4 pt-4 border-t">
-                      <PaymentAdvancedFilter
-                        currentFilters={filters}
-                        onFilterChange={setFilters}
-                      />
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -220,14 +218,14 @@ const Payments = () => {
                 <CardContent className="p-0">
                   {paymentsLoading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-psiclo-primary mx-auto"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                       <p className="mt-4 text-gray-600">Carregando cobranças...</p>
                     </div>
                   ) : filteredPayments.length === 0 ? (
                     <div className="text-center py-8">
                       <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-2">
-                        {searchTerm || Object.values(filters).some(f => f) 
+                        {searchTerm || filters.patientId || filters.status || filters.startDate || filters.endDate
                           ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
                           : 'Nenhuma cobrança cadastrada'
                         }
@@ -287,7 +285,8 @@ const Payments = () => {
                     </h2>
                     <PaymentFormWrapper
                       payment={editingPayment}
-                      onClose={handleFormClose}
+                      onSave={handleFormClose}
+                      onCancel={handleFormClose}
                     />
                   </div>
                 </div>
