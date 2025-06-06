@@ -230,15 +230,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         />
       </div>
 
-      <ReceivedCheckbox
-        isAlreadyReceived={isReceived}
-        setIsAlreadyReceived={setIsReceived}
-        receivedDate={receivedDate}
-        setReceivedDate={setReceivedDate}
-        errors={{}}
-        isEditing={!!payment}
-      />
-
       <div className="flex gap-3 pt-4">
         <Button 
           type="submit" 
