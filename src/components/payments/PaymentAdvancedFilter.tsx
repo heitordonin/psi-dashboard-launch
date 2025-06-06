@@ -12,6 +12,8 @@ export interface PaymentFilters {
   startDate: string;
   endDate: string;
   status: string;
+  minAmount: string;
+  maxAmount: string;
 }
 
 interface PaymentAdvancedFilterProps {
@@ -44,7 +46,9 @@ export function PaymentAdvancedFilter({
       patientId: "",
       startDate: "",
       endDate: "",
-      status: ""
+      status: "",
+      minAmount: "",
+      maxAmount: ""
     };
     setFilters(emptyFilters);
     onFilterChange(emptyFilters);
@@ -119,6 +123,28 @@ export function PaymentAdvancedFilter({
                 <SelectItem value="paid">Pago</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="minAmount">Valor mínimo</Label>
+            <Input
+              id="minAmount"
+              type="number"
+              value={filters.minAmount}
+              onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="maxAmount">Valor máximo</Label>
+            <Input
+              id="maxAmount"
+              type="number"
+              value={filters.maxAmount}
+              onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+              placeholder="R$ 0,00"
+            />
           </div>
 
           <div className="flex gap-2 pt-4">

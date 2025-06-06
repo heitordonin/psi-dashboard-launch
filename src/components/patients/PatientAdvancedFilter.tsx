@@ -10,6 +10,8 @@ import { Filter, X } from "lucide-react";
 export interface PatientFilters {
   patientId: string;
   cpfSearch: string;
+  hasGuardian: string;
+  isFromAbroad: string;
 }
 
 interface PatientAdvancedFilterProps {
@@ -30,7 +32,9 @@ export const PatientAdvancedFilter = ({
     // Convert "__all" back to empty string for filtering logic
     const processedFilters = {
       ...tempFilters,
-      patientId: tempFilters.patientId === "__all" ? "" : tempFilters.patientId
+      patientId: tempFilters.patientId === "__all" ? "" : tempFilters.patientId,
+      hasGuardian: tempFilters.hasGuardian === "__all" ? "" : tempFilters.hasGuardian,
+      isFromAbroad: tempFilters.isFromAbroad === "__all" ? "" : tempFilters.isFromAbroad
     };
     onFilterChange(processedFilters);
     setIsOpen(false);
@@ -39,14 +43,16 @@ export const PatientAdvancedFilter = ({
   const handleClearFilters = () => {
     const emptyFilters = {
       patientId: "",
-      cpfSearch: ""
+      cpfSearch: "",
+      hasGuardian: "",
+      isFromAbroad: ""
     };
     setTempFilters(emptyFilters);
     onFilterChange(emptyFilters);
     setIsOpen(false);
   };
 
-  const hasActiveFilters = currentFilters.patientId || currentFilters.cpfSearch;
+  const hasActiveFilters = currentFilters.patientId || currentFilters.cpfSearch || currentFilters.hasGuardian || currentFilters.isFromAbroad;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -97,6 +103,40 @@ export const PatientAdvancedFilter = ({
               onChange={(e) => setTempFilters({ ...tempFilters, cpfSearch: e.target.value })}
               placeholder="Digite o CPF para buscar"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="has-guardian">Responsável Financeiro</Label>
+            <Select
+              value={tempFilters.hasGuardian || "__all"}
+              onValueChange={(value) => setTempFilters({ ...tempFilters, hasGuardian: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">Todos</SelectItem>
+                <SelectItem value="true">Com responsável</SelectItem>
+                <SelectItem value="false">Sem responsável</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="is-from-abroad">Pagamento do Exterior</Label>
+            <Select
+              value={tempFilters.isFromAbroad || "__all"}
+              onValueChange={(value) => setTempFilters({ ...tempFilters, isFromAbroad: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all">Todos</SelectItem>
+                <SelectItem value="true">Do exterior</SelectItem>
+                <SelectItem value="false">Nacional</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 pt-4">

@@ -300,7 +300,6 @@ const Payments = () => {
                       payment={editingPayment}
                       onSave={handleFormClose}
                       onCancel={handleFormClose}
-                      onClose={handleFormClose}
                     />
                   </div>
                 </div>

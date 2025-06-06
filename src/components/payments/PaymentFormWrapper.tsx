@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,9 +23,10 @@ interface PaymentFormWrapperProps {
   payment?: Payment;
   onSave?: () => void;
   onCancel?: () => void;
+  onClose?: () => void;
 }
 
-export function PaymentFormWrapper({ payment, onSave, onCancel }: PaymentFormWrapperProps) {
+export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: PaymentFormWrapperProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
