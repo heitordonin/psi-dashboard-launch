@@ -35,10 +35,18 @@ export function DashboardCharts({ onDateFilterChange }: DashboardChartsProps) {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboard-charts', user?.id, dateFilter],
+  // Create stable query key
+  const queryKey = ['dashboard-charts', user?.id, dateFilter?.startDate, dateFilter?.endDate];
+
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey,
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) {
+        console.log('No user ID for charts query');
+        return null;
+      }
+
+      console.log('Fetching dashboard charts data');
 
       let startDate: Date;
       let endDate: Date;
@@ -55,60 +63,86 @@ export function DashboardCharts({ onDateFilterChange }: DashboardChartsProps) {
 
       const competencyFilter = `${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
 
-      // Fetch paid payments (receitas)
-      const { data: paidPayments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('owner_id', user.id)
-        .eq('status', 'paid')
-        .gte('paid_date', startDate.toISOString().split('T')[0])
-        .lte('paid_date', endDate.toISOString().split('T')[0]);
+      try {
+        // Fetch paid payments (receitas)
+        const { data: paidPayments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('owner_id', user.id)
+          .eq('status', 'paid')
+          .gte('paid_date', startDate.toISOString().split('T')[0])
+          .lte('paid_date', endDate.toISOString().split('T')[0]);
 
-      // Fetch DARF Carnê-Leão expenses for alíquota efetiva calculation
-      const { data: darfExpenses } = await supabase
-        .from('expenses')
-        .select('amount, residential_adjusted_amount')
-        .eq('owner_id', user.id)
-        .eq('category_id', '0cba18f0-c319-4259-a4af-ed505ee20279')
-        .eq('competency', competencyFilter);
+        if (paymentsError) {
+          console.error('Error fetching paid payments:', paymentsError);
+          throw paymentsError;
+        }
 
-      // Fetch all expenses for margin calculation
-      const { data: expenses } = await supabase
-        .from('expenses')
-        .select('amount, residential_adjusted_amount, is_residential')
-        .eq('owner_id', user.id)
-        .gte('payment_date', startDate.toISOString().split('T')[0])
-        .lte('payment_date', endDate.toISOString().split('T')[0]);
+        // Fetch DARF Carnê-Leão expenses for alíquota efetiva calculation
+        const { data: darfExpenses, error: darfError } = await supabase
+          .from('expenses')
+          .select('amount, residential_adjusted_amount')
+          .eq('owner_id', user.id)
+          .eq('category_id', '0cba18f0-c319-4259-a4af-ed505ee20279')
+          .eq('competency', competencyFilter);
 
-      const totalReceitas = paidPayments?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
-      
-      // Calculate total DARF using residential_adjusted_amount
-      const totalDarf = darfExpenses?.reduce((sum, expense) => {
-        const amount = expense.residential_adjusted_amount || expense.amount;
-        return sum + Number(amount);
-      }, 0) || 0;
-      
-      const totalDespesas = expenses?.reduce((sum, expense) => {
-        const amount = expense.residential_adjusted_amount || expense.amount;
-        return sum + amount;
-      }, 0) || 0;
+        if (darfError) {
+          console.error('Error fetching DARF expenses:', darfError);
+          throw darfError;
+        }
 
-      // Calculate alíquota efetiva
-      const aliquotaEfetiva = totalReceitas > 0 ? (totalDarf / totalReceitas) * 100 : 0;
-      
-      // Calculate margin
-      const margin = totalReceitas > 0 ? ((totalReceitas - totalDespesas) / totalReceitas) * 100 : 0;
+        // Fetch all expenses for margin calculation
+        const { data: expenses, error: expensesError } = await supabase
+          .from('expenses')
+          .select('amount, residential_adjusted_amount, is_residential')
+          .eq('owner_id', user.id)
+          .gte('payment_date', startDate.toISOString().split('T')[0])
+          .lte('payment_date', endDate.toISOString().split('T')[0]);
 
-      return {
-        aliquotaEfetiva,
-        totalReceitas,
-        totalDespesas,
-        margin,
-        hasRevenue: totalReceitas > 0,
-        hasDarf: totalDarf > 0
-      };
+        if (expensesError) {
+          console.error('Error fetching expenses:', expensesError);
+          throw expensesError;
+        }
+
+        const totalReceitas = paidPayments?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0;
+        
+        // Calculate total DARF using residential_adjusted_amount
+        const totalDarf = darfExpenses?.reduce((sum, expense) => {
+          const amount = expense.residential_adjusted_amount || expense.amount;
+          return sum + Number(amount);
+        }, 0) || 0;
+        
+        const totalDespesas = expenses?.reduce((sum, expense) => {
+          const amount = expense.residential_adjusted_amount || expense.amount;
+          return sum + amount;
+        }, 0) || 0;
+
+        // Calculate alíquota efetiva
+        const aliquotaEfetiva = totalReceitas > 0 ? (totalDarf / totalReceitas) * 100 : 0;
+        
+        // Calculate margin
+        const margin = totalReceitas > 0 ? ((totalReceitas - totalDespesas) / totalReceitas) * 100 : 0;
+
+        console.log('Dashboard charts data fetched successfully');
+
+        return {
+          aliquotaEfetiva,
+          totalReceitas,
+          totalDespesas,
+          margin,
+          hasRevenue: totalReceitas > 0,
+          hasDarf: totalDarf > 0
+        };
+      } catch (error) {
+        console.error('Error in dashboard charts query:', error);
+        throw error;
+      }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: 1000
   });
 
   const handleTabChange = (value: string) => {
@@ -145,6 +179,19 @@ export function DashboardCharts({ onDateFilterChange }: DashboardChartsProps) {
             <div className="h-32 bg-gray-200 rounded"></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Dashboard charts error:', error);
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-red-500 text-center">Erro ao carregar dados dos gráficos</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

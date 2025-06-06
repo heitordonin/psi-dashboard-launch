@@ -21,20 +21,29 @@ interface DateFilter {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [dateFilter, setDateFilter] = useState<DateFilter | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
+      console.log('User not authenticated, redirecting to login');
       navigate("/login");
     }
-  }, [user, isLoading, navigate]);
+  }, [user, authLoading, navigate]);
+
+  // Create a stable query key to prevent infinite re-renders
+  const queryKey = ['dashboard-summary', user?.id, dateFilter?.startDate, dateFilter?.endDate];
 
   // Fetch summary data for current month or selected period
-  const { data: summaryData, isLoading: summaryLoading } = useQuery({
-    queryKey: ['dashboard-summary', user?.id, dateFilter],
+  const { data: summaryData, isLoading: summaryLoading, error } = useQuery({
+    queryKey,
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) {
+        console.log('No user ID available for summary query');
+        return null;
+      }
+
+      console.log('Fetching dashboard summary data');
 
       let startOfPeriod: Date;
       let endOfPeriod: Date;
@@ -52,72 +61,91 @@ const Dashboard = () => {
       // Get today's date for overdue calculation
       const today = new Date().toISOString().split('T')[0];
 
-      // Fetch payments summary
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('status, amount, due_date')
-        .eq('owner_id', user.id)
-        .gte('due_date', startOfPeriod.toISOString().split('T')[0])
-        .lte('due_date', endOfPeriod.toISOString().split('T')[0]);
+      try {
+        // Fetch payments summary
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('status, amount, due_date')
+          .eq('owner_id', user.id)
+          .gte('due_date', startOfPeriod.toISOString().split('T')[0])
+          .lte('due_date', endOfPeriod.toISOString().split('T')[0]);
 
-      // Fetch expenses summary
-      const { data: expenses } = await supabase
-        .from('expenses')
-        .select('amount')
-        .eq('owner_id', user.id)
-        .gte('payment_date', startOfPeriod.toISOString().split('T')[0])
-        .lte('payment_date', endOfPeriod.toISOString().split('T')[0]);
-
-      const totals = {
-        receivedCount: 0, receivedTotal: 0,
-        pendingCount: 0, pendingTotal: 0,
-        overdueCount: 0, overdueTotal: 0,
-      };
-
-      payments?.forEach(payment => {
-        const amount = Number(payment.amount);
-        
-        if (payment.status === 'paid') {
-          // Recebidas: status = "paid"
-          totals.receivedCount++;
-          totals.receivedTotal += amount;
-        } else if (['draft', 'pending'].includes(payment.status)) {
-          if (payment.due_date >= today) {
-            // Aguardando pagamento: status IN ("draft","pending") AND due_date >= today
-            totals.pendingCount++;
-            totals.pendingTotal += amount;
-          } else {
-            // Vencidas: status IN ("draft","pending") AND due_date < today
-            totals.overdueCount++;
-            totals.overdueTotal += amount;
-          }
+        if (paymentsError) {
+          console.error('Error fetching payments:', paymentsError);
+          throw paymentsError;
         }
-      });
 
-      const expenseTotal = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
+        // Fetch expenses summary
+        const { data: expenses, error: expensesError } = await supabase
+          .from('expenses')
+          .select('amount')
+          .eq('owner_id', user.id)
+          .gte('payment_date', startOfPeriod.toISOString().split('T')[0])
+          .lte('payment_date', endOfPeriod.toISOString().split('T')[0]);
 
-      return {
-        receivedCount: totals.receivedCount,
-        receivedTotal: totals.receivedTotal,
-        pendingCount: totals.pendingCount,
-        pendingTotal: totals.pendingTotal,
-        overdueCount: totals.overdueCount,
-        overdueTotal: totals.overdueTotal,
-        expenseCount: expenses?.length || 0,
-        expenseTotal,
-        // Include optional properties for backward compatibility
-        confirmedCount: 0,
-        confirmedTotal: 0
-      };
+        if (expensesError) {
+          console.error('Error fetching expenses:', expensesError);
+          throw expensesError;
+        }
+
+        const totals = {
+          receivedCount: 0, receivedTotal: 0,
+          pendingCount: 0, pendingTotal: 0,
+          overdueCount: 0, overdueTotal: 0,
+        };
+
+        payments?.forEach(payment => {
+          const amount = Number(payment.amount);
+          
+          if (payment.status === 'paid') {
+            totals.receivedCount++;
+            totals.receivedTotal += amount;
+          } else if (['draft', 'pending'].includes(payment.status)) {
+            if (payment.due_date >= today) {
+              totals.pendingCount++;
+              totals.pendingTotal += amount;
+            } else {
+              totals.overdueCount++;
+              totals.overdueTotal += amount;
+            }
+          }
+        });
+
+        const expenseTotal = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
+
+        console.log('Dashboard summary fetched successfully');
+
+        return {
+          receivedCount: totals.receivedCount,
+          receivedTotal: totals.receivedTotal,
+          pendingCount: totals.pendingCount,
+          pendingTotal: totals.pendingTotal,
+          overdueCount: totals.overdueCount,
+          overdueTotal: totals.overdueTotal,
+          expenseCount: expenses?.length || 0,
+          expenseTotal,
+          confirmedCount: 0,
+          confirmedTotal: 0
+        };
+      } catch (error) {
+        console.error('Error in dashboard summary query:', error);
+        throw error;
+      }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !authLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: 1000
   });
 
   const handleDateFilterChange = (filter: DateFilter | null) => {
+    console.log('Date filter changed:', filter);
     setDateFilter(filter);
   };
 
-  if (isLoading) {
+  // Show loading only during auth loading
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -128,8 +156,24 @@ const Dashboard = () => {
     );
   }
 
+  // Redirect if not authenticated
   if (!user) {
     return null;
+  }
+
+  // Show error state if query failed
+  if (error) {
+    console.error('Dashboard error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500">Erro ao carregar dashboard. Tente novamente.</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Recarregar
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -186,7 +230,7 @@ const Dashboard = () => {
                 </Button>
               </Card>
 
-              {/* Quick Action Tiles - Made horizontally scrollable on mobile */}
+              {/* Quick Action Tiles */}
               <div className="overflow-x-auto">
                 <div className="flex gap-3 pb-2 min-w-max md:grid md:grid-cols-4 md:gap-4">
                   <QuickTile
@@ -237,7 +281,7 @@ const Dashboard = () => {
                 isLoading={summaryLoading}
               />
 
-              {/* Navigation Modules - Made more responsive */}
+              {/* Navigation Modules */}
               <div className="bg-white p-4 md:p-6 rounded-lg">
                 <h2 className="text-lg font-semibold mb-4 text-gray-900">Módulos</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
