@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -82,12 +83,9 @@ const Expenses = () => {
     }
   });
 
-  // Helper function to get the effective amount (residential adjusted or regular)
+  // Helper function to get the effective amount (always uses residential_adjusted_amount)
   const getEffectiveAmount = (expense: any) => {
-    if (expense.is_residential && expense.residential_adjusted_amount) {
-      return expense.residential_adjusted_amount;
-    }
-    return expense.amount;
+    return expense.residential_adjusted_amount || expense.amount;
   };
 
   const filteredExpenses = expenses.filter(expense => {
@@ -252,7 +250,11 @@ const Expenses = () => {
                                 <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
                               )}
                               <p className="text-xs text-gray-500 mt-1">
-                                Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
+                                {expense.competency ? (
+                                  `Competência: ${expense.competency}`
+                                ) : (
+                                  `Data: ${new Date(expense.payment_date).toLocaleDateString('pt-BR')}`
+                                )}
                               </p>
                               {expense.is_residential && (
                                 <div className="mt-1">
