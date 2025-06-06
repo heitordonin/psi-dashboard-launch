@@ -51,13 +51,17 @@ export function AppSidebar() {
   const handleLogout = async () => {
     try {
       console.log('Attempting to logout...');
-      await signOut();
-      console.log('Logout successful, redirecting...');
-      toast.success('Logout realizado com sucesso!');
+      // First navigate to login to ensure we're on the right page
       navigate('/login');
+      // Then sign out
+      await signOut();
+      console.log('Logout successful');
+      toast.success('Logout realizado com sucesso!');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       toast.error('Erro ao fazer logout');
+      // If signOut fails, still try to navigate to login
+      navigate('/login');
     }
   };
 
