@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -82,6 +81,14 @@ const Expenses = () => {
       toast.error('Erro ao excluir despesa');
     }
   });
+
+  // Helper function to get the effective amount (residential adjusted or regular)
+  const getEffectiveAmount = (expense: any) => {
+    if (expense.is_residential && expense.residential_adjusted_amount) {
+      return expense.residential_adjusted_amount;
+    }
+    return expense.amount;
+  };
 
   const filteredExpenses = expenses.filter(expense => {
     const categoryName = expense.expense_categories?.name || '';
@@ -233,35 +240,43 @@ const Expenses = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col divide-y">
-                      {filteredExpenses.map((expense) => (
-                        <div key={expense.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-gray-900 truncate">
-                              {expense.expense_categories?.name || 'Categoria não encontrada'}
-                            </p>
-                            {expense.description && (
-                              <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
-                            )}
-                            <p className="text-xs text-gray-500 mt-1">
-                              Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
-                            </p>
-                            {expense.is_residential && (
-                              <p className="text-xs text-green-600 mt-1">Residencial</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 ml-4">
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-gray-900">
-                                R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {filteredExpenses.map((expense) => {
+                        const effectiveAmount = getEffectiveAmount(expense);
+                        return (
+                          <div key={expense.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-gray-900 truncate">
+                                {expense.expense_categories?.name || 'Categoria não encontrada'}
                               </p>
+                              {expense.description && (
+                                <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
+                              </p>
+                              {expense.is_residential && (
+                                <div className="mt-1">
+                                  <p className="text-xs text-green-600">Residencial (20% aplicado)</p>
+                                  <p className="text-xs text-gray-500">
+                                    Valor original: R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            <ActionDropdown
-                              onEdit={() => handleEditExpense(expense)}
-                              onDelete={() => handleDeleteExpense(expense)}
-                            />
+                            <div className="flex items-center gap-3 ml-4">
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  R$ {Number(effectiveAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                              <ActionDropdown
+                                onEdit={() => handleEditExpense(expense)}
+                                onDelete={() => handleDeleteExpense(expense)}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
