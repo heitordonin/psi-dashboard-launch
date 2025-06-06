@@ -2,14 +2,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, User, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { Plus, Users, Search, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { PatientForm } from "@/components/PatientForm";
-import { PatientAdvancedFilter, type PatientFilters } from "@/components/patients/PatientAdvancedFilter";
+import { PatientAdvancedFilter } from "@/components/patients/PatientAdvancedFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -25,9 +26,9 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<PatientFilters>({
-    patientId: "",
-    cpfSearch: ""
+  const [filters, setFilters] = useState({
+    hasGuardian: "",
+    isFromAbroad: "",
   });
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const Patients = () => {
         .from('patients')
         .select('*')
         .eq('owner_id', user.id)
-        .order('full_name');
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
@@ -75,13 +76,19 @@ const Patients = () => {
 
   const filteredPatients = patients.filter(patient => {
     const matchesSearch = patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.cpf?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
+                         patient.cpf.includes(searchTerm) ||
+                         patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         patient.phone?.includes(searchTerm);
     
-    const matchesPatientId = filters.patientId === "" || patient.id === filters.patientId;
-    const matchesCpf = filters.cpfSearch === "" || patient.cpf?.toLowerCase().includes(filters.cpfSearch.toLowerCase());
+    const matchesGuardian = filters.hasGuardian === "" || 
+      (filters.hasGuardian === "true" && patient.has_financial_guardian) ||
+      (filters.hasGuardian === "false" && !patient.has_financial_guardian);
 
-    return matchesSearch && matchesPatientId && matchesCpf;
+    const matchesAbroad = filters.isFromAbroad === "" || 
+      (filters.isFromAbroad === "true" && patient.is_payment_from_abroad) ||
+      (filters.isFromAbroad === "false" && !patient.is_payment_from_abroad);
+
+    return matchesSearch && matchesGuardian && matchesAbroad;
   });
 
   const handleEditPatient = (patient: Patient) => {
@@ -104,15 +111,11 @@ const Patients = () => {
     setEditingPatient(null);
   };
 
-  const handleFilterChange = (newFilters: PatientFilters) => {
-    setFilters(newFilters);
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-psiclo-primary"></div>
           <p className="mt-4">Carregando...</p>
         </div>
       </div>
@@ -130,19 +133,19 @@ const Patients = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-indigo-700 px-4 py-4">
+            <div className="bg-psiclo-primary px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                  <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
                   <div>
                     <h1 className="text-xl font-semibold text-white">Pacientes</h1>
-                    <p className="text-sm text-indigo-100">Gerencie seus pacientes</p>
+                    <p className="text-sm text-psiclo-accent">Gerencie seus pacientes</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-white text-indigo-700 hover:bg-gray-100"
+                  className="bg-white text-psiclo-primary hover:bg-gray-100"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Paciente
@@ -159,7 +162,7 @@ const Patients = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por nome, CPF ou email..."
+                        placeholder="Buscar por nome, CPF, email ou telefone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -179,8 +182,7 @@ const Patients = () => {
                     <div className="mt-4 pt-4 border-t">
                       <PatientAdvancedFilter
                         currentFilters={filters}
-                        onFilterChange={handleFilterChange}
-                        patients={patients}
+                        onFilterChange={setFilters}
                       />
                     </div>
                   )}
@@ -188,65 +190,57 @@ const Patients = () => {
               </Card>
 
               {/* Patients List */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {patientsLoading ? (
-                  <div className="col-span-full text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Carregando pacientes...</p>
-                  </div>
-                ) : filteredPatients.length === 0 ? (
-                  <div className="col-span-full text-center py-8">
-                    <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">
-                      {searchTerm || Object.values(filters).some(f => f) 
-                        ? 'Nenhum paciente encontrado com os filtros aplicados' 
-                        : 'Nenhum paciente cadastrado'
-                      }
-                    </p>
-                    <Button onClick={() => setShowForm(true)} variant="outline">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Cadastrar primeiro paciente
-                    </Button>
-                  </div>
-                ) : (
-                  filteredPatients.map((patient) => (
-                    <Card key={patient.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{patient.full_name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2 text-sm text-gray-600 mb-4">
-                          <p>CPF: {patient.cpf}</p>
-                          {patient.email && <p>Email: {patient.email}</p>}
-                          {patient.phone && <p>Telefone: {patient.phone}</p>}
-                          {patient.has_financial_guardian && (
-                            <p className="text-orange-600">Tem responsável financeiro</p>
-                          )}
+              <Card>
+                <CardContent className="p-0">
+                  {patientsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-psiclo-primary mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Carregando pacientes...</p>
+                    </div>
+                  ) : filteredPatients.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">
+                        {searchTerm || Object.values(filters).some(f => f) 
+                          ? 'Nenhum paciente encontrado com os filtros aplicados' 
+                          : 'Nenhum paciente cadastrado'
+                        }
+                      </p>
+                      <Button onClick={() => setShowForm(true)} variant="outline">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Cadastrar primeiro paciente
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col divide-y">
+                      {filteredPatients.map((patient) => (
+                        <div key={patient.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-gray-900 truncate">{patient.full_name}</p>
+                            <p className="text-xs text-gray-600 mt-1">CPF: {patient.cpf}</p>
+                            {patient.email && (
+                              <p className="text-xs text-gray-600">Email: {patient.email}</p>
+                            )}
+                            {patient.phone && (
+                              <p className="text-xs text-gray-600">Telefone: {patient.phone}</p>
+                            )}
+                            {patient.has_financial_guardian && (
+                              <p className="text-xs text-green-600 mt-1">Possui responsável financeiro</p>
+                            )}
+                            {patient.is_payment_from_abroad && (
+                              <p className="text-xs text-blue-600 mt-1">Pagamento do exterior</p>
+                            )}
+                          </div>
+                          <ActionDropdown
+                            onEdit={() => handleEditPatient(patient)}
+                            onDelete={() => handleDeletePatient(patient)}
+                          />
                         </div>
-                        
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditPatient(patient)}
-                            className="flex-1"
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Editar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeletePatient(patient)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Form Modal */}
@@ -272,7 +266,7 @@ const Patients = () => {
               onClose={() => setDeletePatient(null)}
               onConfirm={confirmDelete}
               title="Excluir Paciente"
-              description={`Tem certeza de que deseja excluir ${deletePatient?.full_name}? Esta ação não pode ser desfeita.`}
+              description={`Tem certeza de que deseja excluir o paciente "${deletePatient?.full_name}"? Esta ação não pode ser desfeita.`}
               isLoading={deletePatientMutation.isPending}
             />
           </div>

@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, CreditCard, FileText, LogOut, Settings } from "lucide-react";
+import { User, CreditCard, FileText, LogOut, Settings, X } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { setOpen } = useSidebar();
 
   const handleLogout = async () => {
     try {
@@ -52,6 +54,7 @@ export function AppSidebar() {
       toast.success('Logout realizado com sucesso!');
       navigate('/login');
     } catch (error) {
+      console.error('Erro ao fazer logout:', error);
       toast.error('Erro ao fazer logout');
     }
   };
@@ -66,12 +69,22 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
-            alt="Psiclo" 
-            className="h-10 w-auto"
-          />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
+              alt="Psiclo" 
+              className="h-10 w-auto"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setOpen(false)}
+            className="h-8 w-8 text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       </SidebarHeader>
 

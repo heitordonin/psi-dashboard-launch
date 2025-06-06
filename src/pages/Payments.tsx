@@ -9,15 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
+import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentFormWrapper } from "@/components/payments/PaymentFormWrapper";
 import { PaymentAdvancedFilter } from "@/components/payments/PaymentAdvancedFilter";
-import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
-import { PaymentButtons } from "@/components/payments/PaymentButtons";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { toast } from "sonner";
-import type { PaymentWithPatient } from "@/types/payment";
+import type { Payment } from "@/types/payment";
 
 const Payments = () => {
   const navigate = useNavigate();
@@ -25,14 +24,15 @@ const Payments = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<PaymentWithPatient | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [deletePayment, setDeletePayment] = useState<Payment | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [deletePayment, setDeletePayment] = useState<PaymentWithPatient | null>(null);
   const [filters, setFilters] = useState({
-    patientId: "",
+    status: "",
     startDate: "",
     endDate: "",
-    status: ""
+    minAmount: "",
+    maxAmount: "",
   });
 
   useEffect(() => {
@@ -51,28 +51,12 @@ const Payments = () => {
         .select(`
           *,
           patients (
-            full_name
+            full_name,
+            cpf
           )
         `)
         .eq('owner_id', user.id)
-        .order('due_date', { ascending: false });
-      
-      if (error) throw error;
-      return data as PaymentWithPatient[];
-    },
-    enabled: !!user?.id
-  });
-
-  const { data: patients = [] } = useQuery({
-    queryKey: ['patients', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('patients')
-        .select('id, full_name')
-        .eq('owner_id', user.id)
-        .order('full_name');
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
@@ -100,36 +84,13 @@ const Payments = () => {
     }
   });
 
-  const markAsPaidMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
-      const { error } = await supabase
-        .from('payments')
-        .update({ 
-          status: 'paid',
-          paid_date: new Date().toISOString().split('T')[0]
-        })
-        .eq('id', paymentId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Cobrança marcada como paga!');
-    },
-    onError: (error) => {
-      console.error('Error updating payment:', error);
-      toast.error('Erro ao atualizar cobrança');
-    }
-  });
-
   const filteredPayments = payments.filter(payment => {
     const patientName = payment.patients?.full_name || '';
     const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payment.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.guardian_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                         payment.patients?.cpf?.includes(searchTerm);
     
     const matchesStatus = filters.status === "" || payment.status === filters.status;
-    const matchesPatient = filters.patientId === "" || payment.patient_id === filters.patientId;
     
     const matchesDateRange = (() => {
       if (!filters.startDate && !filters.endDate) return true;
@@ -142,20 +103,27 @@ const Payments = () => {
       return true;
     })();
 
-    return matchesSearch && matchesStatus && matchesPatient && matchesDateRange;
+    const matchesAmountRange = (() => {
+      if (!filters.minAmount && !filters.maxAmount) return true;
+      const amount = Number(payment.amount);
+      const minAmount = filters.minAmount ? Number(filters.minAmount) : null;
+      const maxAmount = filters.maxAmount ? Number(filters.maxAmount) : null;
+      
+      if (minAmount && amount < minAmount) return false;
+      if (maxAmount && amount > maxAmount) return false;
+      return true;
+    })();
+
+    return matchesSearch && matchesStatus && matchesDateRange && matchesAmountRange;
   });
 
-  const handleEditPayment = (payment: PaymentWithPatient) => {
+  const handleEditPayment = (payment: Payment) => {
     setEditingPayment(payment);
     setShowForm(true);
   };
 
-  const handleDeletePayment = (payment: PaymentWithPatient) => {
+  const handleDeletePayment = (payment: Payment) => {
     setDeletePayment(payment);
-  };
-
-  const handleMarkAsPaid = (payment: PaymentWithPatient) => {
-    markAsPaidMutation.mutate(payment.id);
   };
 
   const confirmDelete = () => {
@@ -173,7 +141,7 @@ const Payments = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-psiclo-primary"></div>
           <p className="mt-4">Carregando...</p>
         </div>
       </div>
@@ -191,19 +159,19 @@ const Payments = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-indigo-700 px-4 py-4">
+            <div className="bg-psiclo-primary px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-white hover:bg-indigo-600" />
+                  <SidebarTrigger className="text-white hover:bg-psiclo-secondary" />
                   <div>
                     <h1 className="text-xl font-semibold text-white">Cobranças</h1>
-                    <p className="text-sm text-indigo-100">Gerencie suas cobranças</p>
+                    <p className="text-sm text-psiclo-accent">Gerencie suas cobranças</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-white text-indigo-700 hover:bg-gray-100"
+                  className="bg-white text-psiclo-primary hover:bg-gray-100"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nova Cobrança
@@ -220,7 +188,7 @@ const Payments = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por paciente, descrição ou responsável..."
+                        placeholder="Buscar por paciente, CPF ou descrição..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -241,7 +209,6 @@ const Payments = () => {
                       <PaymentAdvancedFilter
                         currentFilters={filters}
                         onFilterChange={setFilters}
-                        patients={patients}
                       />
                     </div>
                   )}
@@ -253,7 +220,7 @@ const Payments = () => {
                 <CardContent className="p-0">
                   {paymentsLoading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-psiclo-primary mx-auto"></div>
                       <p className="mt-4 text-gray-600">Carregando cobranças...</p>
                     </div>
                   ) : filteredPayments.length === 0 ? (
@@ -278,15 +245,17 @@ const Payments = () => {
                             <p className="font-medium text-sm text-gray-900 truncate">
                               {payment.patients?.full_name || 'Paciente não encontrado'}
                             </p>
-                            {payment.guardian_name && (
-                              <p className="text-xs text-gray-500 truncate">Resp: {payment.guardian_name}</p>
-                            )}
                             {payment.description && (
                               <p className="text-xs text-gray-600 truncate mt-1">{payment.description}</p>
                             )}
                             <p className="text-xs text-gray-500 mt-1">
                               Vencimento: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
                             </p>
+                            {payment.paid_date && (
+                              <p className="text-xs text-green-600 mt-1">
+                                Pago em: {new Date(payment.paid_date).toLocaleDateString('pt-BR')}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-3 ml-4">
                             <div className="text-right">
@@ -298,8 +267,6 @@ const Payments = () => {
                             <ActionDropdown
                               onEdit={() => handleEditPayment(payment)}
                               onDelete={() => handleDeletePayment(payment)}
-                              onMarkAsPaid={payment.status !== 'paid' ? () => handleMarkAsPaid(payment) : undefined}
-                              showMarkAsPaid={payment.status !== 'paid'}
                             />
                           </div>
                         </div>
@@ -320,8 +287,7 @@ const Payments = () => {
                     </h2>
                     <PaymentFormWrapper
                       payment={editingPayment}
-                      onSave={handleFormClose}
-                      onCancel={handleFormClose}
+                      onClose={handleFormClose}
                     />
                   </div>
                 </div>
