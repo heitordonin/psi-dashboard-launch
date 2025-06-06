@@ -14,9 +14,15 @@ import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
+interface DateFilter {
+  startDate: string;
+  endDate: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const [dateFilter, setDateFilter] = useState<DateFilter | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -24,15 +30,24 @@ const Dashboard = () => {
     }
   }, [user, isLoading, navigate]);
 
-  // Fetch summary data for current month
+  // Fetch summary data for current month or selected period
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
-    queryKey: ['dashboard-summary', user?.id],
+    queryKey: ['dashboard-summary', user?.id, dateFilter],
     queryFn: async () => {
       if (!user?.id) return null;
 
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      let startOfPeriod: Date;
+      let endOfPeriod: Date;
+
+      if (dateFilter) {
+        startOfPeriod = new Date(dateFilter.startDate);
+        endOfPeriod = new Date(dateFilter.endDate);
+      } else {
+        // Use current month as default
+        const now = new Date();
+        startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+        endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      }
 
       // Get today's date for overdue calculation
       const today = new Date().toISOString().split('T')[0];
@@ -42,16 +57,16 @@ const Dashboard = () => {
         .from('payments')
         .select('status, amount, due_date')
         .eq('owner_id', user.id)
-        .gte('due_date', startOfMonth.toISOString().split('T')[0])
-        .lte('due_date', endOfMonth.toISOString().split('T')[0]);
+        .gte('due_date', startOfPeriod.toISOString().split('T')[0])
+        .lte('due_date', endOfPeriod.toISOString().split('T')[0]);
 
       // Fetch expenses summary
       const { data: expenses } = await supabase
         .from('expenses')
         .select('amount')
         .eq('owner_id', user.id)
-        .gte('payment_date', startOfMonth.toISOString().split('T')[0])
-        .lte('payment_date', endOfMonth.toISOString().split('T')[0]);
+        .gte('payment_date', startOfPeriod.toISOString().split('T')[0])
+        .lte('payment_date', endOfPeriod.toISOString().split('T')[0]);
 
       const totals = {
         receivedCount: 0, receivedTotal: 0,
@@ -97,6 +112,10 @@ const Dashboard = () => {
     },
     enabled: !!user?.id
   });
+
+  const handleDateFilterChange = (filter: DateFilter | null) => {
+    setDateFilter(filter);
+  };
 
   if (isLoading) {
     return (
@@ -198,7 +217,7 @@ const Dashboard = () => {
               {/* Dashboard Charts Section */}
               <div>
                 <h2 className="text-xl font-semibold mb-4 text-psiclo-primary">Visão Geral Financeira</h2>
-                <DashboardCharts />
+                <DashboardCharts onDateFilterChange={handleDateFilterChange} />
               </div>
 
               {/* Summary Card */}

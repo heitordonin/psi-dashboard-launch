@@ -10,16 +10,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface DateFilter {
   startDate: string;
   endDate: string;
 }
 
-export function DashboardCharts() {
+interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}
+
+interface DashboardChartsProps {
+  onDateFilterChange?: (filter: DateFilter | null) => void;
+}
+
+export function DashboardCharts({ onDateFilterChange }: DashboardChartsProps) {
   const { user } = useAuth();
   const [dateFilter, setDateFilter] = useState<DateFilter | null>(null);
-  const [customDateOpen, setCustomDateOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard-charts', user?.id, dateFilter],
@@ -97,6 +111,26 @@ export function DashboardCharts() {
     enabled: !!user?.id
   });
 
+  const handleTabChange = (value: string) => {
+    if (value === "this-month") {
+      const newFilter = null;
+      setDateFilter(newFilter);
+      onDateFilterChange?.(newFilter);
+    }
+  };
+
+  const handleDateRangeSelect = () => {
+    if (dateRange.from && dateRange.to) {
+      const newFilter = {
+        startDate: dateRange.from.toISOString().split('T')[0],
+        endDate: dateRange.to.toISOString().split('T')[0]
+      };
+      setDateFilter(newFilter);
+      onDateFilterChange?.(newFilter);
+      setIsDatePickerOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -129,7 +163,7 @@ export function DashboardCharts() {
           <CardTitle>Período de análise</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="this-month">
+          <Tabs defaultValue="this-month" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="this-month">Este mês</TabsTrigger>
               <TabsTrigger value="custom">Data personalizada</TabsTrigger>
@@ -143,17 +177,61 @@ export function DashboardCharts() {
             
             <TabsContent value="custom" className="mt-4">
               <div className="flex flex-col items-center space-y-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setCustomDateOpen(!customDateOpen)}
-                  className="w-full"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Selecionar período
-                </Button>
-                <p className="text-sm text-gray-500 text-center">
-                  Funcionalidade em desenvolvimento
-                </p>
+                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {dateRange.from && dateRange.to 
+                        ? `${format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - ${format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}`
+                        : "Selecionar período"
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Data inicial</label>
+                          <CalendarComponent
+                            mode="single"
+                            selected={dateRange.from}
+                            onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+                            className="rounded-md border pointer-events-auto"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Data final</label>
+                          <CalendarComponent
+                            mode="single"
+                            selected={dateRange.to}
+                            onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+                            className="rounded-md border pointer-events-auto"
+                            disabled={(date) => !dateRange.from || date < dateRange.from}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleDateRangeSelect}
+                          disabled={!dateRange.from || !dateRange.to}
+                          className="flex-1"
+                        >
+                          Aplicar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setIsDatePickerOpen(false)}
+                          className="flex-1"
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </TabsContent>
           </Tabs>
