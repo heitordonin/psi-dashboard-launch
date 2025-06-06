@@ -69,7 +69,7 @@ export function DashboardCharts({ onDateFilterChange }: DashboardChartsProps) {
         .from('expenses')
         .select('amount, residential_adjusted_amount, expense_categories!inner(code)')
         .eq('owner_id', user.id)
-        .eq('expense_categories.code', 'DARF_CARNE_LEAO')
+        .eq('expense_categories.code', '0cba18f0-c319-4259-a4af-ed505ee20279')
         .eq('competency', competencyFilter);
 
       // Fetch all expenses for margin calculation
