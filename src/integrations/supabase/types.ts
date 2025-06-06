@@ -207,21 +207,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
+          cpf: string | null
           created_at: string
+          crp_number: string | null
+          display_name: string | null
+          full_name: string | null
           id: string
           is_admin: boolean | null
+          nit_nis_pis: string | null
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
+          crp_number?: string | null
+          display_name?: string | null
+          full_name?: string | null
           id: string
           is_admin?: boolean | null
+          nit_nis_pis?: string | null
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
+          crp_number?: string | null
+          display_name?: string | null
+          full_name?: string | null
           id?: string
           is_admin?: boolean | null
+          nit_nis_pis?: string | null
           updated_at?: string
         }
         Relationships: []

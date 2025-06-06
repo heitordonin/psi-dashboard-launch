@@ -12,12 +12,78 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [cpf, setCpf] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
+  const formatCPF = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, '');
+    
+    // Apply CPF mask: 000.000.000-00
+    if (numericValue.length <= 11) {
+      return numericValue
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    
+    return value;
+  };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatCPF(e.target.value);
+    setCpf(formattedValue);
+  };
+
+  const validateCPF = (cpf: string) => {
+    // Remove formatting for validation
+    const numericCpf = cpf.replace(/\D/g, '');
+    
+    if (numericCpf.length !== 11) return false;
+    
+    // Check if all digits are the same
+    if (/^(\d)\1{10}$/.test(numericCpf)) return false;
+    
+    // Validate CPF algorithm
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(numericCpf.charAt(i)) * (10 - i);
+    }
+    let remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(numericCpf.charAt(9))) return false;
+    
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(numericCpf.charAt(i)) * (11 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(numericCpf.charAt(10))) return false;
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!fullName.trim()) {
+      toast.error('Nome completo é obrigatório');
+      return;
+    }
+
+    if (!cpf.trim()) {
+      toast.error('CPF é obrigatório');
+      return;
+    }
+
+    if (!validateCPF(cpf)) {
+      toast.error('CPF inválido');
+      return;
+    }
     
     if (password !== confirmPassword) {
       toast.error('As senhas não coincidem');
@@ -32,11 +98,16 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
+      const { error } = await signUp(email, password, {
+        full_name: fullName.trim(),
+        cpf: cpf.replace(/\D/g, '') // Store CPF without formatting
+      });
       
       if (error) {
         if (error.message === 'User already registered') {
           toast.error('Este email já está cadastrado');
+        } else if (error.message.includes('duplicate key value violates unique constraint "unique_cpf"')) {
+          toast.error('Este CPF já está cadastrado');
         } else {
           toast.error('Erro ao criar conta: ' + error.message);
         }
@@ -63,7 +134,30 @@ const Signup = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="fullName">Nome Completo *</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Digite seu nome completo"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="cpf">CPF *</Label>
+              <Input
+                id="cpf"
+                type="text"
+                value={cpf}
+                onChange={handleCpfChange}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -74,7 +168,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">Senha *</Label>
               <Input
                 id="password"
                 type="password"
@@ -86,7 +180,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
               <Input
                 id="confirmPassword"
                 type="password"
