@@ -130,7 +130,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.patient_id || !formData.amount || !formData.due_date) {
+    if (!formData.patient_id || !formData.amount || (!formData.due_date && !isReceived)) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -184,16 +184,32 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="due_date">Data de Vencimento *</Label>
-        <Input
-          id="due_date"
-          type="date"
-          value={formData.due_date}
-          onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-          className="w-full"
-        />
-      </div>
+      {!isReceived ? (
+        <div className="space-y-2">
+          <Label htmlFor="due_date">Data de Vencimento *</Label>
+          <Input
+            id="due_date"
+            type="date"
+            value={formData.due_date}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, due_date: e.target.value }))
+            }
+            className="w-full"
+          />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="received_date">Data do Recebimento *</Label>
+          <Input
+            id="received_date"
+            type="date"
+            value={receivedDate}
+            onChange={(e) => setReceivedDate(e.target.value)}
+            className="w-full"
+          />
+        </div>
+      )}
+
 
       <div className="space-y-2">
         <Label htmlFor="description">Descrição</Label>
