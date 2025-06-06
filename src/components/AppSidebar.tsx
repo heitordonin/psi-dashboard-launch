@@ -50,7 +50,9 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
+      console.log('Attempting to logout...');
       await signOut();
+      console.log('Logout successful, redirecting...');
       toast.success('Logout realizado com sucesso!');
       navigate('/login');
     } catch (error) {
@@ -151,15 +153,13 @@ export function AppSidebar() {
           </div>
         </div>
         
-        <Button 
-          variant="outline" 
+        <button 
           onClick={handleLogout}
-          className="w-full"
-          size="sm"
+          className="w-full flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
-          <LogOut className="w-4 h-4 mr-2" />
+          <LogOut className="w-4 h-4" />
           Sair
-        </Button>
+        </button>
       </SidebarFooter>
     </Sidebar>
   );
