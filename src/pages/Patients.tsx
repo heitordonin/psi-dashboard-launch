@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +28,8 @@ const Patients = () => {
   const [filters, setFilters] = useState<PatientFilters>({
     patientId: "",
     cpfSearch: "",
+    hasGuardian: "",
+    isFromAbroad: "",
   });
 
   useEffect(() => {
@@ -82,8 +83,14 @@ const Patients = () => {
     
     const matchesPatientId = !filters.patientId || patient.id === filters.patientId;
     const matchesCpf = !filters.cpfSearch || patient.cpf.includes(filters.cpfSearch);
+    const matchesGuardian = !filters.hasGuardian || 
+                           (filters.hasGuardian === "true" && patient.has_financial_guardian) ||
+                           (filters.hasGuardian === "false" && !patient.has_financial_guardian);
+    const matchesFromAbroad = !filters.isFromAbroad ||
+                             (filters.isFromAbroad === "true" && patient.is_payment_from_abroad) ||
+                             (filters.isFromAbroad === "false" && !patient.is_payment_from_abroad);
 
-    return matchesSearch && matchesPatientId && matchesCpf;
+    return matchesSearch && matchesPatientId && matchesCpf && matchesGuardian && matchesFromAbroad;
   });
 
   const handleFilterChange = (newFilters: PatientFilters) => {
@@ -132,19 +139,20 @@ const Patients = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b px-4 py-4">
+            <div style={{ backgroundColor: '#002472' }} className="border-b px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-gray-600 hover:text-gray-900" />
+                  <SidebarTrigger className="text-white hover:text-gray-200" />
                   <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
-                    <p className="text-sm text-gray-600">Gerencie seus pacientes</p>
+                    <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Pacientes</h1>
+                    <p className="text-sm" style={{ color: '#03f6f9' }}>Gerencie seus pacientes</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  style={{ backgroundColor: '#ffffff', color: '#002472' }}
+                  className="hover:bg-gray-100"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Paciente
@@ -188,7 +196,7 @@ const Patients = () => {
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-2">
-                        {searchTerm || filters.patientId || filters.cpfSearch
+                        {searchTerm || filters.patientId || filters.cpfSearch || filters.hasGuardian || filters.isFromAbroad
                           ? 'Nenhum paciente encontrado com os filtros aplicados' 
                           : 'Nenhum paciente cadastrado'
                         }

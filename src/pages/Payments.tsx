@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +31,8 @@ const Payments = () => {
     startDate: "",
     endDate: "",
     status: "",
+    minAmount: "",
+    maxAmount: "",
   });
 
   useEffect(() => {
@@ -120,7 +121,18 @@ const Payments = () => {
       return true;
     })();
 
-    return matchesSearch && matchesPatientId && matchesStatus && matchesDateRange;
+    const matchesAmountRange = (() => {
+      if (!filters.minAmount && !filters.maxAmount) return true;
+      const amount = Number(payment.amount);
+      const minAmount = filters.minAmount ? Number(filters.minAmount) : null;
+      const maxAmount = filters.maxAmount ? Number(filters.maxAmount) : null;
+
+      if (minAmount && amount < minAmount) return false;
+      if (maxAmount && amount > maxAmount) return false;
+      return true;
+    })();
+
+    return matchesSearch && matchesPatientId && matchesStatus && matchesDateRange && matchesAmountRange;
   });
 
   const handleFilterChange = (newFilters: PaymentFilters) => {
@@ -169,19 +181,20 @@ const Payments = () => {
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b px-4 py-4">
+            <div style={{ backgroundColor: '#002472' }} className="border-b px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="text-gray-600 hover:text-gray-900" />
+                  <SidebarTrigger className="text-white hover:text-gray-200" />
                   <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Cobranças</h1>
-                    <p className="text-sm text-gray-600">Gerencie suas cobranças</p>
+                    <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Cobranças</h1>
+                    <p className="text-sm" style={{ color: '#03f6f9' }}>Gerencie suas cobranças</p>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  style={{ backgroundColor: '#ffffff', color: '#002472' }}
+                  className="hover:bg-gray-100"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nova Cobrança
@@ -225,7 +238,7 @@ const Payments = () => {
                     <div className="text-center py-8">
                       <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-2">
-                        {searchTerm || filters.patientId || filters.status || filters.startDate || filters.endDate
+                        {searchTerm || filters.patientId || filters.status || filters.startDate || filters.endDate || filters.minAmount || filters.maxAmount
                           ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
                           : 'Nenhuma cobrança cadastrada'
                         }
@@ -287,6 +300,7 @@ const Payments = () => {
                       payment={editingPayment}
                       onSave={handleFormClose}
                       onCancel={handleFormClose}
+                      onClose={handleFormClose}
                     />
                   </div>
                 </div>
