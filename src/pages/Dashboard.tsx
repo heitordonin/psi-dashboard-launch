@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu, Bell, User, CreditCard, Calculator, FileText } from "lucide-react";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ModuleTile } from "@/components/dashboard/ModuleTile";
 import { QuickTile } from "@/components/dashboard/QuickTile";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
+import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -191,6 +193,12 @@ const Dashboard = () => {
                     onClick={() => navigate('/expenses')}
                   />
                 </div>
+              </div>
+
+              {/* Dashboard Charts Section */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-psiclo-primary">Visão Geral Financeira</h2>
+                <DashboardCharts />
               </div>
 
               {/* Summary Card */}
