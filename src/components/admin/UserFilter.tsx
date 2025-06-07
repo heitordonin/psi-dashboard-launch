@@ -16,44 +16,24 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showAllUsers, setShowAllUsers] = useState(true);
 
-  // Fetch all users with their profiles
+  // Fetch all users with their profiles data
   const { data: users = [] } = useQuery({
-    queryKey: ['admin-users'],
+    queryKey: ['admin-users-with-profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           id,
+          full_name,
+          cpf,
           created_at
-        `);
+        `)
+        .not('full_name', 'is', null)
+        .not('cpf', 'is', null)
+        .order('full_name');
       
       if (error) throw error;
       return data;
-    },
-  });
-
-  // Get user emails from auth.users (we need to do this separately due to RLS)
-  const { data: userEmails = {} } = useQuery({
-    queryKey: ['admin-user-emails'],
-    queryFn: async () => {
-      // We'll fetch patients to get owner emails as a workaround
-      const { data, error } = await supabase
-        .from('patients')
-        .select('owner_id')
-        .not('owner_id', 'is', null);
-      
-      if (error) throw error;
-      
-      // Get unique owner IDs
-      const uniqueOwnerIds = [...new Set(data.map(p => p.owner_id).filter(Boolean))];
-      
-      // Create a mapping - in a real scenario you'd have user email data
-      const emailMapping: Record<string, string> = {};
-      uniqueOwnerIds.forEach((id, index) => {
-        emailMapping[id] = `Usuário ${index + 1}`;
-      });
-      
-      return emailMapping;
     },
   });
 
@@ -72,8 +52,6 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
     setSelectedUserId(userId);
     setShowAllUsers(false);
   };
-
-  const uniqueUserIds = [...new Set(users.map(u => u.id))];
 
   return (
     <Card className="mb-6">
@@ -104,9 +82,9 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
                   <SelectValue placeholder="Escolha um usuário..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {uniqueUserIds.map((userId) => (
-                    <SelectItem key={userId} value={userId}>
-                      {userEmails[userId] || `ID: ${userId.slice(0, 8)}...`}
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name} - {user.cpf}
                     </SelectItem>
                   ))}
                 </SelectContent>
