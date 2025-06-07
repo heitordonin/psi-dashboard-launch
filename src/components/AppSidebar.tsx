@@ -1,5 +1,4 @@
 
-
 import * as React from "react";
 import {
   Home,
@@ -81,15 +80,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/referral",
       icon: Share2,
     },
-    {
-      title: "Sair",
-      onClick: () => {
-        signOut();
-        navigate("/login");
-      },
-      icon: LogOut,
-    },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -121,10 +121,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
-                const active = location.pathname === item.url;
+                const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton size="sm" isActive={active} asChild>
+                    <SidebarMenuButton size="sm" isActive={isActive} asChild>
                       <a href={item.url}>
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
@@ -142,10 +142,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminItems.map((item) => {
-                  const active = location.pathname === item.url;
+                  const isActive = location.pathname === item.url;
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton size="sm" isActive={active} asChild>
+                      <SidebarMenuButton size="sm" isActive={isActive} asChild>
                         <a href={item.url}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
@@ -165,22 +165,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {bottomItems.map((item) => {
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton size="sm" asChild onClick={item.onClick}>
-                      {item.url ? (
-                        <a href={item.url}>
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </a>
-                      ) : (
-                        <>
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </>
-                      )}
+                    <SidebarMenuButton size="sm" asChild>
+                      <a href={item.url}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
+              <SidebarMenuItem>
+                <SidebarMenuButton size="sm" onClick={handleSignOut}>
+                  <LogOut className="size-4" />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
