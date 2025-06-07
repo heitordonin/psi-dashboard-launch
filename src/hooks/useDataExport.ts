@@ -1,7 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
+import { removeAccents } from '@/lib/utils';
 
 interface ExportOptions {
   format: 'csv' | 'excel';
@@ -36,7 +36,7 @@ export const useDataExport = () => {
       const formattedDate = new Date(expense.payment_date).toLocaleDateString('pt-BR');
       const categoryCode = expense.expense_categories?.code || '';
       const adjustedAmount = expense.residential_adjusted_amount || '';
-      const description = expense.description || expense.expense_categories?.name || '';
+      const description = removeAccents(expense.description || expense.expense_categories?.name || '');
       const penaltyInterest = expense.penalty_interest || '';
       const emptyField = ''; // Campo vazio conforme layout
       const competency = expense.competency || '';
@@ -289,7 +289,8 @@ export const useDataExport = () => {
           residential_adjusted_amount,
           owner_id,
           expense_categories!inner(name, code)
-        `);
+        `)
+        .neq('expense_categories.code', 'P20.01.00004');
 
       if (options.userId) {
         query = query.eq('owner_id', options.userId);
