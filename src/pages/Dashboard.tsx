@@ -61,27 +61,32 @@ const Dashboard = () => {
                   <CardTitle>Ações Rápidas</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    <QuickTile
-                      icon={UserPlus}
-                      label="Novo Paciente"
-                      onClick={() => navigate("/patients")}
-                    />
-                    <QuickTile
-                      icon={Plus}
-                      label="Nova Cobrança"
-                      onClick={() => navigate("/payments")}
-                    />
-                    <QuickTile
-                      icon={DollarSign}
-                      label="Nova Despesa"
-                      onClick={() => navigate("/expenses")}
-                    />
+                  <div className="flex justify-center">
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      <QuickTile
+                        icon={UserPlus}
+                        label="Novo Paciente"
+                        onClick={() => navigate("/patients")}
+                      />
+                      <QuickTile
+                        icon={Plus}
+                        label="Nova Cobrança"
+                        onClick={() => navigate("/payments")}
+                      />
+                      <QuickTile
+                        icon={DollarSign}
+                        label="Nova Despesa"
+                        onClick={() => navigate("/expenses")}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Modules Grid */}
+              {/* Charts */}
+              <DashboardCharts />
+
+              {/* Modules Grid - Moved to the end */}
               <Card>
                 <CardHeader>
                   <CardTitle>Módulos do Sistema</CardTitle>
@@ -110,9 +115,6 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Charts */}
-              <DashboardCharts />
             </div>
           </div>
         </SidebarInset>

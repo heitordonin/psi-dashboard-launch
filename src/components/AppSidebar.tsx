@@ -1,6 +1,5 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, CreditCard, FileText, LogOut, Settings, X, ShieldCheck } from "lucide-react";
+import { User, CreditCard, FileText, LogOut, Settings, X, ShieldCheck, Receipt } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { toast } from "sonner";
 import {
@@ -39,6 +38,11 @@ const menuItems = [
     title: "Despesas",
     url: "/expenses",
     icon: FileText,
+  },
+  {
+    title: "Controle Receita Saúde",
+    url: "/receita-saude",
+    icon: Receipt,
   },
 ];
 
