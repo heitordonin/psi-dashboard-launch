@@ -31,6 +31,8 @@ export function ReceitaSaudeAdvancedFilter({
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState<ReceitaSaudeFilters>(currentFilters);
 
+  const hasActiveFilters = Object.values(currentFilters).some(value => value !== "");
+
   const handleApplyFilters = () => {
     const processedFilters = {
       ...filters,
@@ -60,9 +62,12 @@ export function ReceitaSaudeAdvancedFilter({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="whitespace-nowrap">
+        <Button variant="outline" className="whitespace-nowrap relative">
           <Filter className="w-4 h-4 mr-2" />
           Filtros
+          {hasActiveFilters && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
