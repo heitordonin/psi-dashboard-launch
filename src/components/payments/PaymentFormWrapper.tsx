@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { ReceivedCheckbox } from './ReceivedCheckbox';
-import { GuardianToggle } from './GuardianToggle';
 import type { Payment } from '@/types/payment';
 
 interface FormData {
@@ -46,7 +45,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>(
     payment?.payer_cpf ? 'other' : 'patient'
   );
-  const [hasGuardian, setHasGuardian] = useState(false);
 
   // Initialize received date when isReceived changes to true
   useEffect(() => {
@@ -73,20 +71,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     enabled: !!user?.id
   });
 
-  // Auto-handle guardian CPF when hasGuardian changes
-  useEffect(() => {
-    if (hasGuardian && formData.patient_id) {
-      const selectedPatient = patients.find(p => p.id === formData.patient_id);
-      if (selectedPatient?.guardian_cpf) {
-        setFormData(prev => ({ ...prev, payer_cpf: selectedPatient.guardian_cpf }));
-        setPaymentTitular('other');
-      }
-    } else if (!hasGuardian) {
-      setFormData(prev => ({ ...prev, payer_cpf: '' }));
-      setPaymentTitular('patient');
-    }
-  }, [hasGuardian, formData.patient_id, patients]);
-
   const validateCpf = (cpf: string): boolean => {
     const cleanCpf = cpf.replace(/\D/g, '');
     return cleanCpf.length === 11;
@@ -104,7 +88,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         owner_id: user.id,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
-        payer_cpf: (hasGuardian || paymentTitular === 'other') ? data.payer_cpf : null,
+        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -138,7 +122,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         description: data.description,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
-        payer_cpf: (hasGuardian || paymentTitular === 'other') ? data.payer_cpf : null,
+        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -187,8 +171,8 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
       return;
     }
 
-    // Validate CPF if payment titular is different or has guardian
-    if ((hasGuardian || paymentTitular === 'other') && !validateCpf(formData.payer_cpf)) {
+    // Validate CPF if payment titular is different
+    if (paymentTitular === 'other' && !validateCpf(formData.payer_cpf)) {
       toast.error('CPF do titular é obrigatório e deve ser válido');
       return;
     }
@@ -220,7 +204,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
         errors={{}}
         validateCpf={validateCpf}
-        showCpfSection={hasGuardian}
       />
 
       <ReceivedCheckbox
@@ -230,11 +213,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         setReceivedDate={setReceivedDate}
         errors={{}}
         isEditing={!!payment}
-      />
-
-      <GuardianToggle
-        hasGuardian={hasGuardian}
-        setHasGuardian={setHasGuardian}
       />
       
       {!isReceived && (
