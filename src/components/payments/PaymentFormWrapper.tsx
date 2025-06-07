@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,20 +56,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     }
   }, [isReceived, receivedDate]);
 
-  // Auto-handle guardian CPF when hasGuardian changes
-  useEffect(() => {
-    if (hasGuardian && formData.patient_id) {
-      const selectedPatient = patients.find(p => p.id === formData.patient_id);
-      if (selectedPatient?.guardian_cpf) {
-        setFormData(prev => ({ ...prev, payer_cpf: selectedPatient.guardian_cpf }));
-        setPaymentTitular('other');
-      }
-    } else if (!hasGuardian) {
-      setFormData(prev => ({ ...prev, payer_cpf: '' }));
-      setPaymentTitular('patient');
-    }
-  }, [hasGuardian, formData.patient_id]);
-
   const { data: patients = [] } = useQuery({
     queryKey: ['patients', user?.id],
     queryFn: async () => {
@@ -85,6 +72,20 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     },
     enabled: !!user?.id
   });
+
+  // Auto-handle guardian CPF when hasGuardian changes
+  useEffect(() => {
+    if (hasGuardian && formData.patient_id) {
+      const selectedPatient = patients.find(p => p.id === formData.patient_id);
+      if (selectedPatient?.guardian_cpf) {
+        setFormData(prev => ({ ...prev, payer_cpf: selectedPatient.guardian_cpf }));
+        setPaymentTitular('other');
+      }
+    } else if (!hasGuardian) {
+      setFormData(prev => ({ ...prev, payer_cpf: '' }));
+      setPaymentTitular('patient');
+    }
+  }, [hasGuardian, formData.patient_id, patients]);
 
   const validateCpf = (cpf: string): boolean => {
     const cleanCpf = cpf.replace(/\D/g, '');
@@ -219,6 +220,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
         errors={{}}
         validateCpf={validateCpf}
+        showCpfSection={hasGuardian}
       />
 
       <ReceivedCheckbox
@@ -234,36 +236,6 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         hasGuardian={hasGuardian}
         setHasGuardian={setHasGuardian}
       />
-
-      {hasGuardian && (
-        <PatientAndPayer
-          patients={patients}
-          formData={formData}
-          setFormData={setFormData}
-          paymentTitular={paymentTitular}
-          setPaymentTitular={setPaymentTitular}
-          payerCpf={formData.payer_cpf}
-          setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
-          errors={{}}
-          validateCpf={validateCpf}
-          showCpfSection={true}
-        />
-      )}
-
-      {!hasGuardian && (
-        <PatientAndPayer
-          patients={patients}
-          formData={formData}
-          setFormData={setFormData}
-          paymentTitular={paymentTitular}
-          setPaymentTitular={setPaymentTitular}
-          payerCpf={formData.payer_cpf}
-          setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
-          errors={{}}
-          validateCpf={validateCpf}
-          showCpfSection={false}
-        />
-      )}
       
       {!isReceived && (
         <div className="space-y-2">

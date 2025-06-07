@@ -74,26 +74,6 @@ export const PatientAndPayer = ({
     }
   };
 
-  if (showCpfSection) {
-    // When guardian is enabled, just show CPF input without radio buttons
-    return (
-      <div>
-        <Label htmlFor="payer_cpf">CPF do Responsável Financeiro *</Label>
-        <Input
-          id="payer_cpf"
-          type="text"
-          value={formatCpf(payerCpf)}
-          onChange={(e) => setPayerCpf(e.target.value)}
-          placeholder="000.000.000-00"
-          maxLength={14}
-          className={errors.payerCpf ? 'border-red-500' : ''}
-        />
-        {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
-      </div>
-    );
-  }
-
-  // Default rendering with patient selection and optional CPF selection
   return (
     <>
       <div>
@@ -116,27 +96,9 @@ export const PatientAndPayer = ({
         {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
       </div>
 
-      <div>
-        <Label>CPF do Titular *</Label>
-        <RadioGroup
-          value={paymentTitular}
-          onValueChange={handleTitularChange}
-          className="mt-2"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="patient" id="patient" />
-            <Label htmlFor="patient">CPF do Paciente</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="other" id="other" />
-            <Label htmlFor="other">Outro CPF</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      {paymentTitular === 'other' && (
+      {showCpfSection ? (
         <div>
-          <Label htmlFor="payer_cpf">CPF do Titular *</Label>
+          <Label htmlFor="payer_cpf">CPF do Responsável Financeiro *</Label>
           <Input
             id="payer_cpf"
             type="text"
@@ -148,6 +110,42 @@ export const PatientAndPayer = ({
           />
           {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
         </div>
+      ) : (
+        <>
+          <div>
+            <Label>CPF do Titular *</Label>
+            <RadioGroup
+              value={paymentTitular}
+              onValueChange={handleTitularChange}
+              className="mt-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="patient" id="patient" />
+                <Label htmlFor="patient">CPF do Paciente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="other" id="other" />
+                <Label htmlFor="other">Outro CPF</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {paymentTitular === 'other' && (
+            <div>
+              <Label htmlFor="payer_cpf">CPF do Titular *</Label>
+              <Input
+                id="payer_cpf"
+                type="text"
+                value={formatCpf(payerCpf)}
+                onChange={(e) => setPayerCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={errors.payerCpf ? 'border-red-500' : ''}
+              />
+              {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
+            </div>
+          )}
+        </>
       )}
     </>
   );
