@@ -15,6 +15,8 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { toast } from "sonner";
 import type { Patient } from "@/types/patient";
+import { PatientLimitCheck } from "@/components/patients/PatientLimitCheck";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Patients = () => {
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ const Patients = () => {
     hasGuardian: "",
     isFromAbroad: "",
   });
+  const { patientLimit } = useSubscription();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -51,6 +54,22 @@ const Patients = () => {
       
       if (error) throw error;
       return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: patientCount = 0 } = useQuery({
+    queryKey: ['patients-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      
+      const { count, error } = await supabase
+        .from('patients')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.id);
+      
+      if (error) throw error;
+      return count || 0;
     },
     enabled: !!user?.id
   });
@@ -117,6 +136,15 @@ const Patients = () => {
     setEditingPatient(null);
   };
 
+  const handleNewPatient = () => {
+    // Check patient limit before allowing new patient creation
+    if (patientLimit !== null && patientCount >= patientLimit) {
+      toast.error(`Você atingiu o limite de ${patientLimit} pacientes do seu plano atual. Faça upgrade para adicionar mais pacientes.`);
+      return;
+    }
+    setShowForm(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -150,7 +178,7 @@ const Patients = () => {
                 </div>
                 
                 <Button
-                  onClick={() => setShowForm(true)}
+                  onClick={() => handleNewPatient()}
                   style={{ backgroundColor: '#ffffff', color: '#002472' }}
                   className="hover:bg-gray-100"
                 >
@@ -201,7 +229,7 @@ const Patients = () => {
                           : 'Nenhum paciente cadastrado'
                         }
                       </p>
-                      <Button onClick={() => setShowForm(true)} variant="outline">
+                      <Button onClick={() => handleNewPatient()} variant="outline">
                         <Plus className="w-4 h-4 mr-2" />
                         Cadastrar primeiro paciente
                       </Button>

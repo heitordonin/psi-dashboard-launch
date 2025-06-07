@@ -1,200 +1,166 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { User, CreditCard, FileText, LogOut, Settings, X, ShieldCheck, Receipt } from "lucide-react";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
-import { toast } from "sonner";
+import * as React from "react";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+  Home,
+  Users,
+  CreditCard,
+  FileText,
+  Settings,
+  Receipt,
+  Crown,
+  Share2,
+  LogOut
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Settings,
-  },
-  {
-    title: "Pacientes",
-    url: "/patients",
-    icon: User,
-  },
-  {
-    title: "Cobranças",
-    url: "/payments",
-    icon: CreditCard,
-  },
-  {
-    title: "Despesas",
-    url: "/expenses",
-    icon: FileText,
-  },
-  {
-    title: "Controle Receita Saúde",
-    url: "/receita-saude",
-    icon: Receipt,
-  },
-];
+import { Sidebar } from "@/components/ui/sidebar";
+import { SidebarHeader } from "@/components/ui/sidebar/sidebar-header";
+import { SidebarMenu } from "@/components/ui/sidebar/sidebar-menu";
+import { SidebarMenuItem } from "@/components/ui/sidebar/sidebar-menu-item";
+import { SidebarMenuButton } from "@/components/ui/sidebar/sidebar-menu-button";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
-export function AppSidebar() {
-  const navigate = useNavigate();
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
-  const { user, isAdmin, signOut } = useAuth();
-  const { setOpen } = useSidebar();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { currentPlan } = useSubscription();
 
-  const handleLogout = async () => {
-    try {
-      console.log('Attempting to logout...');
-      await signOut();
-      console.log('Logout successful');
-      toast.success('Logout realizado com sucesso!');
-      
-      // Add a small delay to allow auth state to propagate
-      setTimeout(() => {
-        navigate('/login');
-      }, 100);
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      toast.error('Erro ao fazer logout');
-      // If signOut fails, still try to navigate to login
-      navigate('/login');
-    }
-  };
+  const items = [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: "Pacientes",
+      url: "/patients",
+      icon: Users,
+    },
+    {
+      title: "Cobranças",
+      url: "/payments",
+      icon: CreditCard,
+    },
+    {
+      title: "Despesas",
+      url: "/expenses",
+      icon: Receipt,
+    },
+    {
+      title: "Controle Receita Saúde",
+      url: "/receita-saude-control",
+      icon: FileText,
+    },
+    {
+      title: "Planos",
+      url: "/plans",
+      icon: Crown,
+    },
+  ];
 
-  const getUserInitials = () => {
-    if (user?.email) {
-      return user.email.slice(0, 2).toUpperCase();
-    }
-    return "U";
-  };
+  const adminItems = [
+    {
+      title: "Admin",
+      url: "/admin",
+      icon: Settings,
+    },
+  ];
+
+  const bottomItems = [
+    {
+      title: "Indique um amigo",
+      url: "/referral",
+      icon: Share2,
+    },
+    {
+      title: "Sair",
+      onClick: () => {
+        signOut();
+        navigate("/login");
+      },
+      icon: LogOut,
+    },
+  ];
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
-              alt="Psiclo" 
-              className="h-10 w-auto"
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setOpen(false)}
-            className="h-8 w-8 text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <img 
+                    src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
+                    alt="Psiclo" 
+                    className="size-6"
+                  />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Psiclo</span>
+                  <span className="truncate text-xs">
+                    {currentPlan?.name || 'Freemium'}
+                  </span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url}
-                  >
-                    <button
-                      onClick={() => navigate(item.url)}
-                      className="w-full flex items-center gap-2"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administração</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === '/admin'}
-                  >
-                    <button
-                      onClick={() => navigate('/admin')}
-                      className="w-full flex items-center gap-2"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Painel Admin</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Configurações</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={location.pathname === '/profile'}
-                >
-                  <button
-                    onClick={() => navigate('/profile')}
-                    className="w-full flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4" />
-                    <span>Perfil</span>
-                  </button>
+      <SidebarMenu>
+        {items.map((item) => {
+          const active = location.pathname === item.url;
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton size="sm" active={active} asChild>
+                <a href={item.url}>
+                  <item.icon className="size-4" />
+                  <span>{item.title}</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+      {user?.email === 'admin@psiclo.com.br' && (
+        <SidebarMenu heading="Admin">
+          {adminItems.map((item) => {
+            const active = location.pathname === item.url;
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton size="sm" active={active} asChild>
+                  <a href={item.url}>
+                    <item.icon className="size-4" />
+                    <span>{item.title}</span>
+                  </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar className="w-8 h-8">
-            <AvatarImage src="" />
-            <AvatarFallback className="bg-psiclo-accent text-psiclo-primary text-xs">
-              {getUserInitials()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {user?.email || 'Usuário'}
-            </p>
-          </div>
-        </div>
-        
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Sair
-        </button>
-      </SidebarFooter>
+            );
+          })}
+        </SidebarMenu>
+      )}
+      <SidebarMenu heading="Outros">
+        {bottomItems.map((item) => {
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton size="sm" asChild onClick={item.onClick}>
+                {item.url ? (
+                  <a href={item.url}>
+                    <item.icon className="size-4" />
+                    <span>{item.title}</span>
+                  </a>
+                ) : (
+                  <>
+                    <item.icon className="size-4" />
+                    <span>{item.title}</span>
+                  </>
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
     </Sidebar>
   );
 }
