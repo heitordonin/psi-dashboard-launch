@@ -1,61 +1,208 @@
 
-import { Receipt } from "lucide-react";
-import { ActionDropdown } from "@/components/ui/action-dropdown";
-import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
+import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CheckCircle, Copy, DollarSign, Calendar, User, FileText, MessageCircle, CreditCard } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { PaymentStatusBadge } from "./PaymentStatusBadge";
+import { ReceivedCheckbox } from "./ReceivedCheckbox";
+import { PaymentButtons } from "./PaymentButtons";
+import { WhatsAppButton } from "./WhatsAppButton";
+import { toast } from "sonner";
 import type { Payment } from "@/types/payment";
 
-interface PaymentWithPatient extends Payment {
-  patients?: {
-    full_name: string;
-    cpf?: string;
-  };
-}
-
 interface PaymentItemProps {
-  payment: PaymentWithPatient;
+  payment: Payment;
   onEdit: (payment: Payment) => void;
-  onDelete: (payment: Payment) => void;
+  onDelete: (paymentId: string) => void;
 }
 
-export const PaymentItem = ({ payment, onEdit, onDelete }: PaymentItemProps) => {
+export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
+  const queryClient = useQueryClient();
+  const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copiado para a área de transferência!`);
+    } catch (err) {
+      toast.error('Erro ao copiar para a área de transferência');
+    }
+  };
+
+  const markAsPaidMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('id', payment.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Pagamento marcado como pago!');
+    },
+    onError: (error) => {
+      console.error('Error marking payment as paid:', error);
+      toast.error('Erro ao marcar pagamento como pago');
+    }
+  });
+
+  const handleMarkAsPaid = () => {
+    if (payment.status === 'paid') return;
+    setIsMarkingAsPaid(true);
+    markAsPaidMutation.mutate();
+    setIsMarkingAsPaid(false);
+  };
+
+  const handleCopyPixKey = () => {
+    const pixKey = "chavepix@exemplo.com";
+    copyToClipboard(pixKey, "Chave PIX");
+  };
+
   return (
-    <div className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm text-gray-900 truncate">
-          {payment.patients?.full_name || 'Paciente não encontrado'}
-        </p>
-        {payment.description && (
-          <p className="text-xs text-gray-600 truncate mt-1">{payment.description}</p>
-        )}
-        <p className="text-xs text-gray-500 mt-1">
-          Vencimento: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
-        </p>
-        {payment.paid_date && (
-          <p className="text-xs text-green-600 mt-1">
-            Pago em: {new Date(payment.paid_date).toLocaleDateString('pt-BR')}
-          </p>
-        )}
-        {payment.status === 'paid' && (
-          <div className="flex items-center gap-1 mt-1">
-            <Receipt className={`w-3 h-3 ${payment.receita_saude_receipt_issued ? 'text-green-600' : 'text-red-600'}`} />
-            <span className={`text-xs ${payment.receita_saude_receipt_issued ? 'text-green-600' : 'text-red-600'}`}>
-              {payment.receita_saude_receipt_issued ? 'Recibo emitido' : 'Recibo pendente'}
-            </span>
+    <Card className="mb-4 hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+          {/* Left side - Main info */}
+          <div className="flex-1 space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-900">
+                  {payment.patients?.full_name || 'Paciente não encontrado'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(payment.patients?.full_name || '', 'Nome do paciente')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+              <PaymentStatusBadge status={payment.status} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-600" />
+                <span className="font-semibold text-green-600">
+                  {formatCurrency(Number(payment.amount))}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(Number(payment.amount).toFixed(2).replace('.', ','), 'Valor')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span>Vencimento: {formatDate(payment.due_date)}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(formatDate(payment.due_date), 'Data de vencimento')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+
+              {payment.paid_date && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>Pago em: {formatDate(payment.paid_date)}</span>
+                </div>
+              )}
+
+              {payment.description && (
+                <div className="flex items-center gap-2 md:col-span-2">
+                  <FileText className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600 truncate">{payment.description}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(payment.description!, 'Descrição')}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {payment.payment_url && (
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-blue-600" />
+                <a 
+                  href={payment.payment_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  Link de pagamento
+                </a>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(payment.payment_url!, 'Link de pagamento')}
+                  className="h-6 w-6 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div className="flex items-center gap-3 ml-4">
-        <div className="text-right">
-          <p className="text-sm font-semibold text-gray-900">
-            R$ {Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <PaymentStatusBadge status={payment.status} />
+
+          {/* Right side - Actions */}
+          <div className="flex flex-col gap-3 lg:items-end">
+            <div className="flex items-center gap-2">
+              <WhatsAppButton 
+                payment={payment}
+                patientName={payment.patients?.full_name || 'Paciente'}
+                patientPhone={payment.patients?.phone || undefined}
+              />
+              <ReceivedCheckbox 
+                paymentId={payment.id}
+                currentStatus={payment.status}
+                onStatusChange={handleMarkAsPaid}
+                disabled={isMarkingAsPaid}
+              />
+            </div>
+
+            <PaymentButtons
+              payment={payment}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onCopyPixKey={handleCopyPixKey}
+            />
+          </div>
         </div>
-        <ActionDropdown
-          onEdit={() => onEdit(payment)}
-          onDelete={() => onDelete(payment)}
-        />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-};
+}
