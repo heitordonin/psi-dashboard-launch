@@ -70,10 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user?.id) {
-          // Use setTimeout to avoid blocking the auth state change and prevent deadlock
-          setTimeout(() => {
-            checkAdminStatus(session.user.id);
-          }, 0);
+          await checkAdminStatus(session.user.id);
         } else {
           setIsAdmin(false);
         }

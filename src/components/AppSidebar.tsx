@@ -9,7 +9,8 @@ import {
   Receipt,
   Crown,
   Share2,
-  LogOut
+  LogOut,
+  User
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -22,7 +23,8 @@ import {
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton
+  SidebarMenuButton,
+  SidebarFooter
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -176,16 +178,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuItem>
                 );
               })}
-              <SidebarMenuItem>
-                <SidebarMenuButton size="sm" onClick={handleSignOut}>
-                  <LogOut className="size-4" />
-                  <span>Sair</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="sm" asChild>
+              <a href="/profile">
+                <User className="size-4" />
+                <span>Perfil</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="sm" onClick={handleSignOut}>
+              <LogOut className="size-4" />
+              <span>Sair</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

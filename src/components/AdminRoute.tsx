@@ -19,6 +19,8 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       } else if (!isAdmin) {
         console.log('User not admin (is_admin:', isAdmin, '), redirecting to dashboard');
         navigate('/dashboard');
+      } else {
+        console.log('User is admin, granting access');
       }
     }
   }, [user, isAdmin, isLoading, navigate]);

@@ -1,13 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, User, Crown, Zap } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ interface ProfileData {
 const Profile = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const { currentPlan, isLoading: subscriptionLoading } = useSubscription();
   const [formData, setFormData] = useState<ProfileData>({
     full_name: "",
     cpf: "",
@@ -160,7 +162,22 @@ const Profile = () => {
     }
   };
 
-  if (isLoading || isLoadingProfile) {
+  const getPlanIcon = () => {
+    if (!currentPlan) return <Crown className="w-5 h-5" />;
+    
+    switch (currentPlan.slug) {
+      case 'freemium':
+        return <Crown className="w-5 h-5" />;
+      case 'basic':
+        return <Zap className="w-5 h-5" />;
+      case 'psi_regular':
+        return <Crown className="w-5 h-5" />;
+      default:
+        return <Crown className="w-5 h-5" />;
+    }
+  };
+
+  if (isLoading || isLoadingProfile || subscriptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -200,7 +217,46 @@ const Profile = () => {
             </div>
 
             {/* Content */}
-            <div className="container mx-auto px-4 py-6 max-w-2xl">
+            <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
+              {/* Current Plan Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {getPlanIcon()}
+                    Plano Atual
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold">
+                          {currentPlan?.name || 'Freemium'}
+                        </h3>
+                        {currentPlan?.slug === 'freemium' && (
+                          <Badge variant="secondary">Gratuito</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {currentPlan?.description || 'Plano gratuito com recursos básicos'}
+                      </p>
+                      {currentPlan && currentPlan.price_monthly > 0 && (
+                        <p className="text-sm font-medium mt-1">
+                          R$ {currentPlan.price_monthly.toFixed(2)}/mês
+                        </p>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => navigate('/plans')}
+                      variant={currentPlan?.slug === 'freemium' ? 'default' : 'outline'}
+                    >
+                      {currentPlan?.slug === 'freemium' ? 'Fazer Upgrade' : 'Alterar Plano'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Profile Information Card */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
