@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import {
   Home,
@@ -12,11 +13,13 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Sidebar } from "@/components/ui/sidebar";
-import { SidebarHeader } from "@/components/ui/sidebar/sidebar-header";
-import { SidebarMenu } from "@/components/ui/sidebar/sidebar-menu";
-import { SidebarMenuItem } from "@/components/ui/sidebar/sidebar-menu-item";
-import { SidebarMenuButton } from "@/components/ui/sidebar/sidebar-menu-button";
+import { 
+  Sidebar,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton
+} from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 
