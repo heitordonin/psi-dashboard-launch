@@ -10,6 +10,7 @@ export interface Payment {
   paid_date?: string;
   payer_cpf?: string;
   guardian_name?: string;
+  receita_saude_receipt_issued: boolean;
   created_at: string;
 }
 
