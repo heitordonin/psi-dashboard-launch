@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,12 +5,12 @@ import { Receipt, Search, Copy } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ReceitaSaudeAdvancedFilter, ReceitaSaudeFilters } from "@/components/payments/ReceitaSaudeAdvancedFilter";
 import { toast } from "sonner";
 import type { Payment } from "@/types/payment";
 
@@ -20,13 +19,14 @@ const ReceitaSaudeControl = () => {
   const { user, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<PaymentFilters>({
+  const [filters, setFilters] = useState<ReceitaSaudeFilters>({
     patientId: "",
     startDate: "",
     endDate: "",
     status: "",
     minAmount: "",
     maxAmount: "",
+    receiptStatus: "",
   });
 
   useEffect(() => {
@@ -68,7 +68,8 @@ const ReceitaSaudeControl = () => {
         `)
         .eq('owner_id', user.id)
         .eq('status', 'paid')
-        .order('paid_date', { ascending: false });
+        .order('paid_date', { ascending: false })
+        .order('created_at', { ascending: false }); // Secondary sort for stability
       
       if (error) throw error;
       return data;
@@ -86,8 +87,6 @@ const ReceitaSaudeControl = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments-receita-saude'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Status do recibo atualizado!');
     },
     onError: (error) => {
@@ -126,14 +125,31 @@ const ReceitaSaudeControl = () => {
       return true;
     })();
 
-    return matchesSearch && matchesPatientId && matchesDateRange && matchesAmountRange;
+    const matchesReceiptStatus = (() => {
+      if (!filters.receiptStatus) return true;
+      if (filters.receiptStatus === "issued") return payment.receita_saude_receipt_issued;
+      if (filters.receiptStatus === "not_issued") return !payment.receita_saude_receipt_issued;
+      return true;
+    })();
+
+    return matchesSearch && matchesPatientId && matchesDateRange && matchesAmountRange && matchesReceiptStatus;
   });
 
-  const handleFilterChange = (newFilters: PaymentFilters) => {
+  const handleFilterChange = (newFilters: ReceitaSaudeFilters) => {
     setFilters(newFilters);
   };
 
   const handleReceiptToggle = (paymentId: string, currentStatus: boolean) => {
+    // Optimistic update to prevent order change
+    queryClient.setQueryData(['payments-receita-saude', user?.id], (oldData: any) => {
+      if (!oldData) return oldData;
+      return oldData.map((payment: any) => 
+        payment.id === paymentId 
+          ? { ...payment, receita_saude_receipt_issued: !currentStatus }
+          : payment
+      );
+    });
+    
     updateReceiptMutation.mutate({ paymentId, issued: !currentStatus });
   };
 
@@ -197,7 +213,7 @@ const ReceitaSaudeControl = () => {
                         className="pl-10"
                       />
                     </div>
-                    <PaymentAdvancedFilter
+                    <ReceitaSaudeAdvancedFilter
                       currentFilters={filters}
                       onFilterChange={handleFilterChange}
                       patients={patients}
@@ -218,7 +234,7 @@ const ReceitaSaudeControl = () => {
                     <div className="text-center py-8">
                       <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-2">
-                        {searchTerm || filters.patientId || filters.startDate || filters.endDate || filters.minAmount || filters.maxAmount
+                        {searchTerm || filters.patientId || filters.startDate || filters.endDate || filters.minAmount || filters.maxAmount || filters.receiptStatus
                           ? 'Nenhum pagamento encontrado com os filtros aplicados' 
                           : 'Nenhum pagamento pago encontrado'
                         }
