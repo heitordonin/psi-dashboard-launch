@@ -18,6 +18,7 @@ interface PatientAndPayerProps {
     amount: number;
     due_date: string;
     description: string;
+    payer_cpf?: string;
   };
   setFormData: (data: any) => void;
   paymentTitular: 'patient' | 'other';

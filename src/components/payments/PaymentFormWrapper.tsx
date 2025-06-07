@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { ReceivedCheckbox } from './ReceivedCheckbox';
+import { GuardianToggle } from './GuardianToggle';
 import type { Payment } from '@/types/payment';
 
 interface FormData {
@@ -17,6 +19,7 @@ interface FormData {
   amount: number;
   due_date: string;
   description: string;
+  payer_cpf: string;
 }
 
 interface PaymentFormWrapperProps {
@@ -35,10 +38,15 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     amount: payment?.amount || 0,
     due_date: payment?.due_date || '',
     description: payment?.description || '',
+    payer_cpf: payment?.payer_cpf || '',
   });
 
   const [isReceived, setIsReceived] = useState(payment?.status === 'paid');
   const [receivedDate, setReceivedDate] = useState(payment?.paid_date || '');
+  const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>(
+    payment?.payer_cpf ? 'other' : 'patient'
+  );
+  const [hasGuardian, setHasGuardian] = useState(false);
 
   // Initialize received date when isReceived changes to true
   useEffect(() => {
@@ -65,17 +73,24 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     enabled: !!user?.id
   });
 
+  const validateCpf = (cpf: string): boolean => {
+    const cleanCpf = cpf.replace(/\D/g, '');
+    return cleanCpf.length === 11;
+  };
+
   const createPaymentMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string; }) => {
+    mutationFn: async (data: FormData) => {
       if (!user?.id) throw new Error('User not authenticated');
       
       const paymentData = {
-        ...data,
+        patient_id: data.patient_id,
+        amount: data.amount,
+        due_date: isReceived ? (data.due_date || receivedDate) : data.due_date,
+        description: data.description,
         owner_id: user.id,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
-        // Ensure due_date is not empty when creating
-        due_date: isReceived ? (data.due_date || receivedDate) : data.due_date,
+        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -99,13 +114,17 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   });
 
   const updatePaymentMutation = useMutation({
-    mutationFn: async (data: { patient_id: string; amount: number; due_date: string; description: string; }) => {
+    mutationFn: async (data: FormData) => {
       if (!payment?.id) throw new Error('Payment ID not found');
       
       const paymentData = {
-        ...data,
+        patient_id: data.patient_id,
+        amount: data.amount,
+        due_date: data.due_date,
+        description: data.description,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
+        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -153,12 +172,19 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
       toast.error('Data de vencimento é obrigatória');
       return;
     }
-  
-    const submitData = {
+
+    // Validate CPF if payment titular is different
+    if (paymentTitular === 'other' && !validateCpf(formData.payer_cpf)) {
+      toast.error('CPF do titular é obrigatório e deve ser válido');
+      return;
+    }
+
+    const submitData: FormData = {
       patient_id: formData.patient_id,
       amount: formData.amount,
       due_date: isReceived ? (formData.due_date || receivedDate) : formData.due_date,
       description: formData.description,
+      payer_cpf: formData.payer_cpf,
     };
   
     if (payment) {
@@ -174,12 +200,12 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         patients={patients}
         formData={formData}
         setFormData={setFormData}
-        paymentTitular="patient"
-        setPaymentTitular={() => {}}
-        payerCpf=""
-        setPayerCpf={() => {}}
+        paymentTitular={paymentTitular}
+        setPaymentTitular={setPaymentTitular}
+        payerCpf={formData.payer_cpf}
+        setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
         errors={{}}
-        validateCpf={() => true}
+        validateCpf={validateCpf}
       />
 
       <ReceivedCheckbox
@@ -190,6 +216,26 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         errors={{}}
         isEditing={!!payment}
       />
+
+      <GuardianToggle
+        hasGuardian={hasGuardian}
+        setHasGuardian={setHasGuardian}
+      />
+
+      {hasGuardian && (
+        <PatientAndPayer
+          patients={patients}
+          formData={formData}
+          setFormData={setFormData}
+          paymentTitular={paymentTitular}
+          setPaymentTitular={setPaymentTitular}
+          payerCpf={formData.payer_cpf}
+          setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
+          errors={{}}
+          validateCpf={validateCpf}
+          showCpfSection={true}
+        />
+      )}
       
       {!isReceived && (
         <div className="space-y-2">
