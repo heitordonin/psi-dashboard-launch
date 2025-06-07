@@ -16,7 +16,7 @@ import { Download, Users, CreditCard, FileText, Calendar } from 'lucide-react';
 
 const Admin = () => {
   const { isAdmin } = useAuth();
-  const { exportPatients, exportPayments, exportExpenses } = useDataExport();
+  const { exportPatients, exportPayments, exportExpenses, exportExpensesCarneLeao } = useDataExport();
   const [dateRange, setDateRange] = useState({
     start: '',
     end: '',
@@ -171,6 +171,21 @@ const Admin = () => {
     }
   };
 
+  const handleCarneLeaoExport = () => {
+    const options = {
+      format: 'csv' as const,
+      userId: showAllUsers ? undefined : filteredUserId,
+      ...(dateRange.start && dateRange.end && {
+        dateRange: {
+          start: dateRange.start,
+          end: dateRange.end,
+        },
+      }),
+    };
+
+    exportExpensesCarneLeao(options);
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -303,6 +318,14 @@ const Admin = () => {
                   >
                     <Download className="w-4 h-4" />
                     Exportar Despesas
+                  </Button>
+                  <Button 
+                    onClick={handleCarneLeaoExport}
+                    variant="outline"
+                    className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-200"
+                  >
+                    <Download className="w-4 h-4" />
+                    Exportar despesas para o Carnê Leão
                   </Button>
                 </div>
 

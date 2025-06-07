@@ -31,6 +31,30 @@ export const useDataExport = () => {
     return `${csvHeaders}\n${csvData}`;
   };
 
+  const convertToCarneLeaoCSV = (data: any[]) => {
+    const csvData = data.map(expense => {
+      const formattedDate = new Date(expense.payment_date).toLocaleDateString('pt-BR');
+      const categoryCode = expense.expense_categories?.code || '';
+      const adjustedAmount = expense.residential_adjusted_amount || '';
+      const description = expense.description || expense.expense_categories?.name || '';
+      const penaltyInterest = expense.penalty_interest || '';
+      const emptyField = ''; // Campo vazio conforme layout
+      const competency = expense.competency || '';
+      
+      return [
+        formattedDate,
+        categoryCode,
+        adjustedAmount,
+        description,
+        penaltyInterest,
+        emptyField,
+        competency
+      ].join(';');
+    }).join('\n');
+    
+    return csvData;
+  };
+
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType });
     const url = window.URL.createObjectURL(blob);
@@ -248,9 +272,60 @@ export const useDataExport = () => {
     }
   };
 
+  const exportExpensesCarneLeao = async (options: ExportOptions) => {
+    if (!isAdmin) {
+      toast.error('Acesso negado');
+      return;
+    }
+
+    try {
+      let query = supabase
+        .from('expenses')
+        .select(`
+          payment_date,
+          competency,
+          description,
+          penalty_interest,
+          residential_adjusted_amount,
+          owner_id,
+          expense_categories!inner(name, code)
+        `);
+
+      if (options.userId) {
+        query = query.eq('owner_id', options.userId);
+      }
+
+      if (options.dateRange) {
+        query = query
+          .gte('payment_date', options.dateRange.start)
+          .lte('payment_date', options.dateRange.end);
+      }
+
+      const { data, error } = await query.order('payment_date', { ascending: false });
+
+      if (error) throw error;
+
+      const csvContent = convertToCarneLeaoCSV(data || []);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const userSuffix = options.userId ? '_usuario_filtrado' : '_todos_usuarios';
+      
+      downloadFile(
+        csvContent, 
+        `despesas_carne_leao_${timestamp}${userSuffix}.csv`, 
+        'text/csv;charset=utf-8;'
+      );
+
+      toast.success('Despesas exportadas para Carnê Leão com sucesso!');
+    } catch (error) {
+      console.error('Error exporting expenses for Carnê Leão:', error);
+      toast.error('Erro ao exportar despesas para Carnê Leão');
+    }
+  };
+
   return {
     exportPatients,
     exportPayments,
     exportExpenses,
+    exportExpensesCarneLeao,
   };
 };
