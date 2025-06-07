@@ -37,8 +37,8 @@ export const PaymentItem = ({ payment, onEdit, onDelete }: PaymentItemProps) => 
         )}
         {payment.status === 'paid' && (
           <div className="flex items-center gap-1 mt-1">
-            <Receipt className="w-3 h-3 text-blue-600" />
-            <span className="text-xs text-blue-600">
+            <Receipt className={`w-3 h-3 ${payment.receita_saude_receipt_issued ? 'text-green-600' : 'text-red-600'}`} />
+            <span className={`text-xs ${payment.receita_saude_receipt_issued ? 'text-green-600' : 'text-red-600'}`}>
               {payment.receita_saude_receipt_issued ? 'Recibo emitido' : 'Recibo pendente'}
             </span>
           </div>
