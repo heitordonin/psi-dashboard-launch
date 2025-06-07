@@ -104,10 +104,18 @@ const Signup = () => {
       });
       
       if (error) {
+        console.log('Sign up error details:', error);
+        
+        // Handle specific error cases
         if (error.message === 'User already registered') {
           toast.error('Este email já está cadastrado');
+        } else if (error.message.includes('Database error saving new user')) {
+          // This usually means CPF constraint violation
+          toast.error('Este CPF já está cadastrado no sistema');
         } else if (error.message.includes('duplicate key value violates unique constraint "unique_cpf"')) {
           toast.error('Este CPF já está cadastrado');
+        } else if (error.message.includes('duplicate key value violates unique constraint')) {
+          toast.error('Já existe uma conta com estes dados');
         } else {
           toast.error('Erro ao criar conta: ' + error.message);
         }
@@ -116,6 +124,7 @@ const Signup = () => {
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error('Unexpected error during signup:', error);
       toast.error('Erro inesperado ao criar conta');
     } finally {
       setIsLoading(false);
