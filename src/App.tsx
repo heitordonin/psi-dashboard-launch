@@ -14,6 +14,7 @@ import Payments from "./pages/Payments";
 import Expenses from "./pages/Expenses";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import ReceitaSaudeControl from "./pages/ReceitaSaudeControl";
 import NotFound from "./pages/NotFound";
 import "./App.css";
 
@@ -51,6 +52,11 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/despesas" element={<Navigate to="/expenses" replace />} />
+            <Route path="/receita-saude" element={
+              <ProtectedRoute>
+                <ReceitaSaudeControl />
+              </ProtectedRoute>
+            } />
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />

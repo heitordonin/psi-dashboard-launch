@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, CreditCard, Search, Filter } from "lucide-react";
+import { Plus, CreditCard, Search, Filter, Receipt } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -266,6 +267,14 @@ const Payments = () => {
                               <p className="text-xs text-green-600 mt-1">
                                 Pago em: {new Date(payment.paid_date).toLocaleDateString('pt-BR')}
                               </p>
+                            )}
+                            {payment.status === 'paid' && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Receipt className="w-3 h-3 text-blue-600" />
+                                <span className="text-xs text-blue-600">
+                                  {payment.receita_saude_receipt_issued ? 'Recibo emitido' : 'Recibo pendente'}
+                                </span>
+                              </div>
                             )}
                           </div>
                           <div className="flex items-center gap-3 ml-4">

@@ -167,6 +167,7 @@ export type Database = {
           patient_id: string
           payer_cpf: string | null
           payment_url: string | null
+          receita_saude_receipt_issued: boolean
           status: Database["public"]["Enums"]["payment_status"]
         }
         Insert: {
@@ -180,6 +181,7 @@ export type Database = {
           patient_id: string
           payer_cpf?: string | null
           payment_url?: string | null
+          receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
         }
         Update: {
@@ -193,6 +195,7 @@ export type Database = {
           patient_id?: string
           payer_cpf?: string | null
           payment_url?: string | null
+          receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
         }
         Relationships: [
