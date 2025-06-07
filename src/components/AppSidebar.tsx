@@ -1,4 +1,5 @@
 
+
 import * as React from "react";
 import {
   Home,
@@ -16,6 +17,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { 
   Sidebar,
   SidebarHeader,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton
@@ -111,59 +116,75 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarMenu>
-        {items.map((item) => {
-          const active = location.pathname === item.url;
-          return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton size="sm" active={active} asChild>
-                <a href={item.url}>
-                  <item.icon className="size-4" />
-                  <span>{item.title}</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
-        })}
-      </SidebarMenu>
-      {user?.email === 'admin@psiclo.com.br' && (
-        <SidebarMenu heading="Admin">
-          {adminItems.map((item) => {
-            const active = location.pathname === item.url;
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton size="sm" active={active} asChild>
-                  <a href={item.url}>
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      )}
-      <SidebarMenu heading="Outros">
-        {bottomItems.map((item) => {
-          return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton size="sm" asChild onClick={item.onClick}>
-                {item.url ? (
-                  <a href={item.url}>
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </a>
-                ) : (
-                  <>
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </>
-                )}
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
-        })}
-      </SidebarMenu>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => {
+                const active = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton size="sm" isActive={active} asChild>
+                      <a href={item.url}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        {user?.email === 'admin@psiclo.com.br' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => {
+                  const active = location.pathname === item.url;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton size="sm" isActive={active} asChild>
+                        <a href={item.url}>
+                          <item.icon className="size-4" />
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        <SidebarGroup>
+          <SidebarGroupLabel>Outros</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {bottomItems.map((item) => {
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton size="sm" asChild onClick={item.onClick}>
+                      {item.url ? (
+                        <a href={item.url}>
+                          <item.icon className="size-4" />
+                          <span>{item.title}</span>
+                        </a>
+                      ) : (
+                        <>
+                          <item.icon className="size-4" />
+                          <span>{item.title}</span>
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
     </Sidebar>
   );
 }

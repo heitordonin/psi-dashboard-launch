@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,7 +20,7 @@ import Referral from './pages/Referral';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/SupabaseAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AdminRoute } from './components/AdminRoute';
+import AdminRoute from './components/AdminRoute';
 import Plans from "@/pages/Plans";
 
 const queryClient = new QueryClient();
