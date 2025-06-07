@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,24 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     console.log('Setting up auth state listener');
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user?.id) {
-          await checkAdminStatus(session.user.id);
-        } else {
-          setIsAdmin(false);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Get initial session
+    // Get initial session first
     const initializeAuth = async () => {
       try {
         console.log('Getting initial session');
@@ -110,11 +94,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initializeAuth();
 
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        // Use setTimeout to prevent blocking and infinite loops
+        setTimeout(async () => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user?.id) {
+            await checkAdminStatus(session.user.id);
+          } else {
+            setIsAdmin(false);
+          }
+          
+          setIsLoading(false);
+        }, 0);
+      }
+    );
+
     return () => {
       console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus]);
+  }, []); // Remove checkAdminStatus from dependencies to prevent loops
 
   const signIn = async (email: string, password: string) => {
     console.log('Attempting sign in for:', email);
