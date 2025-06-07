@@ -9,6 +9,7 @@ interface PaymentWithPatient extends Payment {
   patients?: {
     full_name: string;
     cpf?: string;
+    phone?: string;
   };
 }
 
@@ -17,7 +18,7 @@ interface PaymentsListProps {
   isLoading: boolean;
   hasFilters: boolean;
   onEdit: (payment: Payment) => void;
-  onDelete: (payment: Payment) => void;
+  onDelete: (paymentId: string) => void;
   onNewPayment: () => void;
 }
 

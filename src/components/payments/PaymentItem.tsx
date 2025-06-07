@@ -8,15 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentStatusBadge } from "./PaymentStatusBadge";
-import { ReceivedCheckbox } from "./ReceivedCheckbox";
-import { PaymentButtons } from "./PaymentButtons";
+import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { toast } from "sonner";
 import type { Payment } from "@/types/payment";
 
+interface PaymentWithPatient extends Payment {
+  patients?: {
+    full_name: string;
+    cpf?: string;
+    phone?: string;
+  };
+}
+
 interface PaymentItemProps {
-  payment: Payment;
+  payment: PaymentWithPatient;
   onEdit: (payment: Payment) => void;
   onDelete: (paymentId: string) => void;
 }
@@ -186,20 +192,28 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
                 patientName={payment.patients?.full_name || 'Paciente'}
                 patientPhone={payment.patients?.phone || undefined}
               />
-              <ReceivedCheckbox 
-                paymentId={payment.id}
-                currentStatus={payment.status}
-                onStatusChange={handleMarkAsPaid}
-                disabled={isMarkingAsPaid}
-              />
+              <Button
+                variant={payment.status === 'paid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={handleMarkAsPaid}
+                disabled={isMarkingAsPaid || payment.status === 'paid'}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                {payment.status === 'paid' ? 'Pago' : 'Marcar como Pago'}
+              </Button>
             </div>
 
-            <PaymentButtons
-              payment={payment}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onCopyPixKey={handleCopyPixKey}
-            />
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onEdit(payment)}>
+                Editar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onDelete(payment.id)}>
+                Excluir
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopyPixKey}>
+                PIX
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

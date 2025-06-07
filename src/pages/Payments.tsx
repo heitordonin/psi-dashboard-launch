@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,7 +21,7 @@ const Payments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [deletePayment, setDeletePayment] = useState<Payment | null>(null);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [filters, setFilters] = useState<PaymentFilters>({
     patientId: "",
     startDate: "",
@@ -66,7 +65,8 @@ const Payments = () => {
           *,
           patients (
             full_name,
-            cpf
+            cpf,
+            phone
           )
         `)
         .eq('owner_id', user.id)
@@ -90,7 +90,7 @@ const Payments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança excluída com sucesso!');
-      setDeletePayment(null);
+      setDeletePaymentId(null);
     },
     onError: (error) => {
       console.error('Error deleting payment:', error);
@@ -139,13 +139,13 @@ const Payments = () => {
     setShowForm(true);
   };
 
-  const handleDeletePayment = (payment: Payment) => {
-    setDeletePayment(payment);
+  const handleDeletePayment = (paymentId: string) => {
+    setDeletePaymentId(paymentId);
   };
 
   const confirmDelete = () => {
-    if (deletePayment) {
-      deletePaymentMutation.mutate(deletePayment.id);
+    if (deletePaymentId) {
+      deletePaymentMutation.mutate(deletePaymentId);
     }
   };
 
@@ -218,8 +218,8 @@ const Payments = () => {
             )}
 
             <DeleteConfirmationDialog
-              isOpen={!!deletePayment}
-              onClose={() => setDeletePayment(null)}
+              isOpen={!!deletePaymentId}
+              onClose={() => setDeletePaymentId(null)}
               onConfirm={confirmDelete}
               title="Excluir Cobrança"
               description={`Tem certeza de que deseja excluir esta cobrança? Esta ação não pode ser desfeita.`}
