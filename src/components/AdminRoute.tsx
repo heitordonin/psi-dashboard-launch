@@ -12,9 +12,14 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
-      console.log('User not admin, redirecting to dashboard');
-      navigate('/dashboard');
+    if (!isLoading) {
+      if (!user) {
+        console.log('User not authenticated, redirecting to login');
+        navigate('/login');
+      } else if (!isAdmin) {
+        console.log('User not admin (is_admin:', isAdmin, '), redirecting to dashboard');
+        navigate('/dashboard');
+      }
     }
   }, [user, isAdmin, isLoading, navigate]);
 
@@ -23,7 +28,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-          <p className="mt-4">Verificando permissões...</p>
+          <p className="mt-4">Verificando permissões de administrador...</p>
         </div>
       </div>
     );

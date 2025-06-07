@@ -33,6 +33,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, signOut, isAdmin } = useAuth();
   const { currentPlan } = useSubscription();
 
+  console.log('AppSidebar - isAdmin:', isAdmin, 'user:', user?.email);
+
   const items = [
     {
       title: "Dashboard",
