@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +55,20 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     }
   }, [isReceived, receivedDate]);
 
+  // Auto-handle guardian CPF when hasGuardian changes
+  useEffect(() => {
+    if (hasGuardian && formData.patient_id) {
+      const selectedPatient = patients.find(p => p.id === formData.patient_id);
+      if (selectedPatient?.guardian_cpf) {
+        setFormData(prev => ({ ...prev, payer_cpf: selectedPatient.guardian_cpf }));
+        setPaymentTitular('other');
+      }
+    } else if (!hasGuardian) {
+      setFormData(prev => ({ ...prev, payer_cpf: '' }));
+      setPaymentTitular('patient');
+    }
+  }, [hasGuardian, formData.patient_id]);
+
   const { data: patients = [] } = useQuery({
     queryKey: ['patients', user?.id],
     queryFn: async () => {
@@ -90,7 +103,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         owner_id: user.id,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
-        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
+        payer_cpf: (hasGuardian || paymentTitular === 'other') ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -124,7 +137,7 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         description: data.description,
         status: (isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: isReceived ? receivedDate : null,
-        payer_cpf: paymentTitular === 'other' ? data.payer_cpf : null,
+        payer_cpf: (hasGuardian || paymentTitular === 'other') ? data.payer_cpf : null,
       };
 
       const { data: result, error } = await supabase
@@ -173,8 +186,8 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
       return;
     }
 
-    // Validate CPF if payment titular is different
-    if (paymentTitular === 'other' && !validateCpf(formData.payer_cpf)) {
+    // Validate CPF if payment titular is different or has guardian
+    if ((hasGuardian || paymentTitular === 'other') && !validateCpf(formData.payer_cpf)) {
       toast.error('CPF do titular é obrigatório e deve ser válido');
       return;
     }
@@ -234,6 +247,21 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
           errors={{}}
           validateCpf={validateCpf}
           showCpfSection={true}
+        />
+      )}
+
+      {!hasGuardian && (
+        <PatientAndPayer
+          patients={patients}
+          formData={formData}
+          setFormData={setFormData}
+          paymentTitular={paymentTitular}
+          setPaymentTitular={setPaymentTitular}
+          payerCpf={formData.payer_cpf}
+          setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
+          errors={{}}
+          validateCpf={validateCpf}
+          showCpfSection={false}
         />
       )}
       
