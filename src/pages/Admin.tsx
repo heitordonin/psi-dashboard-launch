@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -429,6 +428,8 @@ const Admin = () => {
                           <tr className="border-b">
                             <th className="text-left p-2">Categoria</th>
                             <th className="text-left p-2">Valor</th>
+                            <th className="text-left p-2">Valor Ajustado Residencial</th>
+                            <th className="text-left p-2">Juros/Multa</th>
                             <th className="text-left p-2">Data Pagamento</th>
                             <th className="text-left p-2">Descrição</th>
                             <th className="text-left p-2">Criado em</th>
@@ -440,6 +441,20 @@ const Admin = () => {
                               <td className="p-2">{expense.expense_categories?.name}</td>
                               <td className="p-2">
                                 {expense.amount.toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })}
+                              </td>
+                              <td className="p-2">
+                                {expense.residential_adjusted_amount ? 
+                                  expense.residential_adjusted_amount.toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  }) : '-'
+                                }
+                              </td>
+                              <td className="p-2">
+                                {expense.penalty_interest.toLocaleString('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
                                 })}
