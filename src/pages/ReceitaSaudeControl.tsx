@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Receipt, Search } from "lucide-react";
+import { Receipt, Search, Copy } from "lucide-react";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { PaymentAdvancedFilter, PaymentFilters } from "@/components/payments/PaymentAdvancedFilter";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -136,6 +137,19 @@ const ReceitaSaudeControl = () => {
     updateReceiptMutation.mutate({ paymentId, issued: !currentStatus });
   };
 
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${fieldName} copiado!`);
+    } catch (err) {
+      toast.error('Erro ao copiar');
+    }
+  };
+
+  const formatCpf = (cpf: string) => {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -214,58 +228,150 @@ const ReceitaSaudeControl = () => {
                     <div className="flex flex-col divide-y">
                       {filteredPayments.map((payment) => {
                         const payerCpf = payment.payer_cpf || payment.patients?.cpf;
+                        const patientCpf = payment.patients?.cpf;
+                        const isDifferentPayer = payment.payer_cpf && payment.payer_cpf !== patientCpf;
+                        const paymentDate = new Date(payment.paid_date || payment.due_date).toLocaleDateString('pt-BR');
+                        const formattedAmount = `R$ ${Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                        
                         return (
-                          <div key={payment.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex-1 min-w-0">
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-                                <div>
-                                  <span className="font-medium text-gray-500">Data:</span>
-                                  <p className="text-gray-900">
-                                    {new Date(payment.paid_date || payment.due_date).toLocaleDateString('pt-BR')}
-                                  </p>
+                          <div key={payment.id} className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* Primeira coluna - Informações básicas */}
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-gray-500 text-sm">Data:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-900 font-mono">{paymentDate}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(paymentDate, 'Data')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="font-medium text-gray-500">Paciente:</span>
-                                  <p className="text-gray-900 truncate">
-                                    {payment.patients?.full_name || 'Paciente não encontrado'}
-                                  </p>
+
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-gray-500 text-sm">Paciente:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-900 truncate max-w-[200px]">
+                                      {payment.patients?.full_name || 'Paciente não encontrado'}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(payment.patients?.full_name || '', 'Nome do paciente')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="font-medium text-gray-500">CPF Titular:</span>
-                                  <p className="text-gray-900">
-                                    {payerCpf || 'N/A'}
-                                  </p>
+
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-gray-500 text-sm">CPF Paciente:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-900 font-mono">
+                                      {patientCpf ? formatCpf(patientCpf) : 'N/A'}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(patientCpf || '', 'CPF do paciente')}
+                                      className="h-6 w-6 p-0"
+                                      disabled={!patientCpf}
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="font-medium text-gray-500">Valor:</span>
-                                  <p className="text-gray-900 font-semibold">
-                                    R$ {Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                  </p>
+
+                                {isDifferentPayer && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-gray-500 text-sm">CPF Titular:</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-blue-600 font-mono">
+                                        {formatCpf(payment.payer_cpf!)}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(payment.payer_cpf!, 'CPF do titular')}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Segunda coluna - Valor e controles */}
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-gray-500 text-sm">Valor:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-900 font-semibold font-mono">
+                                      {formattedAmount}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(Number(payment.amount).toFixed(2).replace('.', ','), 'Valor')}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {payment.description && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-gray-500 text-sm">Descrição:</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-600 text-sm truncate max-w-[200px]">
+                                        {payment.description}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyToClipboard(payment.description!, 'Descrição')}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-end mt-4">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`receipt-${payment.id}`}
+                                      checked={payment.receita_saude_receipt_issued}
+                                      onCheckedChange={() => handleReceiptToggle(payment.id, payment.receita_saude_receipt_issued)}
+                                      disabled={updateReceiptMutation.isPending}
+                                    />
+                                    <label 
+                                      htmlFor={`receipt-${payment.id}`}
+                                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                                    >
+                                      Recibo emitido
+                                    </label>
+                                  </div>
                                 </div>
                               </div>
-                              {payment.description && (
-                                <div className="mt-2">
-                                  <span className="font-medium text-gray-500 text-sm">Descrição:</span>
-                                  <p className="text-gray-600 text-sm truncate">{payment.description}</p>
-                                </div>
-                              )}
                             </div>
-                            <div className="flex items-center gap-3 ml-4">
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`receipt-${payment.id}`}
-                                  checked={payment.receita_saude_receipt_issued}
-                                  onCheckedChange={() => handleReceiptToggle(payment.id, payment.receita_saude_receipt_issued)}
-                                  disabled={updateReceiptMutation.isPending}
-                                />
-                                <label 
-                                  htmlFor={`receipt-${payment.id}`}
-                                  className="text-sm font-medium text-gray-700 cursor-pointer"
-                                >
-                                  Recibo emitido
-                                </label>
+
+                            {isDifferentPayer && (
+                              <div className="mt-3 p-2 bg-blue-50 rounded-md">
+                                <p className="text-xs text-blue-700">
+                                  ⚠️ Pagamento realizado por titular diferente do paciente
+                                </p>
                               </div>
-                            </div>
+                            )}
                           </div>
                         );
                       })}
