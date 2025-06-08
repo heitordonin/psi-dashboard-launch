@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -181,7 +182,7 @@ const Payments = () => {
           <div className="min-h-screen bg-gray-50">
             <PaymentsHeader onNewPayment={handleNewPayment} />
 
-            <div className="container mx-auto px-4 py-6 space-y-6">
+            <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6 overflow-x-hidden">
               <PaymentsSearchFilter
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -201,10 +202,10 @@ const Payments = () => {
             </div>
 
             {showForm && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-                  <div className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50">
+                <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto mx-2">
+                  <div className="p-4 md:p-6">
+                    <h2 className="text-lg md:text-xl font-semibold mb-4">
                       {editingPayment ? 'Editar Cobrança' : 'Nova Cobrança'}
                     </h2>
                     <PaymentFormWrapper
