@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -187,10 +188,10 @@ const Profile = () => {
                       </p>
                     </div>
                     
-                    {currentPlan?.price && (
+                    {currentPlan?.price_monthly && (
                       <div className="text-center">
                         <p className="text-lg font-semibold">
-                          R$ {currentPlan.price.toFixed(2)}/mês
+                          R$ {currentPlan.price_monthly.toFixed(2)}/mês
                         </p>
                       </div>
                     )}

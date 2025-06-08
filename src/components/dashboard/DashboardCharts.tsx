@@ -56,6 +56,8 @@ export const DashboardCharts = () => {
   // Calculate effective tax rate (simplified calculation)
   const effectiveRate = totalRevenue > 0 ? Math.min((totalExpenses / totalRevenue) * 100, 100) : 0;
 
+  const hasData = paymentsData.length > 0 || expensesData.length > 0;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Revenue vs Expense Chart - moved to first position */}
@@ -65,8 +67,8 @@ export const DashboardCharts = () => {
         </CardHeader>
         <CardContent>
           <RevenueExpenseChart 
-            paymentsData={paymentsData} 
-            expensesData={expensesData} 
+            revenue={totalRevenue}
+            expense={totalExpenses}
           />
         </CardContent>
       </Card>
@@ -78,9 +80,8 @@ export const DashboardCharts = () => {
         </CardHeader>
         <CardContent>
           <MarginKPI 
-            totalRevenue={totalRevenue}
-            totalExpenses={totalExpenses}
-            marginPercentage={marginPercentage}
+            margin={marginPercentage}
+            hasData={hasData}
           />
         </CardContent>
       </Card>
@@ -91,7 +92,10 @@ export const DashboardCharts = () => {
           <CardTitle>Alíquota Efetiva</CardTitle>
         </CardHeader>
         <CardContent>
-          <GaugeChart value={effectiveRate} />
+          <GaugeChart 
+            percentage={effectiveRate}
+            hasData={hasData}
+          />
         </CardContent>
       </Card>
     </div>
