@@ -91,9 +91,9 @@ const Dashboard = () => {
     pendingTotal: paymentsData
       .filter(p => p.status === 'pending')
       .reduce((sum, p) => sum + Number(p.amount), 0),
-    overdueCount: paymentsData.filter(p => p.status === 'overdue' || (p.status === 'pending' && new Date(p.due_date) < new Date())).length,
+    overdueCount: paymentsData.filter(p => p.status === 'pending' && new Date(p.due_date) < new Date()).length,
     overdueTotal: paymentsData
-      .filter(p => p.status === 'overdue' || (p.status === 'pending' && new Date(p.due_date) < new Date()))
+      .filter(p => p.status === 'pending' && new Date(p.due_date) < new Date())
       .reduce((sum, p) => sum + Number(p.amount), 0),
     expenseCount: expensesData.length,
     expenseTotal: expensesData.reduce((sum, e) => sum + Number(e.amount), 0)
