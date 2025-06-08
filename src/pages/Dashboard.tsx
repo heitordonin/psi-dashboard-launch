@@ -1,26 +1,105 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ModuleTile } from "@/components/dashboard/ModuleTile";
 import { QuickTile } from "@/components/dashboard/QuickTile";
 import { ReceitaSaudeTile } from "@/components/dashboard/ReceitaSaudeTile";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { Users, CreditCard, Receipt, Plus, UserPlus, DollarSign, User } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/login");
     }
   }, [user, isLoading, navigate]);
+
+  // Fetch payments data with date filter
+  const { data: paymentsData = [], isLoading: paymentsLoading } = useQuery({
+    queryKey: ['dashboard-payments', user?.id, startDate, endDate],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      let query = supabase
+        .from('payments')
+        .select('*')
+        .eq('owner_id', user.id);
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch expenses data with date filter
+  const { data: expensesData = [], isLoading: expensesLoading } = useQuery({
+    queryKey: ['dashboard-expenses', user?.id, startDate, endDate],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      let query = supabase
+        .from('expenses')
+        .select('*')
+        .eq('owner_id', user.id);
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  // Calculate summary data
+  const summaryData = {
+    receivedCount: paymentsData.filter(p => p.status === 'paid').length,
+    receivedTotal: paymentsData
+      .filter(p => p.status === 'paid')
+      .reduce((sum, p) => sum + Number(p.amount), 0),
+    pendingCount: paymentsData.filter(p => p.status === 'pending').length,
+    pendingTotal: paymentsData
+      .filter(p => p.status === 'pending')
+      .reduce((sum, p) => sum + Number(p.amount), 0),
+    overdueCount: paymentsData.filter(p => p.status === 'overdue' || (p.status === 'pending' && new Date(p.due_date) < new Date())).length,
+    overdueTotal: paymentsData
+      .filter(p => p.status === 'overdue' || (p.status === 'pending' && new Date(p.due_date) < new Date()))
+      .reduce((sum, p) => sum + Number(p.amount), 0),
+    expenseCount: expensesData.length,
+    expenseTotal: expensesData.reduce((sum, e) => sum + Number(e.amount), 0)
+  };
+
+  const isLoadingSummary = paymentsLoading || expensesLoading;
 
   if (isLoading) {
     return (
@@ -66,6 +145,38 @@ const Dashboard = () => {
 
             {/* Main Content */}
             <div className="container mx-auto px-4 py-6 space-y-6">
+              {/* Date Filter */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Filtro por Período</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="start-date">Data Inicial</Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="end-date">Data Final</Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Summary Card */}
+              <SummaryCard data={summaryData} isLoading={isLoadingSummary} />
+
               {/* Quick Actions */}
               <Card>
                 <CardHeader>

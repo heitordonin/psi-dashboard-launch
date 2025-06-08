@@ -33,7 +33,7 @@ export const DashboardCharts = () => {
       
       const { data, error } = await supabase
         .from('expenses')
-        .select('*')
+        .select('*, expense_categories!inner(*)')
         .eq('owner_id', user.id);
       
       if (error) throw error;
@@ -50,11 +50,30 @@ export const DashboardCharts = () => {
   const totalExpenses = expensesData
     .reduce((sum, expense) => sum + Number(expense.amount), 0);
 
+  // Calculate tax-related expenses for effective tax rate
+  // This should be filtered to only include tax-related categories
+  const taxExpenses = expensesData
+    .filter(expense => {
+      // Filter only expenses that are tax-related
+      // You might want to add specific category codes for taxes here
+      const category = expense.expense_categories;
+      return category && (
+        category.code?.includes('TAX') || 
+        category.name?.toLowerCase().includes('imposto') ||
+        category.name?.toLowerCase().includes('taxa') ||
+        category.code === 'IRPF' ||
+        category.code === 'CSLL' ||
+        category.code === 'PIS' ||
+        category.code === 'COFINS'
+      );
+    })
+    .reduce((sum, expense) => sum + Number(expense.amount), 0);
+
   const margin = totalRevenue - totalExpenses;
   const marginPercentage = totalRevenue > 0 ? (margin / totalRevenue) * 100 : 0;
 
-  // Calculate effective tax rate (simplified calculation)
-  const effectiveRate = totalRevenue > 0 ? Math.min((totalExpenses / totalRevenue) * 100, 100) : 0;
+  // Calculate effective tax rate using only tax-related expenses
+  const effectiveRate = totalRevenue > 0 ? Math.min((taxExpenses / totalRevenue) * 100, 100) : 0;
 
   const hasData = paymentsData.length > 0 || expensesData.length > 0;
 
@@ -62,9 +81,6 @@ export const DashboardCharts = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Revenue vs Expense Chart - moved to first position */}
       <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Receita vs Despesa</CardTitle>
-        </CardHeader>
         <CardContent>
           <RevenueExpenseChart 
             revenue={totalRevenue}
@@ -75,9 +91,6 @@ export const DashboardCharts = () => {
 
       {/* Margin KPI - moved to second position */}
       <Card>
-        <CardHeader>
-          <CardTitle>Margem de Lucro</CardTitle>
-        </CardHeader>
         <CardContent>
           <MarginKPI 
             margin={marginPercentage}
@@ -88,9 +101,6 @@ export const DashboardCharts = () => {
 
       {/* Effective Rate Gauge - moved to third position */}
       <Card className="lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Alíquota Efetiva</CardTitle>
-        </CardHeader>
         <CardContent>
           <GaugeChart 
             percentage={effectiveRate}
