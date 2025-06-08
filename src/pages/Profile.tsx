@@ -20,6 +20,10 @@ const Profile = () => {
   const [profile, setProfile] = useState({
     full_name: "",
     cpf: "",
+    birth_date: "",
+    display_name: "",
+    crp_number: "",
+    nit_nis_pis: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -52,6 +56,10 @@ const Profile = () => {
         setProfile({
           full_name: data.full_name || "",
           cpf: data.cpf || "",
+          birth_date: data.birth_date || "",
+          display_name: data.display_name || "",
+          crp_number: data.crp_number || "",
+          nit_nis_pis: data.nit_nis_pis || "",
         });
       }
     } catch (error) {
@@ -70,6 +78,10 @@ const Profile = () => {
           id: user.id,
           full_name: profile.full_name,
           cpf: profile.cpf,
+          birth_date: profile.birth_date || null,
+          display_name: profile.display_name,
+          crp_number: profile.crp_number,
+          nit_nis_pis: profile.nit_nis_pis,
         });
 
       if (error) {
@@ -152,12 +164,48 @@ const Profile = () => {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="display_name">Nome de Exibição</Label>
+                      <Input
+                        id="display_name"
+                        value={profile.display_name}
+                        onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+                        placeholder="Como você gostaria de ser chamado"
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="cpf">CPF</Label>
                       <Input
                         id="cpf"
                         value={profile.cpf}
                         onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
                         placeholder="Digite seu CPF"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="birth_date">Data de Nascimento</Label>
+                      <Input
+                        id="birth_date"
+                        type="date"
+                        value={profile.birth_date}
+                        onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="crp_number">Número CRP</Label>
+                      <Input
+                        id="crp_number"
+                        value={profile.crp_number}
+                        onChange={(e) => setProfile({ ...profile, crp_number: e.target.value })}
+                        placeholder="Digite seu número do CRP"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nit_nis_pis">NIT/NIS/PIS</Label>
+                      <Input
+                        id="nit_nis_pis"
+                        value={profile.nit_nis_pis}
+                        onChange={(e) => setProfile({ ...profile, nit_nis_pis: e.target.value })}
+                        placeholder="Digite seu NIT/NIS/PIS"
                       />
                     </div>
                     <Button 
