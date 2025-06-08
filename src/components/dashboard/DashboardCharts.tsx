@@ -2,23 +2,37 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { RevenueExpenseChart } from "./RevenueExpenseChart";
 import { MarginKPI } from "./MarginKPI";
 import { GaugeChart } from "./GaugeChart";
 
-export const DashboardCharts = () => {
+interface DashboardChartsProps {
+  startDate: string;
+  endDate: string;
+}
+
+export const DashboardCharts = ({ startDate, endDate }: DashboardChartsProps) => {
   const { user } = useAuth();
 
   const { data: paymentsData = [] } = useQuery({
-    queryKey: ['dashboard-payments', user?.id],
+    queryKey: ['dashboard-payments-charts', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
         .select('*')
         .eq('owner_id', user.id);
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data;
@@ -27,14 +41,23 @@ export const DashboardCharts = () => {
   });
 
   const { data: expensesData = [] } = useQuery({
-    queryKey: ['dashboard-expenses', user?.id],
+    queryKey: ['dashboard-expenses-charts', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('expenses')
         .select('*, expense_categories!inner(*)')
         .eq('owner_id', user.id);
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate + 'T23:59:59');
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data;
@@ -50,36 +73,57 @@ export const DashboardCharts = () => {
   const totalExpenses = expensesData
     .reduce((sum, expense) => sum + Number(expense.amount), 0);
 
-  // Calculate tax-related expenses for effective tax rate
-  // This should be filtered to only include tax-related categories
-  const taxExpenses = expensesData
+  // Calculate DARF Carnê-Leão expenses for effective tax rate
+  // Filter for DARF Carnê-Leão category and expenses with competency in the filtered period
+  const darfCarneLeaoExpenses = expensesData
     .filter(expense => {
-      // Filter only expenses that are tax-related
-      // You might want to add specific category codes for taxes here
       const category = expense.expense_categories;
-      return category && (
-        category.code?.includes('TAX') || 
-        category.name?.toLowerCase().includes('imposto') ||
-        category.name?.toLowerCase().includes('taxa') ||
-        category.code === 'IRPF' ||
-        category.code === 'CSLL' ||
-        category.code === 'PIS' ||
-        category.code === 'COFINS'
+      const isDarfCarneLeao = category && (
+        category.code === 'P20.01.00004' ||
+        category.name?.toLowerCase().includes('darf') ||
+        category.name?.toLowerCase().includes('carnê-leão') ||
+        category.name?.toLowerCase().includes('carne leao')
       );
+      
+      // Only include expenses with competency and within the filtered period
+      if (!isDarfCarneLeao || !expense.competency) return false;
+      
+      // If we have date filters, check if competency falls within the period
+      if (startDate || endDate) {
+        const competencyDate = new Date(expense.competency);
+        if (startDate && competencyDate < new Date(startDate)) return false;
+        if (endDate && competencyDate > new Date(endDate)) return false;
+      }
+      
+      return true;
     })
     .reduce((sum, expense) => sum + Number(expense.amount), 0);
 
   const margin = totalRevenue - totalExpenses;
   const marginPercentage = totalRevenue > 0 ? (margin / totalRevenue) * 100 : 0;
 
-  // Calculate effective tax rate using only tax-related expenses
-  const effectiveRate = totalRevenue > 0 ? Math.min((taxExpenses / totalRevenue) * 100, 100) : 0;
+  // Calculate effective tax rate using DARF Carnê-Leão formula
+  const effectiveRate = totalRevenue > 0 ? Math.min((darfCarneLeaoExpenses / totalRevenue) * 100, 100) : 0;
 
   const hasData = paymentsData.length > 0 || expensesData.length > 0;
 
+  console.log('DashboardCharts - DARF Carnê-Leão calculation:', {
+    totalRevenue,
+    darfCarneLeaoExpenses,
+    effectiveRate,
+    filteredExpenses: expensesData.filter(expense => {
+      const category = expense.expense_categories;
+      return category && (
+        category.code === 'P20.01.00004' ||
+        category.name?.toLowerCase().includes('darf') ||
+        category.name?.toLowerCase().includes('carnê-leão')
+      );
+    })
+  });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Revenue vs Expense Chart - moved to first position */}
+      {/* Revenue vs Expense Chart */}
       <Card className="lg:col-span-2">
         <CardContent>
           <RevenueExpenseChart 
@@ -89,7 +133,7 @@ export const DashboardCharts = () => {
         </CardContent>
       </Card>
 
-      {/* Margin KPI - moved to second position */}
+      {/* Margin KPI */}
       <Card>
         <CardContent>
           <MarginKPI 
@@ -99,7 +143,7 @@ export const DashboardCharts = () => {
         </CardContent>
       </Card>
 
-      {/* Effective Rate Gauge - moved to third position */}
+      {/* Effective Rate Gauge */}
       <Card className="lg:col-span-3">
         <CardContent>
           <GaugeChart 

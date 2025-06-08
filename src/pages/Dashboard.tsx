@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -16,6 +15,7 @@ import { ReceitaSaudeTile } from "@/components/dashboard/ReceitaSaudeTile";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { Users, CreditCard, Receipt, Plus, UserPlus, DollarSign, User } from "lucide-react";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -145,39 +145,7 @@ const Dashboard = () => {
 
             {/* Main Content */}
             <div className="container mx-auto px-4 py-6 space-y-6">
-              {/* Date Filter */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Filtro por Período</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="start-date">Data Inicial</Label>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="end-date">Data Final</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Summary Card */}
-              <SummaryCard data={summaryData} isLoading={isLoadingSummary} />
-
-              {/* Quick Actions */}
+              {/* 1. Quick Actions */}
               <Card>
                 <CardHeader>
                   <CardTitle>Ações Rápidas</CardTitle>
@@ -205,10 +173,24 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Charts */}
-              <DashboardCharts />
+              {/* 2. Period Filter */}
+              <PeriodFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
 
-              {/* Modules Grid - Moved to the end */}
+              {/* 3. Charts */}
+              <DashboardCharts 
+                startDate={startDate}
+                endDate={endDate}
+              />
+
+              {/* 4. Summary Card */}
+              <SummaryCard data={summaryData} isLoading={isLoadingSummary} />
+
+              {/* 5. Modules Grid */}
               <Card>
                 <CardHeader>
                   <CardTitle>Módulos do Sistema</CardTitle>
