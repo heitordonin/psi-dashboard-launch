@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -244,35 +243,40 @@ const Patients = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col divide-y">
-                      {filteredPatients.map((patient) => (
-                        <div key={patient.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-gray-900 truncate">{patient.full_name}</p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {patient.patient_type === 'individual' ? 'CPF' : 'CNPJ'}: {patient.patient_type === 'individual' ? patient.cpf : patient.cnpj}
-                            </p>
-                            {patient.email && (
-                              <p className="text-xs text-gray-600">Email: {patient.email}</p>
-                            )}
-                            {patient.phone && (
-                              <p className="text-xs text-gray-600">Telefone: {patient.phone}</p>
-                            )}
-                            {patient.has_financial_guardian && (
-                              <p className="text-xs text-green-600 mt-1">Possui responsável financeiro</p>
-                            )}
-                            {patient.is_payment_from_abroad && (
-                              <p className="text-xs text-blue-600 mt-1">Pagamento do exterior</p>
-                            )}
-                            <p className="text-xs text-gray-500 mt-1 capitalize">
-                              {patient.patient_type === 'individual' ? 'Pessoa Física' : 'Empresa'}
-                            </p>
+                      {filteredPatients.map((patient) => {
+                        const documentLabel = patient.patient_type === 'company' ? 'CNPJ' : 'CPF';
+                        const documentValue = patient.patient_type === 'company' ? patient.cnpj : patient.cpf;
+                        
+                        return (
+                          <div key={patient.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-gray-900 truncate">{patient.full_name}</p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {documentLabel}: {documentValue}
+                              </p>
+                              {patient.email && (
+                                <p className="text-xs text-gray-600">Email: {patient.email}</p>
+                              )}
+                              {patient.phone && (
+                                <p className="text-xs text-gray-600">Telefone: {patient.phone}</p>
+                              )}
+                              {patient.has_financial_guardian && (
+                                <p className="text-xs text-green-600 mt-1">Possui responsável financeiro</p>
+                              )}
+                              {patient.is_payment_from_abroad && (
+                                <p className="text-xs text-blue-600 mt-1">Pagamento do exterior</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1 capitalize">
+                                {patient.patient_type === 'individual' ? 'Pessoa Física' : 'Empresa'}
+                              </p>
+                            </div>
+                            <ActionDropdown
+                              onEdit={() => handleEditPatient(patient)}
+                              onDelete={() => handleDeletePatient(patient)}
+                            />
                           </div>
-                          <ActionDropdown
-                            onEdit={() => handleEditPatient(patient)}
-                            onDelete={() => handleDeletePatient(patient)}
-                          />
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>

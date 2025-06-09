@@ -63,7 +63,9 @@ const ReceitaSaudeControl = () => {
           *,
           patients (
             full_name,
-            cpf
+            cpf,
+            cnpj,
+            patient_type
           )
         `)
         .eq('owner_id', user.id)
@@ -110,6 +112,8 @@ const ReceitaSaudeControl = () => {
   // Function to determine receipt eligibility and warning message
   const getReceiptEligibility = (payment: any) => {
     const patientCpf = payment.patients?.cpf;
+    const patientCnpj = payment.patients?.cnpj;
+    const patientType = payment.patients?.patient_type;
     const payerCpf = payment.payer_cpf;
     
     // Check if we have any CPF (from patient or payer)
@@ -118,7 +122,7 @@ const ReceitaSaudeControl = () => {
     const hasCpf = hasPatientCpf || hasPayerCpf;
     
     // Check if we have any CNPJ (from patient or payer)
-    const hasPatientCnpj = patientCpf && isCnpjFormat(patientCpf);
+    const hasPatientCnpj = (patientType === 'company' && patientCnpj) || (patientCpf && isCnpjFormat(patientCpf));
     const hasPayerCnpj = payerCpf && isCnpjFormat(payerCpf);
     const hasCnpj = hasPatientCnpj || hasPayerCnpj;
     
