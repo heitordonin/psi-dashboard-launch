@@ -95,6 +95,56 @@ const ReceitaSaudeControl = () => {
     }
   });
 
+  // Helper function to check if a string contains only numbers (CPF format)
+  const isCpfFormat = (document: string): boolean => {
+    const cleanDoc = document?.replace(/\D/g, '');
+    return cleanDoc?.length === 11;
+  };
+
+  // Helper function to check if a string is CNPJ format
+  const isCnpjFormat = (document: string): boolean => {
+    const cleanDoc = document?.replace(/\D/g, '');
+    return cleanDoc?.length === 14;
+  };
+
+  // Function to determine receipt eligibility and warning message
+  const getReceiptEligibility = (payment: any) => {
+    const patientCpf = payment.patients?.cpf;
+    const payerCpf = payment.payer_cpf;
+    
+    // Check if we have any CPF (from patient or payer)
+    const hasPatientCpf = patientCpf && isCpfFormat(patientCpf);
+    const hasPayerCpf = payerCpf && isCpfFormat(payerCpf);
+    const hasCpf = hasPatientCpf || hasPayerCpf;
+    
+    // Check if we have any CNPJ (from patient or payer)
+    const hasPatientCnpj = patientCpf && isCnpjFormat(patientCpf);
+    const hasPayerCnpj = payerCpf && isCnpjFormat(payerCpf);
+    const hasCnpj = hasPatientCnpj || hasPayerCnpj;
+    
+    // No CPF and no CNPJ - payment from abroad
+    if (!hasCpf && !hasCnpj) {
+      return {
+        isEligible: false,
+        warningMessage: "Pagamento recebido do exterior não possui recibo pelo Receita Saúde, registrar manualmente no Carnê-Leão."
+      };
+    }
+    
+    // No CPF but has CNPJ - juridical person payment
+    if (!hasCpf && hasCnpj) {
+      return {
+        isEligible: false,
+        warningMessage: "Pagamento recebido de pessoa jurídica não possui recibo pelo Receita Saúde nem registro no Carnê-Leão."
+      };
+    }
+    
+    // Has CPF (with or without CNPJ) - eligible for receipt
+    return {
+      isEligible: true,
+      warningMessage: null
+    };
+  };
+
   const filteredPayments = payments.filter(payment => {
     const patientName = payment.patients?.full_name || '';
     const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -249,6 +299,9 @@ const ReceitaSaudeControl = () => {
                         const paymentDate = new Date(payment.paid_date || payment.due_date).toLocaleDateString('pt-BR');
                         const formattedAmount = `R$ ${Number(payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
                         
+                        // Get receipt eligibility
+                        const receiptEligibility = getReceiptEligibility(payment);
+                        
                         return (
                           <div key={payment.id} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -368,11 +421,13 @@ const ReceitaSaudeControl = () => {
                                       id={`receipt-${payment.id}`}
                                       checked={payment.receita_saude_receipt_issued}
                                       onCheckedChange={() => handleReceiptToggle(payment.id, payment.receita_saude_receipt_issued)}
-                                      disabled={updateReceiptMutation.isPending}
+                                      disabled={updateReceiptMutation.isPending || !receiptEligibility.isEligible}
                                     />
                                     <label 
                                       htmlFor={`receipt-${payment.id}`}
-                                      className="text-sm font-medium text-gray-700 cursor-pointer"
+                                      className={`text-sm font-medium cursor-pointer ${
+                                        receiptEligibility.isEligible ? 'text-gray-700' : 'text-gray-400'
+                                      }`}
                                     >
                                       Recibo emitido
                                     </label>
@@ -381,10 +436,19 @@ const ReceitaSaudeControl = () => {
                               </div>
                             </div>
 
+                            {/* Warning messages */}
                             {isDifferentPayer && (
                               <div className="mt-3 p-2 bg-blue-50 rounded-md">
                                 <p className="text-xs text-blue-700">
                                   ⚠️ Pagamento realizado por titular diferente do paciente
+                                </p>
+                              </div>
+                            )}
+
+                            {receiptEligibility.warningMessage && (
+                              <div className="mt-3 p-2 bg-blue-50 rounded-md">
+                                <p className="text-xs text-blue-700">
+                                  ⚠️ {receiptEligibility.warningMessage}
                                 </p>
                               </div>
                             )}
