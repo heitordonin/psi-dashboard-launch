@@ -24,7 +24,7 @@ export const PaymentsHeader = ({ onNewPayment }: PaymentsHeaderProps) => {
         
         <div className="flex gap-3">
           <Button
-            onClick={() => navigate("/receita-saude")}
+            onClick={() => navigate("/receita-saude-control")}
             variant="outline"
             style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#ffffff' }}
             className="hover:bg-white/10"
