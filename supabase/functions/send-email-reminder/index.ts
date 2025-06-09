@@ -18,7 +18,7 @@ interface EmailReminderRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log('🚀 Email reminder function started - v2.0');
+  console.log('🚀 Email reminder function started - v2.1');
   console.log('Request method:', req.method);
   console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
@@ -68,16 +68,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('🔍 Fetching payment and user information...');
-    // Buscar informações do pagamento e usuário
+    // Buscar informações do pagamento usando explicit join
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select(`
-        owner_id,
-        profiles!payments_owner_id_fkey (
-          email_reminders_enabled,
-          display_name,
-          full_name
-        )
+        *,
+        patients!inner(full_name, email)
       `)
       .eq('id', paymentId)
       .single();
@@ -95,10 +91,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('✅ Payment data retrieved:', payment);
 
-    // Verificar se o usuário tem lembretes habilitados (opcional por enquanto)
-    console.log('📧 User email reminders enabled:', payment?.profiles?.email_reminders_enabled);
+    // Buscar informações do perfil do usuário separadamente
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('email_reminders_enabled, display_name, full_name')
+      .eq('id', payment.owner_id)
+      .single();
 
-    const therapistName = payment?.profiles?.display_name || payment?.profiles?.full_name || "Seu terapeuta";
+    if (profileError) {
+      console.error('❌ Error fetching profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: "Profile not found", details: profileError }),
+        { 
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        }
+      );
+    }
+
+    console.log('✅ Profile data retrieved:', profile);
+
+    // Verificar se o usuário tem lembretes habilitados (opcional por enquanto)
+    console.log('📧 User email reminders enabled:', profile?.email_reminders_enabled);
+
+    const therapistName = profile?.display_name || profile?.full_name || "Seu terapeuta";
     const formattedAmount = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
