@@ -32,13 +32,14 @@ export const DefaultDescriptionModal = ({
   const { user } = useAuth();
 
   const { data: descriptions = [], isLoading } = useQuery({
-    queryKey: ['invoice-descriptions'],
+    queryKey: ['invoice-descriptions', user?.id],
     queryFn: async () => {
       console.log('DefaultDescriptionModal - Buscando descrições padrão para usuário:', user?.id);
       
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
+        .eq('owner_id', user!.id)
         .order('created_at', { ascending: false });
         
       if (error) {

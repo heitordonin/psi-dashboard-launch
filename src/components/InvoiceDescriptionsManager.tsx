@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface InvoiceDescription {
   id: string;
@@ -33,31 +34,40 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
     text: ''
   });
 
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: descriptions = [], isLoading } = useQuery({
-    queryKey: ['invoice-descriptions'],
+    queryKey: ['invoice-descriptions', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      
       const { data, error } = await supabase
         .from('invoice_descriptions')
         .select('*')
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as InvoiceDescription[];
     },
-    enabled: isOpen
+    enabled: isOpen && !!user
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: { subject?: string; text: string }) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      
       const { error } = await supabase
         .from('invoice_descriptions')
-        .insert(data);
+        .insert({
+          ...data,
+          owner_id: user.id
+        });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions', user?.id] });
       toast.success('Descrição criada com sucesso!');
       setIsFormOpen(false);
       setFormData({ subject: '', text: '' });
@@ -69,15 +79,18 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
 
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; subject?: string; text: string }) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      
       const { id, ...updateData } = data;
       const { error } = await supabase
         .from('invoice_descriptions')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('owner_id', user.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions', user?.id] });
       toast.success('Descrição atualizada com sucesso!');
       setIsFormOpen(false);
       setEditingDescription(null);
@@ -90,14 +103,17 @@ export const InvoiceDescriptionsManager = ({ isOpen, onClose }: InvoiceDescripti
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error('Usuário não autenticado');
+      
       const { error } = await supabase
         .from('invoice_descriptions')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('owner_id', user.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-descriptions', user?.id] });
       toast.success('Descrição excluída com sucesso!');
       setDeletingDescription(null);
     },
