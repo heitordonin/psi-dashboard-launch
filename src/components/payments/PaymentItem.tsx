@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Copy, DollarSign, Calendar, User, FileText, CreditCard } from "lucide-react";
+import { CheckCircle, Copy, Calendar, User, FileText, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -100,7 +100,6 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-green-600" />
                 <span className="font-semibold text-green-600">
                   {formatCurrency(Number(payment.amount))}
                 </span>
