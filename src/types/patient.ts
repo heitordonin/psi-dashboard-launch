@@ -3,6 +3,8 @@ export interface Patient {
   id: string;
   full_name: string;
   cpf: string;
+  cnpj?: string;
+  patient_type: "individual" | "company";
   phone?: string;
   email?: string;
   guardian_cpf?: string;

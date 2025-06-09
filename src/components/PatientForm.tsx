@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { validateCpf } from '@/utils/validators';
+import { Switch } from '@/components/ui/switch';
+import { validateCpf, validateCnpj } from '@/utils/validators';
 import { Patient } from '@/types/patient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,9 @@ import { toast } from 'sonner';
 
 interface PatientFormData {
   full_name: string;
+  patient_type: "individual" | "company";
   cpf: string;
+  cnpj: string;
   email: string;
   phone: string;
   has_financial_guardian: boolean;
@@ -32,7 +35,9 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
 
   const [formData, setFormData] = useState<PatientFormData>({
     full_name: patient?.full_name || '',
+    patient_type: patient?.patient_type || 'individual',
     cpf: patient?.cpf || '',
+    cnpj: patient?.cnpj || '',
     email: patient?.email || '',
     phone: patient?.phone || '',
     has_financial_guardian: patient?.has_financial_guardian || false,
@@ -46,12 +51,22 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     mutationFn: async (data: PatientFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      const patientData = {
+        full_name: data.full_name,
+        patient_type: data.patient_type,
+        cpf: data.patient_type === 'individual' ? data.cpf : '',
+        cnpj: data.patient_type === 'company' ? data.cnpj : null,
+        email: data.email,
+        phone: data.phone,
+        has_financial_guardian: data.has_financial_guardian,
+        guardian_cpf: data.guardian_cpf,
+        is_payment_from_abroad: data.is_payment_from_abroad,
+        owner_id: user.id
+      };
+      
       const { error } = await supabase
         .from('patients')
-        .insert({
-          ...data,
-          owner_id: user.id
-        });
+        .insert(patientData);
       
       if (error) throw error;
     },
@@ -71,9 +86,21 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     mutationFn: async (data: PatientFormData) => {
       if (!patient?.id) throw new Error('Patient ID is required for update');
       
+      const patientData = {
+        full_name: data.full_name,
+        patient_type: data.patient_type,
+        cpf: data.patient_type === 'individual' ? data.cpf : '',
+        cnpj: data.patient_type === 'company' ? data.cnpj : null,
+        email: data.email,
+        phone: data.phone,
+        has_financial_guardian: data.has_financial_guardian,
+        guardian_cpf: data.guardian_cpf,
+        is_payment_from_abroad: data.is_payment_from_abroad,
+      };
+      
       const { error } = await supabase
         .from('patients')
-        .update(data)
+        .update(patientData)
         .eq('id', patient.id);
       
       if (error) throw error;
@@ -101,6 +128,19 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     return value;
   };
 
+  const formatCnpj = (value: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    
+    if (numericValue.length <= 14) {
+      return numericValue
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})/, '$1-$2');
+    }
+    return value;
+  };
+
   const formatPhone = (value: string) => {
     const numericValue = value.replace(/\D/g, '');
     
@@ -117,6 +157,11 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     setFormData(prev => ({ ...prev, cpf: formattedCpf }));
   };
 
+  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCnpj = formatCnpj(e.target.value);
+    setFormData(prev => ({ ...prev, cnpj: formattedCnpj }));
+  };
+
   const handleGuardianCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCpf = formatCpf(e.target.value);
     setFormData(prev => ({ ...prev, guardian_cpf: formattedCpf }));
@@ -127,6 +172,23 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     setFormData(prev => ({ ...prev, phone: formattedPhone }));
   };
 
+  const handlePatientTypeChange = (isCompany: boolean) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      patient_type: isCompany ? 'company' : 'individual',
+      cpf: isCompany ? '' : prev.cpf,
+      cnpj: isCompany ? prev.cnpj : ''
+    }));
+    
+    // Clear related errors when switching types
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.cpf;
+      delete newErrors.cnpj;
+      return newErrors;
+    });
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -134,12 +196,20 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
       newErrors.full_name = 'Nome completo é obrigatório';
     }
 
-    // CPF validation: only required if payment is NOT from abroad
+    // Document validation based on type and payment origin
     if (!formData.is_payment_from_abroad) {
-      if (!formData.cpf) {
-        newErrors.cpf = 'CPF é obrigatório para pagamentos nacionais';
-      } else if (!validateCpf(formData.cpf)) {
-        newErrors.cpf = 'CPF deve ter um formato válido';
+      if (formData.patient_type === 'individual') {
+        if (!formData.cpf) {
+          newErrors.cpf = 'CPF é obrigatório para pessoa física';
+        } else if (!validateCpf(formData.cpf)) {
+          newErrors.cpf = 'CPF deve ter um formato válido';
+        }
+      } else {
+        if (!formData.cnpj) {
+          newErrors.cnpj = 'CNPJ é obrigatório para empresa';
+        } else if (!validateCnpj(formData.cnpj)) {
+          newErrors.cnpj = 'CNPJ deve ter um formato válido';
+        }
       }
     }
 
@@ -173,16 +243,17 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     }
   };
 
-  // Clear CPF error when payment from abroad changes
+  // Clear document errors when payment from abroad changes
   useEffect(() => {
-    if (formData.is_payment_from_abroad && errors.cpf) {
+    if (formData.is_payment_from_abroad && (errors.cpf || errors.cnpj)) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.cpf;
+        delete newErrors.cnpj;
         return newErrors;
       });
     }
-  }, [formData.is_payment_from_abroad, errors.cpf]);
+  }, [formData.is_payment_from_abroad, errors.cpf, errors.cnpj]);
 
   const isLoading = createPatientMutation.isPending || updatePatientMutation.isPending;
 
@@ -194,10 +265,28 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
           id="full_name"
           value={formData.full_name}
           onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-          placeholder="Nome completo do paciente"
+          placeholder="Nome completo do paciente/empresa"
           className={errors.full_name ? 'border-red-500' : ''}
         />
         {errors.full_name && <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>}
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>Tipo de Cadastro</Label>
+          <div className="flex items-center space-x-3">
+            <span className={`text-sm ${formData.patient_type === 'individual' ? 'font-medium' : 'text-gray-500'}`}>
+              Pessoa Física
+            </span>
+            <Switch
+              checked={formData.patient_type === 'company'}
+              onCheckedChange={handlePatientTypeChange}
+            />
+            <span className={`text-sm ${formData.patient_type === 'company' ? 'font-medium' : 'text-gray-500'}`}>
+              Empresa
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -212,24 +301,47 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
         <Label htmlFor="is_payment_from_abroad">Pagamento vem do exterior</Label>
       </div>
 
-      <div>
-        <Label htmlFor="cpf">
-          CPF {!formData.is_payment_from_abroad && '*'}
-        </Label>
-        <Input
-          id="cpf"
-          value={formData.cpf}
-          onChange={handleCpfChange}
-          placeholder="000.000.000-00"
-          maxLength={14}
-          className={errors.cpf ? 'border-red-500' : ''}
-          disabled={formData.is_payment_from_abroad}
-        />
-        {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
-        {formData.is_payment_from_abroad && (
-          <p className="text-sm text-gray-500 mt-1">CPF não é obrigatório para pagamentos do exterior</p>
-        )}
-      </div>
+      {formData.patient_type === 'individual' && (
+        <div>
+          <Label htmlFor="cpf">
+            CPF {!formData.is_payment_from_abroad && '*'}
+          </Label>
+          <Input
+            id="cpf"
+            value={formData.cpf}
+            onChange={handleCpfChange}
+            placeholder="000.000.000-00"
+            maxLength={14}
+            className={errors.cpf ? 'border-red-500' : ''}
+            disabled={formData.is_payment_from_abroad}
+          />
+          {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+          {formData.is_payment_from_abroad && (
+            <p className="text-sm text-gray-500 mt-1">CPF não é obrigatório para pagamentos do exterior</p>
+          )}
+        </div>
+      )}
+
+      {formData.patient_type === 'company' && (
+        <div>
+          <Label htmlFor="cnpj">
+            CNPJ {!formData.is_payment_from_abroad && '*'}
+          </Label>
+          <Input
+            id="cnpj"
+            value={formData.cnpj}
+            onChange={handleCnpjChange}
+            placeholder="00.000.000/0000-00"
+            maxLength={18}
+            className={errors.cnpj ? 'border-red-500' : ''}
+            disabled={formData.is_payment_from_abroad}
+          />
+          {errors.cnpj && <p className="text-red-500 text-sm mt-1">{errors.cnpj}</p>}
+          {formData.is_payment_from_abroad && (
+            <p className="text-sm text-gray-500 mt-1">CNPJ não é obrigatório para pagamentos do exterior</p>
+          )}
+        </div>
+      )}
 
       <div>
         <Label htmlFor="email">Email</Label>
