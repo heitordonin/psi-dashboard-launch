@@ -52,25 +52,31 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
       
       // Build the patient data object with only the relevant fields
       const patientData: any = {
-        full_name: data.full_name,
+        full_name: data.full_name.trim(),
         patient_type: data.patient_type,
-        email: data.email || null,
-        phone: data.phone || null,
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
         has_financial_guardian: data.has_financial_guardian,
-        guardian_cpf: data.has_financial_guardian ? data.guardian_cpf : null,
         is_payment_from_abroad: data.is_payment_from_abroad,
         owner_id: user.id
       };
-
-      // Only include the relevant document field based on patient type
+      
+      // Clean and include only relevant document field
       if (data.patient_type === 'individual') {
-        patientData.cpf = data.cpf;
+        patientData.cpf = data.cpf ? data.cpf.replace(/\D/g, '') : null;
         patientData.cnpj = null;
       } else {
         patientData.cpf = null;
-        patientData.cnpj = data.cnpj;
+        patientData.cnpj = data.cnpj ? data.cnpj.replace(/\D/g, '') : null;
       }
       
+      // Clean guardian CPF if present
+      if (data.has_financial_guardian && data.guardian_cpf) {
+        patientData.guardian_cpf = data.guardian_cpf.replace(/\D/g, '');
+      } else {
+        patientData.guardian_cpf = null;
+      }
+
       const { error } = await supabase
         .from('patients')
         .insert(patientData);
@@ -93,24 +99,30 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     mutationFn: async (data: PatientFormData) => {
       if (!patient?.id) throw new Error('Patient ID is required for update');
       
-      // Build the patient data object with only the relevant fields
+      // Build the patient data object with properly cleaned fields
       const patientData: any = {
-        full_name: data.full_name,
+        full_name: data.full_name.trim(),
         patient_type: data.patient_type,
-        email: data.email || null,
-        phone: data.phone || null,
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
         has_financial_guardian: data.has_financial_guardian,
-        guardian_cpf: data.has_financial_guardian ? data.guardian_cpf : null,
         is_payment_from_abroad: data.is_payment_from_abroad,
       };
-
-      // Only include the relevant document field based on patient type
+      
+      // Clean and include only relevant document field
       if (data.patient_type === 'individual') {
-        patientData.cpf = data.cpf;
+        patientData.cpf = data.cpf ? data.cpf.replace(/\D/g, '') : null;
         patientData.cnpj = null;
       } else {
         patientData.cpf = null;
-        patientData.cnpj = data.cnpj;
+        patientData.cnpj = data.cnpj ? data.cnpj.replace(/\D/g, '') : null;
+      }
+      
+      // Clean guardian CPF if present
+      if (data.has_financial_guardian && data.guardian_cpf) {
+        patientData.guardian_cpf = data.guardian_cpf.replace(/\D/g, '');
+      } else {
+        patientData.guardian_cpf = null;
       }
       
       const { error } = await supabase
