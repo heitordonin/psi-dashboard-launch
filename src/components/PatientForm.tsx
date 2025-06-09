@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,18 +50,26 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     mutationFn: async (data: PatientFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      const patientData = {
+      // Build the patient data object with only the relevant fields
+      const patientData: any = {
         full_name: data.full_name,
         patient_type: data.patient_type,
-        cpf: data.patient_type === 'individual' ? data.cpf : '',
-        cnpj: data.patient_type === 'company' ? data.cnpj : null,
-        email: data.email,
-        phone: data.phone,
+        email: data.email || null,
+        phone: data.phone || null,
         has_financial_guardian: data.has_financial_guardian,
-        guardian_cpf: data.guardian_cpf,
+        guardian_cpf: data.has_financial_guardian ? data.guardian_cpf : null,
         is_payment_from_abroad: data.is_payment_from_abroad,
         owner_id: user.id
       };
+
+      // Only include the relevant document field based on patient type
+      if (data.patient_type === 'individual') {
+        patientData.cpf = data.cpf;
+        patientData.cnpj = null;
+      } else {
+        patientData.cpf = '';
+        patientData.cnpj = data.cnpj;
+      }
       
       const { error } = await supabase
         .from('patients')
@@ -86,17 +93,25 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     mutationFn: async (data: PatientFormData) => {
       if (!patient?.id) throw new Error('Patient ID is required for update');
       
-      const patientData = {
+      // Build the patient data object with only the relevant fields
+      const patientData: any = {
         full_name: data.full_name,
         patient_type: data.patient_type,
-        cpf: data.patient_type === 'individual' ? data.cpf : '',
-        cnpj: data.patient_type === 'company' ? data.cnpj : null,
-        email: data.email,
-        phone: data.phone,
+        email: data.email || null,
+        phone: data.phone || null,
         has_financial_guardian: data.has_financial_guardian,
-        guardian_cpf: data.guardian_cpf,
+        guardian_cpf: data.has_financial_guardian ? data.guardian_cpf : null,
         is_payment_from_abroad: data.is_payment_from_abroad,
       };
+
+      // Only include the relevant document field based on patient type
+      if (data.patient_type === 'individual') {
+        patientData.cpf = data.cpf;
+        patientData.cnpj = null;
+      } else {
+        patientData.cpf = '';
+        patientData.cnpj = data.cnpj;
+      }
       
       const { error } = await supabase
         .from('patients')
