@@ -4,7 +4,7 @@ export interface Patient {
   full_name: string;
   cpf: string;
   cnpj?: string;
-  patient_type: "individual" | "company";
+  patient_type?: "individual" | "company"; // Tornando opcional para compatibilidade com dados legados
   phone?: string;
   email?: string;
   guardian_cpf?: string;
