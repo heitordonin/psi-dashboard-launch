@@ -1,11 +1,13 @@
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { validateCpf } from '@/utils/validators';
 import { toast } from 'sonner';
 
 const Signup = () => {
@@ -14,147 +16,140 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const formatCPF = (value: string) => {
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!email) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
+    if (!password) {
+      newErrors.password = 'Senha é obrigatória';
+    } else if (password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Senhas não coincidem';
+    }
+
+    if (!fullName) {
+      newErrors.fullName = 'Nome completo é obrigatório';
+    }
+
+    if (!cpf) {
+      newErrors.cpf = 'CPF é obrigatório';
+    } else if (!validateCpf(cpf)) {
+      newErrors.cpf = 'CPF deve ter um formato válido';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const formatCpf = (value: string) => {
     // Remove all non-numeric characters
     const numericValue = value.replace(/\D/g, '');
     
-    // Apply CPF mask: 000.000.000-00
+    // Apply CPF mask
     if (numericValue.length <= 11) {
       return numericValue
         .replace(/(\d{3})(\d)/, '$1.$2')
         .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        .replace(/(\d{3})(\d{1,2})/, '$1-$2');
     }
-    
     return value;
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatCPF(e.target.value);
-    setCpf(formattedValue);
-  };
-
-  const validateCPF = (cpf: string) => {
-    // Remove formatting for validation
-    const numericCpf = cpf.replace(/\D/g, '');
-    
-    if (numericCpf.length !== 11) return false;
-    
-    // Check if all digits are the same
-    if (/^(\d)\1{10}$/.test(numericCpf)) return false;
-    
-    // Validate CPF algorithm
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(numericCpf.charAt(i)) * (10 - i);
-    }
-    let remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(numericCpf.charAt(9))) return false;
-    
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-      sum += parseInt(numericCpf.charAt(i)) * (11 - i);
-    }
-    remainder = (sum * 10) % 11;
-    if (remainder === 10 || remainder === 11) remainder = 0;
-    if (remainder !== parseInt(numericCpf.charAt(10))) return false;
-    
-    return true;
+    const formattedCpf = formatCpf(e.target.value);
+    setCpf(formattedCpf);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fullName.trim()) {
-      toast.error('Nome completo é obrigatório');
+    if (!validateForm()) {
       return;
     }
 
-    if (!cpf.trim()) {
-      toast.error('CPF é obrigatório');
-      return;
-    }
-
-    if (!validateCPF(cpf)) {
-      toast.error('CPF inválido');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      toast.error('As senhas não coincidem');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      const { error } = await signUp(email, password, {
-        full_name: fullName.trim(),
-        cpf: cpf.replace(/\D/g, '') // Store CPF without formatting
-      });
-      
-      if (error) {
-        console.log('Sign up error details:', error);
-        
-        // Handle specific error cases
-        if (error.message === 'User already registered') {
-          toast.error('Este email já está cadastrado');
-        } else if (error.message.includes('Database error saving new user')) {
-          // This usually means CPF constraint violation
-          toast.error('Este CPF já está cadastrado no sistema');
-        } else if (error.message.includes('duplicate key value violates unique constraint "unique_cpf"')) {
-          toast.error('Este CPF já está cadastrado');
-        } else if (error.message.includes('duplicate key value violates unique constraint')) {
-          toast.error('Já existe uma conta com estes dados');
-        } else {
-          toast.error('Erro ao criar conta: ' + error.message);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            cpf: cpf,
+          }
         }
-      } else {
-        toast.success('Conta criada com sucesso!');
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      console.error('Unexpected error during signup:', error);
-      toast.error('Erro inesperado ao criar conta');
+      });
+
+      if (error) throw error;
+
+      toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.", {
+        duration: 5000,
+        style: {
+          background: '#f0f9ff',
+          border: '1px solid #0ea5e9',
+          color: '#0c4a6e'
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || 'Erro ao criar conta');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Criar Conta</CardTitle>
+          <img 
+            src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
+            alt="Psiclo" 
+            className="mx-auto h-12 w-auto mb-4"
+          />
+          <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
           <CardDescription>
-            Crie sua conta para acessar o Declara Psi
+            Preencha os dados abaixo para criar sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="fullName">Nome Completo *</Label>
+              <Label htmlFor="fullName">Nome Completo</Label>
               <Input
                 id="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Digite seu nome completo"
-                required
+                placeholder="Seu nome completo"
+                className={errors.fullName ? 'border-red-500' : ''}
               />
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
+
             <div>
-              <Label htmlFor="cpf">CPF *</Label>
+              <Label htmlFor="cpf">CPF</Label>
               <Input
                 id="cpf"
                 type="text"
@@ -162,53 +157,60 @@ const Signup = () => {
                 onChange={handleCpfChange}
                 placeholder="000.000.000-00"
                 maxLength={14}
-                required
+                className={errors.cpf ? 'border-red-500' : ''}
               />
+              {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
             </div>
+
             <div>
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                required
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
+
             <div>
-              <Label htmlFor="password">Senha *</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite sua senha"
-                required
-                minLength={6}
+                placeholder="Sua senha"
+                className={errors.password ? 'border-red-500' : ''}
               />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
+
             <div>
-              <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirme sua senha"
-                required
-                minLength={6}
+                className={errors.confirmPassword ? 'border-red-500' : ''}
               />
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Criando conta...' : 'Criar Conta'}
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Criando conta...' : 'Criar Conta'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
+
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Já tem uma conta?{' '}
-              <Link to="/login" className="text-blue-600 hover:underline">
-                Entrar
+              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                Faça login
               </Link>
             </p>
           </div>

@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription, useSubscriptionPlans } from "@/hooks/useSubscription";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,10 +73,13 @@ const Plans = () => {
         <AppSidebar />
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
-            <div className="bg-white shadow-sm border-b">
-              <div className="container mx-auto px-4 py-6">
-                <h1 className="text-3xl font-bold text-gray-900">Planos de Assinatura</h1>
-                <p className="text-gray-600 mt-2">Escolha o plano ideal para sua prática</p>
+            <div style={{ backgroundColor: '#002472' }} className="border-b px-4 py-4">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-white hover:text-gray-200" />
+                <div>
+                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Planos de Assinatura</h1>
+                  <p className="text-sm" style={{ color: '#03f6f9' }}>Escolha o plano ideal para sua prática</p>
+                </div>
               </div>
             </div>
 
