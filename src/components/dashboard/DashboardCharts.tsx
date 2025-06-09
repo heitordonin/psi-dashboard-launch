@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +70,7 @@ export const DashboardCharts = ({ startDate, endDate }: DashboardChartsProps) =>
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
   const totalExpenses = expensesData
-    .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    .reduce((sum, expense) => sum + Number(expense.residential_adjusted_amount ?? expense.amount), 0);
 
   // Calculate DARF Carnê-Leão expenses for effective tax rate
   // Filter for DARF Carnê-Leão category and expenses with competency in the filtered period
@@ -97,7 +96,7 @@ export const DashboardCharts = ({ startDate, endDate }: DashboardChartsProps) =>
       
       return true;
     })
-    .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    .reduce((sum, expense) => sum + Number(expense.residential_adjusted_amount ?? expense.amount), 0);
 
   const margin = totalRevenue - totalExpenses;
   const marginPercentage = totalRevenue > 0 ? (margin / totalRevenue) * 100 : 0;

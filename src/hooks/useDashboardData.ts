@@ -70,7 +70,7 @@ export const useDashboardData = (startDate: string, endDate: string) => {
       .filter(p => p.status === 'pending' && new Date(p.due_date) < new Date())
       .reduce((sum, p) => sum + Number(p.amount), 0),
     expenseCount: expensesData.length,
-    expenseTotal: expensesData.reduce((sum, e) => sum + Number(e.amount), 0)
+    expenseTotal: expensesData.reduce((sum, e) => sum + Number(e.residential_adjusted_amount ?? e.amount), 0)
   };
 
   const isLoadingSummary = paymentsLoading || expensesLoading;
