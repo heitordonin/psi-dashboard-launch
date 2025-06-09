@@ -18,8 +18,13 @@ interface EmailReminderRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('🚀 Email reminder function started - v2.0');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log('✅ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -29,6 +34,10 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    console.log('📧 Parsing request body...');
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
+
     const { 
       paymentId, 
       recipientEmail, 
@@ -36,13 +45,19 @@ const handler = async (req: Request): Promise<Response> => {
       patientName, 
       dueDate, 
       description 
-    }: EmailReminderRequest = await req.json();
+    }: EmailReminderRequest = requestBody;
 
-    console.log('Email reminder request:', { paymentId, recipientEmail, patientName });
+    console.log('📋 Email reminder request:', { 
+      paymentId, 
+      recipientEmail, 
+      patientName,
+      amount,
+      dueDate 
+    });
 
     // Verificar se há email válido
     if (!recipientEmail || !recipientEmail.includes('@')) {
-      console.error('Invalid recipient email:', recipientEmail);
+      console.error('❌ Invalid recipient email:', recipientEmail);
       return new Response(
         JSON.stringify({ error: "Invalid recipient email" }),
         { 
@@ -52,6 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log('🔍 Fetching payment and user information...');
     // Buscar informações do pagamento e usuário
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
@@ -67,9 +83,9 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (paymentError) {
-      console.error('Error fetching payment:', paymentError);
+      console.error('❌ Error fetching payment:', paymentError);
       return new Response(
-        JSON.stringify({ error: "Payment not found" }),
+        JSON.stringify({ error: "Payment not found", details: paymentError }),
         { 
           status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -77,8 +93,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log('✅ Payment data retrieved:', payment);
+
     // Verificar se o usuário tem lembretes habilitados (opcional por enquanto)
-    console.log('User email reminders enabled:', payment?.profiles?.email_reminders_enabled);
+    console.log('📧 User email reminders enabled:', payment?.profiles?.email_reminders_enabled);
 
     const therapistName = payment?.profiles?.display_name || payment?.profiles?.full_name || "Seu terapeuta";
     const formattedAmount = new Intl.NumberFormat('pt-BR', {
@@ -112,6 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
+    console.log('💾 Logging email attempt...');
     // Log do email
     const { error: logError } = await supabaseClient
       .from('email_logs')
@@ -126,17 +145,22 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (logError) {
-      console.error('Error logging email:', logError);
+      console.error('⚠️ Error logging email:', logError);
+    } else {
+      console.log('✅ Email logged successfully');
     }
 
     // Por enquanto, apenas simular o envio do email
     // TODO: Integrar com Resend, Mailgun ou outro provedor
-    console.log('Email reminder sent successfully to:', recipientEmail);
+    console.log('📧 Email reminder sent successfully to:', recipientEmail);
+    console.log('📄 Email subject:', emailSubject);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Email reminder sent successfully" 
+        message: "Email reminder sent successfully",
+        recipient: recipientEmail,
+        subject: emailSubject
       }),
       {
         status: 200,
@@ -145,9 +169,14 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("Error in send-email-reminder function:", error);
+    console.error("💥 Error in send-email-reminder function:", error);
+    console.error("Error stack:", error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -156,4 +185,5 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
+console.log('🎯 Starting email reminder function server...');
 serve(handler);
