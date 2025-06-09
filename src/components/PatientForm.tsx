@@ -5,6 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { validateCpf } from '@/utils/validators';
+import { Patient } from '@/types/patient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface PatientFormData {
   full_name: string;
@@ -17,25 +22,72 @@ interface PatientFormData {
 }
 
 interface PatientFormProps {
-  onSubmit: (data: PatientFormData) => void;
-  onCancel: () => void;
-  initialData?: Partial<PatientFormData>;
-  isLoading?: boolean;
+  patient?: Patient;
+  onClose: () => void;
 }
 
-export const PatientForm = ({ onSubmit, onCancel, initialData, isLoading = false }: PatientFormProps) => {
+export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState<PatientFormData>({
-    full_name: '',
-    cpf: '',
-    email: '',
-    phone: '',
-    has_financial_guardian: false,
-    guardian_cpf: '',
-    is_payment_from_abroad: false,
-    ...initialData
+    full_name: patient?.full_name || '',
+    cpf: patient?.cpf || '',
+    email: patient?.email || '',
+    phone: patient?.phone || '',
+    has_financial_guardian: patient?.has_financial_guardian || false,
+    guardian_cpf: patient?.guardian_cpf || '',
+    is_payment_from_abroad: patient?.is_payment_from_abroad || false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const createPatientMutation = useMutation({
+    mutationFn: async (data: PatientFormData) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('patients')
+        .insert({
+          ...data,
+          owner_id: user.id
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ['patients-count'] });
+      toast.success('Paciente criado com sucesso!');
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error creating patient:', error);
+      toast.error('Erro ao criar paciente');
+    }
+  });
+
+  const updatePatientMutation = useMutation({
+    mutationFn: async (data: PatientFormData) => {
+      if (!patient?.id) throw new Error('Patient ID is required for update');
+      
+      const { error } = await supabase
+        .from('patients')
+        .update(data)
+        .eq('id', patient.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      toast.success('Paciente atualizado com sucesso!');
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error updating patient:', error);
+      toast.error('Erro ao atualizar paciente');
+    }
+  });
 
   const formatCpf = (value: string) => {
     const numericValue = value.replace(/\D/g, '');
@@ -114,7 +166,11 @@ export const PatientForm = ({ onSubmit, onCancel, initialData, isLoading = false
       return;
     }
 
-    onSubmit(formData);
+    if (patient) {
+      updatePatientMutation.mutate(formData);
+    } else {
+      createPatientMutation.mutate(formData);
+    }
   };
 
   // Clear CPF error when payment from abroad changes
@@ -127,6 +183,8 @@ export const PatientForm = ({ onSubmit, onCancel, initialData, isLoading = false
       });
     }
   }, [formData.is_payment_from_abroad, errors.cpf]);
+
+  const isLoading = createPatientMutation.isPending || updatePatientMutation.isPending;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -226,7 +284,7 @@ export const PatientForm = ({ onSubmit, onCancel, initialData, isLoading = false
       )}
 
       <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isLoading}>
