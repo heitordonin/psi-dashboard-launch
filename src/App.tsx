@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Referral from './pages/Referral';
 import NotFound from './pages/NotFound';
+import EmailLogs from './pages/EmailLogs';
 import { AuthProvider } from './contexts/SupabaseAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -81,6 +82,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Plans />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/email-logs"
+                element={
+                  <ProtectedRoute>
+                    <EmailLogs />
                   </ProtectedRoute>
                 }
               />

@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import {
   Home,
@@ -11,7 +10,8 @@ import {
   Share2,
   LogOut,
   User,
-  ChevronLeft
+  ChevronLeft,
+  Mail
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -66,6 +66,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Controle Receita Saúde",
       url: "/receita-saude-control",
       icon: FileText,
+    },
+    {
+      title: "Logs de Email",
+      url: "/email-logs",
+      icon: Mail,
     },
     {
       title: "Planos",

@@ -20,12 +20,11 @@ export const EmailReminderButton = ({ payment, disabled }: EmailReminderButtonPr
       return;
     }
 
-    // Para MVP, vamos assumir que o email está no campo email do paciente
-    // Isso pode ser expandido futuramente para incluir email do responsável financeiro
+    // Verificar se o paciente tem email cadastrado
     const recipientEmail = payment.patients.email;
     
     if (!recipientEmail || !recipientEmail.includes('@')) {
-      toast.error('Email do paciente não encontrado ou inválido');
+      toast.error('Email não está cadastrado para este paciente. Por favor, atualize o cadastro do paciente para incluir um email válido.');
       return;
     }
 
@@ -65,11 +64,6 @@ export const EmailReminderButton = ({ payment, disabled }: EmailReminderButtonPr
 
   // Não mostrar o botão se o pagamento não está pendente
   if (payment.status !== 'pending' || payment.paid_date) {
-    return null;
-  }
-
-  // Verificar se o paciente tem email válido
-  if (!payment.patients?.email || !payment.patients.email.includes('@')) {
     return null;
   }
 
