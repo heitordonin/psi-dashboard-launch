@@ -165,6 +165,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          cnpj: string | null
           cpf: string
           created_at: string
           email: string | null
@@ -174,10 +175,12 @@ export type Database = {
           id: string
           is_payment_from_abroad: boolean
           owner_id: string | null
+          patient_type: string
           phone: string | null
           updated_at: string
         }
         Insert: {
+          cnpj?: string | null
           cpf: string
           created_at?: string
           email?: string | null
@@ -187,10 +190,12 @@ export type Database = {
           id?: string
           is_payment_from_abroad?: boolean
           owner_id?: string | null
+          patient_type?: string
           phone?: string | null
           updated_at?: string
         }
         Update: {
+          cnpj?: string | null
           cpf?: string
           created_at?: string
           email?: string | null
@@ -200,6 +205,7 @@ export type Database = {
           id?: string
           is_payment_from_abroad?: boolean
           owner_id?: string | null
+          patient_type?: string
           phone?: string | null
           updated_at?: string
         }

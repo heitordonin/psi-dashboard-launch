@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -53,7 +54,13 @@ const Patients = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      
+      // Ensure all patients have the required fields with defaults
+      return data.map(patient => ({
+        ...patient,
+        patient_type: patient.patient_type || 'individual',
+        cnpj: patient.cnpj || undefined
+      })) as Patient[];
     },
     enabled: !!user?.id
   });
@@ -95,8 +102,9 @@ const Patients = () => {
   });
 
   const filteredPatients = patients.filter(patient => {
+    const documentNumber = patient.patient_type === 'individual' ? patient.cpf : patient.cnpj || '';
     const matchesSearch = patient.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.cpf.includes(searchTerm) ||
+                         documentNumber.includes(searchTerm) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.phone?.includes(searchTerm);
     
@@ -197,7 +205,7 @@ const Patients = () => {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Buscar por nome, CPF, email ou telefone..."
+                        placeholder="Buscar por nome, CPF/CNPJ, email ou telefone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -240,7 +248,9 @@ const Patients = () => {
                         <div key={patient.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm text-gray-900 truncate">{patient.full_name}</p>
-                            <p className="text-xs text-gray-600 mt-1">CPF: {patient.cpf}</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {patient.patient_type === 'individual' ? 'CPF' : 'CNPJ'}: {patient.patient_type === 'individual' ? patient.cpf : patient.cnpj}
+                            </p>
                             {patient.email && (
                               <p className="text-xs text-gray-600">Email: {patient.email}</p>
                             )}
@@ -253,6 +263,9 @@ const Patients = () => {
                             {patient.is_payment_from_abroad && (
                               <p className="text-xs text-blue-600 mt-1">Pagamento do exterior</p>
                             )}
+                            <p className="text-xs text-gray-500 mt-1 capitalize">
+                              {patient.patient_type === 'individual' ? 'Pessoa Física' : 'Empresa'}
+                            </p>
                           </div>
                           <ActionDropdown
                             onEdit={() => handleEditPatient(patient)}
