@@ -152,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Enviar email usando Resend
     const emailResponse = await resend.emails.send({
-      from: "Psiclo <noreply@resend.dev>", // Usando domínio padrão do Resend
+      from: "Cobrança Psiclo <heitor@grupodeclara.com.br>", // Usando domínio padrão do Resend
       to: [recipientEmail],
       subject: emailSubject,
       html: emailContent,
