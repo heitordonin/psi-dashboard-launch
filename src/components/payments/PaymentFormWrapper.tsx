@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { PaymentForm } from './PaymentForm';
 import type { Payment } from '@/types/payment';
+import type { Patient } from '@/types/patient';
 
 interface PaymentFormWrapperProps {
   payment?: Payment;
@@ -27,7 +28,12 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
         .order('full_name');
       
       if (error) throw error;
-      return data;
+      
+      // Cast patient_type to ensure strict type safety
+      return data.map((p) => ({
+        ...p,
+        patient_type: p.patient_type as "individual" | "company"
+      })) as Patient[];
     },
     enabled: !!user?.id
   });
