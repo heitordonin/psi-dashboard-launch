@@ -20,13 +20,22 @@ export const EmailReminderButton = ({ payment, disabled }: EmailReminderButtonPr
       return;
     }
 
+    // Para MVP, vamos assumir que o email está no campo email do paciente
+    // Isso pode ser expandido futuramente para incluir email do responsável financeiro
+    const recipientEmail = payment.patients.email;
+    
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      toast.error('Email do paciente não encontrado ou inválido');
+      return;
+    }
+
     setSending(true);
     try {
       // Chamar edge function para enviar email
       const { error } = await supabase.functions.invoke('send-email-reminder', {
         body: {
           paymentId: payment.id,
-          recipientEmail: payment.patients.email || '', // Assumindo que email será adicionado ao patient
+          recipientEmail: recipientEmail,
           amount: payment.amount,
           patientName: payment.patients.full_name,
           dueDate: payment.due_date,
@@ -56,6 +65,11 @@ export const EmailReminderButton = ({ payment, disabled }: EmailReminderButtonPr
 
   // Não mostrar o botão se o pagamento não está pendente
   if (payment.status !== 'pending' || payment.paid_date) {
+    return null;
+  }
+
+  // Verificar se o paciente tem email válido
+  if (!payment.patients?.email || !payment.patients.email.includes('@')) {
     return null;
   }
 

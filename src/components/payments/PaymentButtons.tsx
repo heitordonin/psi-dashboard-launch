@@ -1,6 +1,5 @@
 
-import { PaymentStatusBadge } from "./PaymentStatusBadge";
-import { WhatsAppButton } from "./WhatsAppButton";
+import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
