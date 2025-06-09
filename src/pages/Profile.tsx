@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Crown, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Crown, User, Mail } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -63,7 +64,8 @@ const Profile = () => {
           cpf: profile.cpf,
           birth_date: profile.birth_date,
           crp_number: profile.crp_number,
-          nit_nis_pis: profile.nit_nis_pis
+          nit_nis_pis: profile.nit_nis_pis,
+          email_reminders_enabled: profile.email_reminders_enabled
         })
         .eq('id', user?.id);
 
@@ -111,7 +113,7 @@ const Profile = () => {
             </div>
 
             <div className="container mx-auto px-4 py-8">
-              <div className="max-w-2xl mx-auto">
+              <div className="max-w-2xl mx-auto space-y-6">
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -205,6 +207,38 @@ const Profile = () => {
                         </Button>
                       </div>
                     </form>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Mail className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <CardTitle>Configurações de Email</CardTitle>
+                        <CardDescription>Gerencie suas preferências de notificações por email</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="email-reminders">Lembretes por Email</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receba lembretes automáticos de pagamentos pendentes
+                        </p>
+                      </div>
+                      <Switch
+                        id="email-reminders"
+                        checked={profile.email_reminders_enabled || false}
+                        onCheckedChange={(checked) => 
+                          setProfile({ ...profile, email_reminders_enabled: checked })
+                        }
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </div>

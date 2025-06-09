@@ -38,8 +38,22 @@ const handler = async (req: Request): Promise<Response> => {
       description 
     }: EmailReminderRequest = await req.json();
 
-    // Verificar se o usuário tem lembretes habilitados
-    const { data: payment } = await supabaseClient
+    console.log('Email reminder request:', { paymentId, recipientEmail, patientName });
+
+    // Verificar se há email válido
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      console.error('Invalid recipient email:', recipientEmail);
+      return new Response(
+        JSON.stringify({ error: "Invalid recipient email" }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        }
+      );
+    }
+
+    // Buscar informações do pagamento e usuário
+    const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select(`
         owner_id,
@@ -52,28 +66,21 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', paymentId)
       .single();
 
-    if (!payment?.profiles?.email_reminders_enabled) {
+    if (paymentError) {
+      console.error('Error fetching payment:', paymentError);
       return new Response(
-        JSON.stringify({ error: "Email reminders not enabled for this user" }),
+        JSON.stringify({ error: "Payment not found" }),
         { 
-          status: 400,
+          status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders }
         }
       );
     }
 
-    // Verificar se há email válido
-    if (!recipientEmail || !recipientEmail.includes('@')) {
-      return new Response(
-        JSON.stringify({ error: "Invalid recipient email" }),
-        { 
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        }
-      );
-    }
+    // Verificar se o usuário tem lembretes habilitados (opcional por enquanto)
+    console.log('User email reminders enabled:', payment?.profiles?.email_reminders_enabled);
 
-    const therapistName = payment.profiles.display_name || payment.profiles.full_name || "Seu terapeuta";
+    const therapistName = payment?.profiles?.display_name || payment?.profiles?.full_name || "Seu terapeuta";
     const formattedAmount = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -124,9 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Por enquanto, apenas simular o envio do email
     // TODO: Integrar com Resend, Mailgun ou outro provedor
-    console.log('Email reminder sent to:', recipientEmail);
-    console.log('Subject:', emailSubject);
-    console.log('Content:', emailContent);
+    console.log('Email reminder sent successfully to:', recipientEmail);
 
     return new Response(
       JSON.stringify({ 

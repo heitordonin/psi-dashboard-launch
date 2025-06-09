@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.send-bulk-email-reminders]
 verify_jwt = false
+
+[functions.send-email-reminder]
+verify_jwt = false
