@@ -22,7 +22,7 @@ export const PaymentsHeader = ({ onNewPayment }: PaymentsHeaderProps) => {
           </div>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2 md:flex-row md:gap-3">
           <Button
             onClick={() => navigate("/receita-saude-control")}
             variant="outline"
