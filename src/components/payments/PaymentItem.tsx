@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Copy, DollarSign, Calendar, User, FileText, MessageCircle, CreditCard } from "lucide-react";
+import { CheckCircle, Copy, DollarSign, Calendar, User, FileText, CreditCard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
-import { WhatsAppButton } from "./WhatsAppButton";
+import { PaymentButtons } from "./PaymentButtons";
 import { toast } from "sonner";
 import type { Payment } from "@/types/payment";
 
@@ -18,6 +16,7 @@ interface PaymentWithPatient extends Payment {
     full_name: string;
     cpf?: string;
     phone?: string;
+    email?: string;
   };
 }
 
@@ -106,7 +105,6 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
-              <PaymentStatusBadge status={payment.status} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -187,11 +185,6 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
           {/* Right side - Actions */}
           <div className="flex flex-col gap-3 lg:items-end">
             <div className="flex items-center gap-2">
-              <WhatsAppButton 
-                payment={payment}
-                patientName={payment.patients?.full_name || 'Paciente'}
-                patientPhone={payment.patients?.phone || undefined}
-              />
               <Button
                 variant={payment.status === 'paid' ? 'default' : 'outline'}
                 size="sm"
@@ -203,13 +196,14 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               </Button>
             </div>
 
+            {/* Use PaymentButtons component */}
+            <PaymentButtons
+              payment={payment}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => onEdit(payment)}>
-                Editar
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onDelete(payment.id)}>
-                Excluir
-              </Button>
               <Button variant="outline" size="sm" onClick={handleCopyPixKey}>
                 PIX
               </Button>
