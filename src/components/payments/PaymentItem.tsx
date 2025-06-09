@@ -9,16 +9,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentButtons } from "./PaymentButtons";
 import { toast } from "sonner";
-import type { Payment } from "@/types/payment";
-
-interface PaymentWithPatient extends Payment {
-  patients?: {
-    full_name: string;
-    cpf?: string;
-    phone?: string;
-    email?: string;
-  };
-}
+import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentItemProps {
   payment: PaymentWithPatient;
