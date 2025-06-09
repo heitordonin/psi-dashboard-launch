@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -67,7 +66,8 @@ const Payments = () => {
           patients (
             full_name,
             cpf,
-            phone
+            phone,
+            email
           )
         `)
         .eq('owner_id', user.id)

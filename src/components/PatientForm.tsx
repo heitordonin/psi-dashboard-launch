@@ -46,9 +46,103 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Function to check for duplicates within the same user
+  const checkForDuplicates = async (data: PatientFormData): Promise<string | null> => {
+    if (!user?.id) return null;
+
+    const queries = [];
+
+    // Check CPF duplicates for individual patients
+    if (data.patient_type === 'individual' && data.cpf && !data.is_payment_from_abroad) {
+      const cleanCpf = data.cpf.replace(/\D/g, '');
+      queries.push(
+        supabase
+          .from('patients')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('cpf', cleanCpf)
+          .neq('id', patient?.id || '')
+          .limit(1)
+      );
+    }
+
+    // Check CNPJ duplicates for company patients
+    if (data.patient_type === 'company' && data.cnpj && !data.is_payment_from_abroad) {
+      const cleanCnpj = data.cnpj.replace(/\D/g, '');
+      queries.push(
+        supabase
+          .from('patients')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('cnpj', cleanCnpj)
+          .neq('id', patient?.id || '')
+          .limit(1)
+      );
+    }
+
+    // Check email duplicates
+    if (data.email) {
+      queries.push(
+        supabase
+          .from('patients')
+          .select('id')
+          .eq('owner_id', user.id)
+          .eq('email', data.email.trim())
+          .neq('id', patient?.id || '')
+          .limit(1)
+      );
+    }
+
+    try {
+      const results = await Promise.all(queries);
+      
+      let duplicateIndex = 0;
+      
+      // Check CPF duplicate
+      if (data.patient_type === 'individual' && data.cpf && !data.is_payment_from_abroad) {
+        const { data: cpfResult, error } = results[duplicateIndex];
+        if (error) throw error;
+        if (cpfResult && cpfResult.length > 0) {
+          return 'Já existe um paciente cadastrado com este CPF na sua conta.';
+        }
+        duplicateIndex++;
+      }
+
+      // Check CNPJ duplicate
+      if (data.patient_type === 'company' && data.cnpj && !data.is_payment_from_abroad) {
+        const { data: cnpjResult, error } = results[duplicateIndex];
+        if (error) throw error;
+        if (cnpjResult && cnpjResult.length > 0) {
+          return 'Já existe um paciente cadastrado com este CNPJ na sua conta.';
+        }
+        duplicateIndex++;
+      }
+
+      // Check email duplicate
+      if (data.email) {
+        const { data: emailResult, error } = results[duplicateIndex];
+        if (error) throw error;
+        if (emailResult && emailResult.length > 0) {
+          return 'Já existe um paciente cadastrado com este email na sua conta.';
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      return 'Erro ao verificar duplicatas. Tente novamente.';
+    }
+  };
+
   const createPatientMutation = useMutation({
     mutationFn: async (data: PatientFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
+      
+      // Check for duplicates before creating
+      const duplicateError = await checkForDuplicates(data);
+      if (duplicateError) {
+        throw new Error(duplicateError);
+      }
       
       // Build the patient data object with only the relevant fields
       const patientData: any = {
@@ -91,13 +185,19 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     },
     onError: (error) => {
       console.error('Error creating patient:', error);
-      toast.error('Erro ao criar paciente');
+      toast.error(error.message || 'Erro ao criar paciente');
     }
   });
 
   const updatePatientMutation = useMutation({
     mutationFn: async (data: PatientFormData) => {
       if (!patient?.id) throw new Error('Patient ID is required for update');
+      
+      // Check for duplicates before updating
+      const duplicateError = await checkForDuplicates(data);
+      if (duplicateError) {
+        throw new Error(duplicateError);
+      }
       
       // Build the patient data object with properly cleaned fields
       const patientData: any = {
@@ -139,7 +239,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     },
     onError: (error) => {
       console.error('Error updating patient:', error);
-      toast.error('Erro ao atualizar paciente');
+      toast.error(error.message || 'Erro ao atualizar paciente');
     }
   });
 
