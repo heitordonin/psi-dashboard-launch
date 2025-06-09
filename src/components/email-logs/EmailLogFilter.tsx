@@ -58,13 +58,13 @@ export const EmailLogFilter = ({ filters, onFilterChange }: EmailLogFilterProps)
 
         <Select
           value={filters.status}
-          onValueChange={(value) => onFilterChange({ ...filters, status: value })}
+          onValueChange={(value) => onFilterChange({ ...filters, status: value === "all" ? "" : value })}
         >
           <SelectTrigger>
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
+            <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="pending">Pendente</SelectItem>
             <SelectItem value="sent">Enviado</SelectItem>
             <SelectItem value="failed">Falha</SelectItem>
