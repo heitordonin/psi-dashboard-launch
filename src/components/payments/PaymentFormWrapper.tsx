@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { ReceivedCheckbox } from './ReceivedCheckbox';
+import { DefaultDescriptionModal } from '@/components/DefaultDescriptionModal';
+import { InvoiceDescriptionsManager } from '@/components/InvoiceDescriptionsManager';
+import { FileText } from 'lucide-react';
 import type { Payment } from '@/types/payment';
 
 interface FormData {
@@ -45,6 +47,8 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   const [paymentTitular, setPaymentTitular] = useState<'patient' | 'other'>(
     payment?.payer_cpf ? 'other' : 'patient'
   );
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [showDescriptionManager, setShowDescriptionManager] = useState(false);
 
   // Initialize received date when isReceived changes to true
   useEffect(() => {
@@ -146,6 +150,16 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
     }
   });
 
+  const handleSelectDescription = (description: string) => {
+    setFormData(prev => ({ ...prev, description }));
+    setShowDescriptionModal(false);
+  };
+
+  const handleManageDescriptions = () => {
+    setShowDescriptionModal(false);
+    setShowDescriptionManager(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
   
@@ -193,84 +207,110 @@ export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: Payme
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PatientAndPayer
-        patients={patients}
-        formData={formData}
-        setFormData={setFormData}
-        paymentTitular={paymentTitular}
-        setPaymentTitular={setPaymentTitular}
-        payerCpf={formData.payer_cpf}
-        setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
-        errors={{}}
-        validateCpf={validateCpf}
-      />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <PatientAndPayer
+          patients={patients}
+          formData={formData}
+          setFormData={setFormData}
+          paymentTitular={paymentTitular}
+          setPaymentTitular={setPaymentTitular}
+          payerCpf={formData.payer_cpf}
+          setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
+          errors={{}}
+          validateCpf={validateCpf}
+        />
 
-      <ReceivedCheckbox
-        isAlreadyReceived={isReceived}
-        setIsAlreadyReceived={setIsReceived}
-        receivedDate={receivedDate}
-        setReceivedDate={setReceivedDate}
-        errors={{}}
-        isEditing={!!payment}
-      />
-      
-      {!isReceived && (
+        <ReceivedCheckbox
+          isAlreadyReceived={isReceived}
+          setIsAlreadyReceived={setIsReceived}
+          receivedDate={receivedDate}
+          setReceivedDate={setReceivedDate}
+          errors={{}}
+          isEditing={!!payment}
+        />
+        
+        {!isReceived && (
+          <div className="space-y-2">
+            <Label htmlFor="due_date">Data de Vencimento *</Label>
+            <Input
+              id="due_date"
+              type="date"
+              value={formData.due_date}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, due_date: e.target.value }))
+              }
+              className="w-full"
+            />
+          </div>
+        )}
+        
         <div className="space-y-2">
-          <Label htmlFor="due_date">Data de Vencimento *</Label>
-          <Input
-            id="due_date"
-            type="date"
-            value={formData.due_date}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, due_date: e.target.value }))
-            }
+          <Label htmlFor="amount">Valor *</Label>
+          <CurrencyInput
+            value={formData.amount}
+            onChange={(value) => {
+              console.log('Currency input changed:', value);
+              setFormData(prev => ({ ...prev, amount: value }));
+            }}
+            placeholder="R$ 0,00"
             className="w-full"
           />
         </div>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="amount">Valor *</Label>
-        <CurrencyInput
-          value={formData.amount}
-          onChange={(value) => {
-            console.log('Currency input changed:', value);
-            setFormData(prev => ({ ...prev, amount: value }));
-          }}
-          placeholder="R$ 0,00"
-          className="w-full"
-        />
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Descrição</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="Descrição da cobrança..."
-          className="w-full"
-        />
-      </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="description">Descrição</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDescriptionModal(true)}
+              className="text-sm"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Usar Descrição Padrão
+            </Button>
+          </div>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            placeholder="Descrição da cobrança..."
+            className="w-full"
+          />
+        </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button 
-          type="submit" 
-          disabled={createPaymentMutation.isPending || updatePaymentMutation.isPending}
-          className="flex-1"
-        >
-          {createPaymentMutation.isPending || updatePaymentMutation.isPending 
-            ? 'Salvando...' 
-            : payment ? 'Atualizar' : 'Criar Cobrança'
-          }
-        </Button>
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+        <div className="flex gap-3 pt-4">
+          <Button 
+            type="submit" 
+            disabled={createPaymentMutation.isPending || updatePaymentMutation.isPending}
+            className="flex-1"
+          >
+            {createPaymentMutation.isPending || updatePaymentMutation.isPending 
+              ? 'Salvando...' 
+              : payment ? 'Atualizar' : 'Criar Cobrança'
+            }
           </Button>
-        )}
-      </div>
-    </form>
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+          )}
+        </div>
+      </form>
+
+      <DefaultDescriptionModal
+        isOpen={showDescriptionModal}
+        onClose={() => setShowDescriptionModal(false)}
+        onSelectDescription={handleSelectDescription}
+        onManageDescriptions={handleManageDescriptions}
+      />
+
+      <InvoiceDescriptionsManager
+        isOpen={showDescriptionManager}
+        onClose={() => setShowDescriptionManager(false)}
+      />
+    </>
   );
 }
