@@ -16,8 +16,10 @@ export interface Payment {
 }
 
 export interface PaymentWithPatient extends Payment {
-  patients: {
+  patients?: {
     full_name: string;
+    cpf?: string;
+    phone?: string;
     email?: string;
   };
 }

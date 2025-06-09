@@ -3,15 +3,7 @@ import { CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentItem } from "./PaymentItem";
-import type { Payment } from "@/types/payment";
-
-interface PaymentWithPatient extends Payment {
-  patients?: {
-    full_name: string;
-    cpf?: string;
-    phone?: string;
-  };
-}
+import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentsListProps {
   payments: PaymentWithPatient[];
