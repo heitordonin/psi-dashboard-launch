@@ -1,15 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { validateCpf, validateCnpj } from '@/utils/validators';
 import { Patient } from '@/types/patient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { usePatientMutations } from '@/hooks/usePatientMutations';
+import { validatePatientForm } from '@/utils/patientFormValidation';
+import { formatCpf, formatCnpj, formatPhone } from '@/utils/inputFormatters';
 
 interface PatientFormData {
   full_name: string;
@@ -30,7 +30,7 @@ interface PatientFormProps {
 
 export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { createPatientMutation, updatePatientMutation, isLoading } = usePatientMutations(user?.id, onClose);
 
   const [formData, setFormData] = useState<PatientFormData>({
     full_name: patient?.full_name || '',
@@ -45,239 +45,6 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Function to check for duplicates within the same user
-  const checkForDuplicates = async (data: PatientFormData): Promise<string | null> => {
-    if (!user?.id) return null;
-
-    const queries = [];
-
-    // Check CPF duplicates for individual patients
-    if (data.patient_type === 'individual' && data.cpf && !data.is_payment_from_abroad) {
-      const cleanCpf = data.cpf.replace(/\D/g, '');
-      queries.push(
-        supabase
-          .from('patients')
-          .select('id')
-          .eq('owner_id', user.id)
-          .eq('cpf', cleanCpf)
-          .neq('id', patient?.id || '')
-          .limit(1)
-      );
-    }
-
-    // Check CNPJ duplicates for company patients
-    if (data.patient_type === 'company' && data.cnpj && !data.is_payment_from_abroad) {
-      const cleanCnpj = data.cnpj.replace(/\D/g, '');
-      queries.push(
-        supabase
-          .from('patients')
-          .select('id')
-          .eq('owner_id', user.id)
-          .eq('cnpj', cleanCnpj)
-          .neq('id', patient?.id || '')
-          .limit(1)
-      );
-    }
-
-    // Check email duplicates
-    if (data.email) {
-      queries.push(
-        supabase
-          .from('patients')
-          .select('id')
-          .eq('owner_id', user.id)
-          .eq('email', data.email.trim())
-          .neq('id', patient?.id || '')
-          .limit(1)
-      );
-    }
-
-    try {
-      const results = await Promise.all(queries);
-      
-      let duplicateIndex = 0;
-      
-      // Check CPF duplicate
-      if (data.patient_type === 'individual' && data.cpf && !data.is_payment_from_abroad) {
-        const { data: cpfResult, error } = results[duplicateIndex];
-        if (error) throw error;
-        if (cpfResult && cpfResult.length > 0) {
-          return 'Já existe um paciente cadastrado com este CPF na sua conta.';
-        }
-        duplicateIndex++;
-      }
-
-      // Check CNPJ duplicate
-      if (data.patient_type === 'company' && data.cnpj && !data.is_payment_from_abroad) {
-        const { data: cnpjResult, error } = results[duplicateIndex];
-        if (error) throw error;
-        if (cnpjResult && cnpjResult.length > 0) {
-          return 'Já existe um paciente cadastrado com este CNPJ na sua conta.';
-        }
-        duplicateIndex++;
-      }
-
-      // Check email duplicate
-      if (data.email) {
-        const { data: emailResult, error } = results[duplicateIndex];
-        if (error) throw error;
-        if (emailResult && emailResult.length > 0) {
-          return 'Já existe um paciente cadastrado com este email na sua conta.';
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error checking duplicates:', error);
-      return 'Erro ao verificar duplicatas. Tente novamente.';
-    }
-  };
-
-  const createPatientMutation = useMutation({
-    mutationFn: async (data: PatientFormData) => {
-      if (!user?.id) throw new Error('User not authenticated');
-      
-      // Check for duplicates before creating
-      const duplicateError = await checkForDuplicates(data);
-      if (duplicateError) {
-        throw new Error(duplicateError);
-      }
-      
-      // Build the patient data object with only the relevant fields
-      const patientData: any = {
-        full_name: data.full_name.trim(),
-        patient_type: data.patient_type,
-        email: data.email?.trim() || null,
-        phone: data.phone?.trim() || null,
-        has_financial_guardian: data.has_financial_guardian,
-        is_payment_from_abroad: data.is_payment_from_abroad,
-        owner_id: user.id
-      };
-      
-      // Clean and include only relevant document field
-      if (data.patient_type === 'individual') {
-        patientData.cpf = data.cpf ? data.cpf.replace(/\D/g, '') : null;
-        patientData.cnpj = null;
-      } else {
-        patientData.cpf = null;
-        patientData.cnpj = data.cnpj ? data.cnpj.replace(/\D/g, '') : null;
-      }
-      
-      // Clean guardian CPF if present
-      if (data.has_financial_guardian && data.guardian_cpf) {
-        patientData.guardian_cpf = data.guardian_cpf.replace(/\D/g, '');
-      } else {
-        patientData.guardian_cpf = null;
-      }
-
-      const { error } = await supabase
-        .from('patients')
-        .insert(patientData);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
-      queryClient.invalidateQueries({ queryKey: ['patients-count'] });
-      toast.success('Paciente criado com sucesso!');
-      onClose();
-    },
-    onError: (error) => {
-      console.error('Error creating patient:', error);
-      toast.error(error.message || 'Erro ao criar paciente');
-    }
-  });
-
-  const updatePatientMutation = useMutation({
-    mutationFn: async (data: PatientFormData) => {
-      if (!patient?.id) throw new Error('Patient ID is required for update');
-      
-      // Check for duplicates before updating
-      const duplicateError = await checkForDuplicates(data);
-      if (duplicateError) {
-        throw new Error(duplicateError);
-      }
-      
-      // Build the patient data object with properly cleaned fields
-      const patientData: any = {
-        full_name: data.full_name.trim(),
-        patient_type: data.patient_type,
-        email: data.email?.trim() || null,
-        phone: data.phone?.trim() || null,
-        has_financial_guardian: data.has_financial_guardian,
-        is_payment_from_abroad: data.is_payment_from_abroad,
-      };
-      
-      // Clean and include only relevant document field
-      if (data.patient_type === 'individual') {
-        patientData.cpf = data.cpf ? data.cpf.replace(/\D/g, '') : null;
-        patientData.cnpj = null;
-      } else {
-        patientData.cpf = null;
-        patientData.cnpj = data.cnpj ? data.cnpj.replace(/\D/g, '') : null;
-      }
-      
-      // Clean guardian CPF if present
-      if (data.has_financial_guardian && data.guardian_cpf) {
-        patientData.guardian_cpf = data.guardian_cpf.replace(/\D/g, '');
-      } else {
-        patientData.guardian_cpf = null;
-      }
-      
-      const { error } = await supabase
-        .from('patients')
-        .update(patientData)
-        .eq('id', patient.id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
-      toast.success('Paciente atualizado com sucesso!');
-      onClose();
-    },
-    onError: (error) => {
-      console.error('Error updating patient:', error);
-      toast.error(error.message || 'Erro ao atualizar paciente');
-    }
-  });
-
-  const formatCpf = (value: string) => {
-    const numericValue = value.replace(/\D/g, '');
-    
-    if (numericValue.length <= 11) {
-      return numericValue
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})/, '$1-$2');
-    }
-    return value;
-  };
-
-  const formatCnpj = (value: string) => {
-    const numericValue = value.replace(/\D/g, '');
-    
-    if (numericValue.length <= 14) {
-      return numericValue
-        .replace(/(\d{2})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1/$2')
-        .replace(/(\d{4})(\d{1,2})/, '$1-$2');
-    }
-    return value;
-  };
-
-  const formatPhone = (value: string) => {
-    const numericValue = value.replace(/\D/g, '');
-    
-    if (numericValue.length <= 11) {
-      return numericValue
-        .replace(/(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{5})(\d)/, '$1-$2');
-    }
-    return value;
-  };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCpf = formatCpf(e.target.value);
@@ -316,57 +83,18 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     });
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.full_name.trim()) {
-      newErrors.full_name = 'Nome completo é obrigatório';
-    }
-
-    // Document validation based on type and payment origin
-    if (!formData.is_payment_from_abroad) {
-      if (formData.patient_type === 'individual') {
-        if (!formData.cpf) {
-          newErrors.cpf = 'CPF é obrigatório para pessoa física';
-        } else if (!validateCpf(formData.cpf)) {
-          newErrors.cpf = 'CPF deve ter um formato válido';
-        }
-      } else {
-        if (!formData.cnpj) {
-          newErrors.cnpj = 'CNPJ é obrigatório para empresa';
-        } else if (!validateCnpj(formData.cnpj)) {
-          newErrors.cnpj = 'CNPJ deve ter um formato válido';
-        }
-      }
-    }
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email deve ter um formato válido';
-    }
-
-    if (formData.has_financial_guardian) {
-      if (!formData.guardian_cpf) {
-        newErrors.guardian_cpf = 'CPF do responsável é obrigatório';
-      } else if (!validateCpf(formData.guardian_cpf)) {
-        newErrors.guardian_cpf = 'CPF do responsável deve ter um formato válido';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      return;
-    }
-
-    if (patient) {
-      updatePatientMutation.mutate(formData);
-    } else {
-      createPatientMutation.mutate(formData);
+    const validationErrors = validatePatientForm(formData);
+    setErrors(validationErrors);
+    
+    if (Object.keys(validationErrors).length === 0) {
+      if (patient) {
+        updatePatientMutation.mutate({ data: formData, patientId: patient.id });
+      } else {
+        createPatientMutation.mutate(formData);
+      }
     }
   };
 
@@ -381,8 +109,6 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
       });
     }
   }, [formData.is_payment_from_abroad, errors.cpf, errors.cnpj]);
-
-  const isLoading = createPatientMutation.isPending || updatePatientMutation.isPending;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
