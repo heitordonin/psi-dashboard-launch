@@ -2,7 +2,8 @@
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { PaymentWithPatient } from "@/types/payment";
 
 interface PaymentButtonsProps {
@@ -12,15 +13,29 @@ interface PaymentButtonsProps {
 }
 
 export const PaymentButtons = ({ payment, onEdit, onDelete }: PaymentButtonsProps) => {
+  const navigate = useNavigate();
+
+  const handleReceitaSaudeClick = () => {
+    navigate('/receita-saude-control');
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
       <PaymentStatusBadge status={payment.status} />
       <div className="flex gap-2">
-        {/* WhatsApp button - mantido inativo conforme solicitado */}
-        {/* <WhatsAppButton payment={payment} disabled={true} /> */}
-        
-        {/* Novo botão de lembrete por email */}
+        {/* Email reminder button */}
         <EmailReminderButton payment={payment} />
+        
+        {/* Receita Saúde button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReceitaSaudeClick}
+          className="flex items-center gap-2"
+        >
+          <Receipt className="h-4 w-4" />
+          Receita Saúde
+        </Button>
         
         <Button
           variant="ghost"
