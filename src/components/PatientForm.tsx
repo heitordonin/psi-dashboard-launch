@@ -67,7 +67,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
         patientData.cpf = data.cpf;
         patientData.cnpj = null;
       } else {
-        patientData.cpf = '';
+        patientData.cpf = null;
         patientData.cnpj = data.cnpj;
       }
       
@@ -109,7 +109,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
         patientData.cpf = data.cpf;
         patientData.cnpj = null;
       } else {
-        patientData.cpf = '';
+        patientData.cpf = null;
         patientData.cnpj = data.cnpj;
       }
       
