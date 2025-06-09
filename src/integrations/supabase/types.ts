@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      email_logs: {
+        Row: {
+          content: string | null
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          owner_id: string
+          payment_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          owner_id: string
+          payment_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          owner_id?: string
+          payment_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           code: string
@@ -161,6 +211,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string
+          email_reminder_sent_at: string | null
           id: string
           owner_id: string | null
           paid_date: string | null
@@ -175,6 +226,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date: string
+          email_reminder_sent_at?: string | null
           id?: string
           owner_id?: string | null
           paid_date?: string | null
@@ -189,6 +241,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string
+          email_reminder_sent_at?: string | null
           id?: string
           owner_id?: string | null
           paid_date?: string | null
@@ -215,6 +268,7 @@ export type Database = {
           created_at: string
           crp_number: string | null
           display_name: string | null
+          email_reminders_enabled: boolean
           full_name: string | null
           id: string
           is_admin: boolean | null
@@ -227,6 +281,7 @@ export type Database = {
           created_at?: string
           crp_number?: string | null
           display_name?: string | null
+          email_reminders_enabled?: boolean
           full_name?: string | null
           id: string
           is_admin?: boolean | null
@@ -239,6 +294,7 @@ export type Database = {
           created_at?: string
           crp_number?: string | null
           display_name?: string | null
+          email_reminders_enabled?: boolean
           full_name?: string | null
           id?: string
           is_admin?: boolean | null

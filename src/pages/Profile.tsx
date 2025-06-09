@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -8,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Crown } from "lucide-react";
+import { Crown, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 const Profile = () => {
@@ -24,6 +24,7 @@ const Profile = () => {
     display_name: "",
     crp_number: "",
     nit_nis_pis: "",
+    email_reminders_enabled: false,
   });
   const [loading, setLoading] = useState(false);
 
@@ -60,6 +61,7 @@ const Profile = () => {
           display_name: data.display_name || "",
           crp_number: data.crp_number || "",
           nit_nis_pis: data.nit_nis_pis || "",
+          email_reminders_enabled: data.email_reminders_enabled || false,
         });
       }
     } catch (error) {
@@ -82,6 +84,7 @@ const Profile = () => {
           display_name: profile.display_name,
           crp_number: profile.crp_number,
           nit_nis_pis: profile.nit_nis_pis,
+          email_reminders_enabled: profile.email_reminders_enabled,
         });
 
       if (error) {
@@ -208,6 +211,29 @@ const Profile = () => {
                         placeholder="Digite seu NIT/NIS/PIS"
                       />
                     </div>
+                    
+                    {/* Email Reminders Setting */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50">
+                      <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <Label htmlFor="email_reminders" className="font-medium">
+                            Lembretes por Email
+                          </Label>
+                          <p className="text-sm text-gray-600">
+                            Receba lembretes automáticos de pagamentos pendentes
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        id="email_reminders"
+                        checked={profile.email_reminders_enabled}
+                        onCheckedChange={(checked) => 
+                          setProfile({ ...profile, email_reminders_enabled: checked })
+                        }
+                      />
+                    </div>
+
                     <Button 
                       onClick={handleSave} 
                       disabled={loading}
