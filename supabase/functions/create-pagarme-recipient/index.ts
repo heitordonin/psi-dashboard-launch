@@ -39,18 +39,23 @@ serve(async (req) => {
       throw new Error('Missing required fields: full_name, cpf, bank_account')
     }
 
+    // Validate bank account fields
+    if (!bank_account.bank_code || !bank_account.agency || !bank_account.account || !bank_account.account_digit) {
+      throw new Error('Missing required bank account fields')
+    }
+
     const pagarmeApiKey = Deno.env.get('PAGARME_API_KEY')
     if (!pagarmeApiKey) {
       throw new Error('PAGARME_API_KEY not configured')
     }
 
-    // Create recipient on Pagar.me
+    // Create recipient data with default_bank_account at root level
     const recipientData = {
       name: full_name,
       email: user.email,
       document: cpf.replace(/\D/g, ''), // Remove non-digits
       type: 'individual',
-      bank_account: {
+      default_bank_account: {
         bank_code: bank_account.bank_code,
         agencia: bank_account.agency,
         agencia_dv: bank_account.agency_digit || '',
@@ -61,7 +66,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('Creating Pagar.me recipient:', recipientData)
+    console.log('Creating Pagar.me recipient:', JSON.stringify(recipientData, null, 2))
 
     const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/recipients', {
       method: 'POST',
@@ -74,12 +79,13 @@ serve(async (req) => {
 
     if (!pagarmeResponse.ok) {
       const errorData = await pagarmeResponse.text()
-      console.error('Pagar.me API error:', errorData)
+      console.error('Pagar.me API error response:', errorData)
+      console.error('Request data sent:', JSON.stringify(recipientData, null, 2))
       throw new Error(`Pagar.me API error: ${pagarmeResponse.status} - ${errorData}`)
     }
 
     const recipient = await pagarmeResponse.json()
-    console.log('Pagar.me recipient created:', recipient)
+    console.log('Pagar.me recipient created successfully:', recipient.id)
 
     // Update user profile with recipient_id
     const { error: updateError } = await supabaseClient
@@ -88,7 +94,7 @@ serve(async (req) => {
       .eq('id', user.id)
 
     if (updateError) {
-      console.error('Error updating profile:', updateError)
+      console.error('Error updating profile with recipient_id:', updateError)
       throw updateError
     }
 
