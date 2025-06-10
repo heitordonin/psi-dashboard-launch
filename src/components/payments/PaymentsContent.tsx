@@ -4,7 +4,6 @@ import { usePaymentData } from "@/hooks/usePaymentData";
 import { PaymentsHeader } from "./PaymentsHeader";
 import { PaymentFormWrapper } from "./PaymentFormWrapper";
 import { PaymentsList } from "./PaymentsList";
-import { RecipientSetup } from "./RecipientSetup";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface PaymentsContentProps {
@@ -25,11 +24,6 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         onAddPayment={() => setShowForm(true)}
         totalPayments={payments.length}
       />
-
-      {/* Recipient Setup - show if user doesn't have recipient configured */}
-      <div className="mb-6">
-        <RecipientSetup />
-      </div>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
