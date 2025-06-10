@@ -36,7 +36,10 @@ export const useAdminFinancialData = (startDate?: string, endDate?: string) => {
           due_date,
           paid_date,
           owner_id,
-          profiles(full_name, display_name)
+          profiles!payments_owner_id_fkey (
+            full_name,
+            display_name
+          )
         `)
         .gte('created_at', finalStartDate)
         .lte('created_at', finalEndDate + 'T23:59:59')
