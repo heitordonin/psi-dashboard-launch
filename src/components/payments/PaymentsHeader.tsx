@@ -5,10 +5,11 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate } from "react-router-dom";
 
 interface PaymentsHeaderProps {
-  onNewPayment: () => void;
+  onAddPayment: () => void;
+  totalPayments: number;
 }
 
-export const PaymentsHeader = ({ onNewPayment }: PaymentsHeaderProps) => {
+export const PaymentsHeader = ({ onAddPayment, totalPayments }: PaymentsHeaderProps) => {
   const navigate = useNavigate();
 
   return (
@@ -18,7 +19,9 @@ export const PaymentsHeader = ({ onNewPayment }: PaymentsHeaderProps) => {
           <SidebarTrigger className="text-white hover:text-gray-200" />
           <div>
             <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Cobranças</h1>
-            <p className="text-sm" style={{ color: '#03f6f9' }}>Gerencie suas cobranças</p>
+            <p className="text-sm" style={{ color: '#03f6f9' }}>
+              Gerencie suas cobranças ({totalPayments} total)
+            </p>
           </div>
         </div>
         
@@ -34,7 +37,7 @@ export const PaymentsHeader = ({ onNewPayment }: PaymentsHeaderProps) => {
           </Button>
           
           <Button
-            onClick={onNewPayment}
+            onClick={onAddPayment}
             style={{ backgroundColor: '#ffffff', color: '#002472' }}
             className="hover:bg-gray-100"
           >

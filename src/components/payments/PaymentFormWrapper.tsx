@@ -10,7 +10,7 @@ interface PaymentFormWrapperProps {
   onSuccess: () => void;
 }
 
-export const PaymentFormWrapper = ({ userId, patients, onSuccess }: PaymentFormWrapperProps) => {
+export const PaymentFormWrapper = ({ patients, onSuccess }: PaymentFormWrapperProps) => {
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
   const [createdPayment, setCreatedPayment] = useState<any>(null);
 
@@ -28,7 +28,6 @@ export const PaymentFormWrapper = ({ userId, patients, onSuccess }: PaymentFormW
   return (
     <>
       <PaymentForm 
-        userId={userId} 
         patients={patients} 
         onSuccess={handlePaymentCreated}
       />
