@@ -19,8 +19,14 @@ export const PaymentFormWrapper = ({ payment, onSave, onCancel }: PaymentFormWra
   const [createdPayment, setCreatedPayment] = useState<any>(null);
 
   const handlePaymentCreated = (payment: any) => {
-    setCreatedPayment(payment);
-    setShowPaymentMethod(true);
+    // TEMPORARIAMENTE DESABILITADO - Integração Pagar.me
+    // Para reativar no futuro, descomente as linhas abaixo e comente a linha onSave()
+    
+    // setCreatedPayment(payment);
+    // setShowPaymentMethod(true);
+    
+    // Por enquanto, apenas fecha o modal após criar a cobrança
+    onSave();
   };
 
   const handlePaymentSuccess = () => {
@@ -40,20 +46,33 @@ export const PaymentFormWrapper = ({ payment, onSave, onCancel }: PaymentFormWra
         />
       </div>
 
-      <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Finalizar Pagamento</DialogTitle>
-          </DialogHeader>
-          {createdPayment && (
-            <PagarmePaymentMethod
-              paymentId={createdPayment.id}
-              amount={createdPayment.amount}
-              onSuccess={handlePaymentSuccess}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* 
+        TEMPORARIAMENTE DESABILITADO - Modal de Pagamento Pagar.me
+        
+        Este modal permite ao usuário finalizar o pagamento via Pagar.me após criar a cobrança.
+        Para reativar esta funcionalidade no futuro:
+        1. Descomente o código abaixo
+        2. No handlePaymentCreated, descomente as linhas que setam o createdPayment e showPaymentMethod
+        3. Comente a linha onSave() direta no handlePaymentCreated
+        
+        Mantido aqui para facilitar a reativação futura.
+      */}
+      {false && (
+        <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Finalizar Pagamento</DialogTitle>
+            </DialogHeader>
+            {createdPayment && (
+              <PagarmePaymentMethod
+                paymentId={createdPayment.id}
+                amount={createdPayment.amount}
+                onSuccess={handlePaymentSuccess}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
