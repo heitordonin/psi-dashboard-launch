@@ -3,14 +3,18 @@ import { useState } from "react";
 import { PaymentForm } from "./PaymentForm";
 import { PagarmePaymentMethod } from "./PagarmePaymentMethod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePaymentData } from "@/hooks/usePaymentData";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 interface PaymentFormWrapperProps {
-  userId: string;
-  patients: any[];
-  onSuccess: () => void;
+  payment?: any;
+  onSave: () => void;
+  onCancel?: () => void;
 }
 
-export const PaymentFormWrapper = ({ patients, onSuccess }: PaymentFormWrapperProps) => {
+export const PaymentFormWrapper = ({ payment, onSave, onCancel }: PaymentFormWrapperProps) => {
+  const { user } = useAuth();
+  const { patients } = usePaymentData(user?.id || '');
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
   const [createdPayment, setCreatedPayment] = useState<any>(null);
 
@@ -22,14 +26,16 @@ export const PaymentFormWrapper = ({ patients, onSuccess }: PaymentFormWrapperPr
   const handlePaymentSuccess = () => {
     setShowPaymentMethod(false);
     setCreatedPayment(null);
-    onSuccess();
+    onSave();
   };
 
   return (
     <>
       <PaymentForm 
         patients={patients} 
-        onSuccess={handlePaymentCreated}
+        onSave={handlePaymentCreated}
+        payment={payment}
+        onCancel={onCancel}
       />
 
       <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>

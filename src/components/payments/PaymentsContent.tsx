@@ -5,18 +5,16 @@ import { PaymentsHeader } from "./PaymentsHeader";
 import { PaymentFormWrapper } from "./PaymentFormWrapper";
 import { PaymentsList } from "./PaymentsList";
 import { RecipientSetup } from "./RecipientSetup";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 interface PaymentsContentProps {
   userId: string;
 }
 
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
-  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
-  const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
+  const { payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
 
-  const handleSuccess = () => {
+  const handleSavePayment = () => {
     setShowForm(false);
   };
 
@@ -35,9 +33,8 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
       {showForm && (
         <div className="mb-6">
           <PaymentFormWrapper 
-            userId={userId}
-            patients={patients}
-            onSuccess={handleSuccess}
+            onSave={handleSavePayment}
+            onCancel={() => setShowForm(false)}
           />
         </div>
       )}
