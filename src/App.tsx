@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import Index from './pages/Index';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import UpdatePhone from './pages/UpdatePhone';
 import VerifyPhone from './pages/VerifyPhone';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
@@ -41,6 +42,14 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route
+                path="/update-phone"
+                element={
+                  <ProtectedRoute>
+                    <UpdatePhone />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/verify-phone"
                 element={

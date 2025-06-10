@@ -38,16 +38,22 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
           return;
         }
 
-        console.log('Status de verificação do telefone:', profile?.phone_verified);
-        setPhoneVerified(profile?.phone_verified ?? false);
+        console.log('Dados do perfil:', profile);
+
+        // Se o usuário não tem telefone cadastrado, redirecionar para atualizar
+        if (!profile?.phone) {
+          console.log('Usuário sem telefone cadastrado, redirecionando para /update-phone');
+          navigate('/update-phone');
+          return;
+        }
 
         // Se o telefone não está verificado, enviar OTP e redirecionar
-        if (!profile?.phone_verified && profile?.phone) {
+        if (!profile?.phone_verified) {
           console.log('Telefone não verificado, enviando OTP...');
           
           try {
             const { error: otpError } = await supabase.auth.signInWithOtp({
-              phone: profile.phone
+              phone: `+55${profile.phone}`
             });
 
             if (otpError) {
@@ -61,6 +67,9 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
             console.error('Erro no envio do OTP:', otpSendError);
             toast.error('Erro ao enviar código de verificação');
           }
+        } else {
+          // Telefone está verificado
+          setPhoneVerified(true);
         }
       } catch (error) {
         console.error('Erro na verificação do telefone:', error);
@@ -93,17 +102,17 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
     return null;
   }
 
-  // Se o telefone está verificado ou ainda estamos checando, renderizar children
+  // Se o telefone está verificado, renderizar children
   if (phoneVerified === true) {
     return <>{children}</>;
   }
 
-  // Se chegou aqui e phoneVerified é false, significa que estamos redirecionando
+  // Se chegou aqui, significa que estamos redirecionando
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        <p className="mt-4">Redirecionando para verificação...</p>
+        <p className="mt-4">Redirecionando...</p>
       </div>
     </div>
   );
