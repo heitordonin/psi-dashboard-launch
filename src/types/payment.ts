@@ -12,6 +12,8 @@ export interface Payment {
   guardian_name?: string;
   receita_saude_receipt_issued: boolean;
   email_reminder_sent_at?: string;
+  pagarme_transaction_id?: string;
+  pix_qr_code?: string;
   created_at: string;
 }
 

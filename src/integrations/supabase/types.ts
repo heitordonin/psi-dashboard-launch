@@ -220,10 +220,12 @@ export type Database = {
           email_reminder_sent_at: string | null
           id: string
           owner_id: string | null
+          pagarme_transaction_id: string | null
           paid_date: string | null
           patient_id: string
           payer_cpf: string | null
           payment_url: string | null
+          pix_qr_code: string | null
           receita_saude_receipt_issued: boolean
           status: Database["public"]["Enums"]["payment_status"]
         }
@@ -235,10 +237,12 @@ export type Database = {
           email_reminder_sent_at?: string | null
           id?: string
           owner_id?: string | null
+          pagarme_transaction_id?: string | null
           paid_date?: string | null
           patient_id: string
           payer_cpf?: string | null
           payment_url?: string | null
+          pix_qr_code?: string | null
           receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
         }
@@ -250,10 +254,12 @@ export type Database = {
           email_reminder_sent_at?: string | null
           id?: string
           owner_id?: string | null
+          pagarme_transaction_id?: string | null
           paid_date?: string | null
           patient_id?: string
           payer_cpf?: string | null
           payment_url?: string | null
+          pix_qr_code?: string | null
           receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
         }
@@ -279,6 +285,7 @@ export type Database = {
           id: string
           is_admin: boolean | null
           nit_nis_pis: string | null
+          pagarme_recipient_id: string | null
           updated_at: string
         }
         Insert: {
@@ -292,6 +299,7 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           nit_nis_pis?: string | null
+          pagarme_recipient_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -305,6 +313,7 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           nit_nis_pis?: string | null
+          pagarme_recipient_id?: string | null
           updated_at?: string
         }
         Relationships: []

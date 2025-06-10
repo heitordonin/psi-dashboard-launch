@@ -1,49 +1,52 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { PaymentForm } from './PaymentForm';
-import type { Payment } from '@/types/payment';
-import type { Patient } from '@/types/patient';
+import { useState } from "react";
+import { PaymentForm } from "./PaymentForm";
+import { PagarmePaymentMethod } from "./PagarmePaymentMethod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface PaymentFormWrapperProps {
-  payment?: Payment;
-  onSave?: () => void;
-  onCancel?: () => void;
-  onClose?: () => void;
+  userId: string;
+  patients: any[];
+  onSuccess: () => void;
 }
 
-export function PaymentFormWrapper({ payment, onSave, onCancel, onClose }: PaymentFormWrapperProps) {
-  const { user } = useAuth();
+export const PaymentFormWrapper = ({ userId, patients, onSuccess }: PaymentFormWrapperProps) => {
+  const [showPaymentMethod, setShowPaymentMethod] = useState(false);
+  const [createdPayment, setCreatedPayment] = useState<any>(null);
 
-  const { data: patients = [] } = useQuery({
-    queryKey: ['patients', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('owner_id', user.id)
-        .order('full_name');
-      
-      if (error) throw error;
-      
-      // Cast patient_type to ensure strict type safety
-      return data.map((p) => ({
-        ...p,
-        patient_type: p.patient_type as "individual" | "company"
-      })) as Patient[];
-    },
-    enabled: !!user?.id
-  });
+  const handlePaymentCreated = (payment: any) => {
+    setCreatedPayment(payment);
+    setShowPaymentMethod(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentMethod(false);
+    setCreatedPayment(null);
+    onSuccess();
+  };
 
   return (
-    <PaymentForm
-      payment={payment}
-      patients={patients}
-      onSave={onSave}
-      onCancel={onCancel}
-    />
+    <>
+      <PaymentForm 
+        userId={userId} 
+        patients={patients} 
+        onSuccess={handlePaymentCreated}
+      />
+
+      <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Finalizar Pagamento</DialogTitle>
+          </DialogHeader>
+          {createdPayment && (
+            <PagarmePaymentMethod
+              paymentId={createdPayment.id}
+              amount={createdPayment.amount}
+              onSuccess={handlePaymentSuccess}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
-}
+};
