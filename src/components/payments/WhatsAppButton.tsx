@@ -67,8 +67,7 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Lembrete WhatsApp
+          <MessageCircle className="w-4 h-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">

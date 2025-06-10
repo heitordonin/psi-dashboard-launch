@@ -7,7 +7,7 @@ interface WhatsAppMessage {
   to: string;
   message?: string;
   templateSid?: string;
-  templateVariables?: string[];
+  templateVariables?: { [key: string]: string }; // CORREÇÃO: objeto em vez de array
   paymentId?: string;
   messageType?: string;
 }
