@@ -1,117 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { validateCpf } from '@/utils/validators';
-import { formatCpf, formatPhone } from '@/utils/inputFormatters';
-import { toast } from 'sonner';
+import { SignupForm } from '@/components/auth/SignupForm';
 
 const Signup = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
-  const { user, signUp } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email deve ter um formato válido';
-    }
-
-    if (!password) {
-      newErrors.password = 'Senha é obrigatória';
-    } else if (password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Senhas não coincidem';
-    }
-
-    if (!fullName) {
-      newErrors.fullName = 'Nome completo é obrigatório';
-    }
-
-    if (!cpf) {
-      newErrors.cpf = 'CPF é obrigatório';
-    } else if (!validateCpf(cpf)) {
-      newErrors.cpf = 'CPF deve ter um formato válido';
-    }
-
-    if (!phone) {
-      newErrors.phone = 'Celular é obrigatório';
-    } else if (phone.replace(/\D/g, '').length < 10) {
-      newErrors.phone = 'Celular deve ter pelo menos 10 dígitos';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedCpf = formatCpf(e.target.value);
-    setCpf(formattedCpf);
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedPhone = formatPhone(e.target.value);
-    setPhone(formattedPhone);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { error } = await signUp(email, password, {
-        full_name: fullName,
-        cpf: cpf,
-        phone: phone
-      });
-
-      if (error) throw error;
-
-      toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.", {
-        duration: 5000,
-        style: {
-          background: '#f0f9ff',
-          border: '1px solid #0ea5e9',
-          color: '#0c4a6e'
-        }
-      });
-
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Erro ao criar conta');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -128,91 +30,7 @@ const Signup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="fullName">Nome Completo</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Seu nome completo"
-                className={errors.fullName ? 'border-red-500' : ''}
-              />
-              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                value={cpf}
-                onChange={handleCpfChange}
-                placeholder="000.000.000-00"
-                maxLength={14}
-                className={errors.cpf ? 'border-red-500' : ''}
-              />
-              {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="phone">Celular</Label>
-              <Input
-                id="phone"
-                type="text"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="(11) 99999-9999"
-                maxLength={15}
-                className={errors.phone ? 'border-red-500' : ''}
-              />
-              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                className={errors.email ? 'border-red-500' : ''}
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Sua senha"
-                className={errors.password ? 'border-red-500' : ''}
-              />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirme sua senha"
-                className={errors.confirmPassword ? 'border-red-500' : ''}
-              />
-              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Criando conta...' : 'Criar Conta'}
-            </Button>
-          </form>
+          <SignupForm />
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
