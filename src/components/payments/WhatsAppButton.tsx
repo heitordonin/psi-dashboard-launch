@@ -6,18 +6,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
-import type { Payment } from "@/types/payment";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
+import type { PaymentWithPatient } from "@/types/payment";
+import { format } from "date-fns";
 
 interface WhatsAppButtonProps {
-  payment: Payment;
-  patientName: string;
-  patientPhone?: string;
+  payment: PaymentWithPatient;
 }
 
-export function WhatsAppButton({ payment, patientName, patientPhone }: WhatsAppButtonProps) {
+export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const { sendWhatsApp, isLoading } = useWhatsApp();
+  const { user } = useAuth();
+
+  const patientName = payment.patients?.full_name || 'Paciente';
+  const patientPhone = payment.patients?.phone;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -27,19 +31,22 @@ export function WhatsAppButton({ payment, patientName, patientPhone }: WhatsAppB
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return format(new Date(dateString), 'dd/MM/yyyy');
   };
 
-  const defaultMessage = `Olá ${patientName}! 
+  // Template da mensagem conforme especificado
+  const defaultMessage = `Olá, ${patientName}.
 
-Lembrando sobre o pagamento em aberto:
-💰 Valor: ${formatCurrency(Number(payment.amount))}
-📅 Vencimento: ${formatDate(payment.due_date)}
-${payment.description ? `📝 Descrição: ${payment.description}` : ''}
+Este é um lembrete sobre sua cobrança referente aos seus atendimentos - seu psicólogo(a).
 
-${payment.payment_url ? `🔗 Link para pagamento: ${payment.payment_url}` : ''}
+Valor: ${formatCurrency(Number(payment.amount))}
+Vencimento: ${formatDate(payment.due_date)}
 
-Qualquer dúvida, estou à disposição!`;
+Se já realizou o pagamento, por favor, desconsidere esta mensagem.
+Qualquer dúvida, estou à disposição!
+
+Atenciosamente,
+Equipe Psiclo - App de cobrança para Psis Regulares`;
 
   const handleOpen = () => {
     setMessage(defaultMessage);
@@ -48,12 +55,10 @@ Qualquer dúvida, estou à disposição!`;
 
   const handleSend = () => {
     if (!patientPhone) {
-      alert('Paciente não possui telefone cadastrado');
       return;
     }
 
     if (!message.trim()) {
-      alert('Digite uma mensagem');
       return;
     }
 
@@ -67,12 +72,9 @@ Qualquer dúvida, estou à disposição!`;
     setIsOpen(false);
   };
 
-  if (!patientPhone) {
-    return (
-      <Button variant="outline" size="sm" disabled>
-        <MessageCircle className="w-4 h-4" />
-      </Button>
-    );
+  // Não mostrar o botão se não há telefone ou se não é pagamento pendente
+  if (!patientPhone || payment.status !== 'pending') {
+    return null;
   }
 
   return (
@@ -84,12 +86,12 @@ Qualquer dúvida, estou à disposição!`;
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Enviar WhatsApp</DialogTitle>
+          <DialogTitle>Enviar Lembrete via WhatsApp</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <Label>Para: {patientName}</Label>
-            <p className="text-sm text-gray-600">{patientPhone}</p>
+            <p className="text-sm text-muted-foreground">{patientPhone}</p>
           </div>
           
           <div>
@@ -98,7 +100,7 @@ Qualquer dúvida, estou à disposição!`;
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={8}
+              rows={10}
               className="mt-1"
             />
           </div>

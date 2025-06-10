@@ -1,6 +1,7 @@
 
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { EmailReminderButton } from "./EmailReminderButton";
+import { WhatsAppButton } from "./WhatsAppButton";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import type { PaymentWithPatient } from "@/types/payment";
@@ -18,6 +19,9 @@ export const PaymentButtons = ({ payment, onEdit, onDelete }: PaymentButtonsProp
       <div className="flex gap-2">
         {/* Email reminder button */}
         <EmailReminderButton payment={payment} />
+        
+        {/* WhatsApp reminder button */}
+        <WhatsAppButton payment={payment} />
         
         <Button
           variant="ghost"
