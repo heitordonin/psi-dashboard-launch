@@ -66,11 +66,20 @@ export const RecipientSetup = () => {
         return;
       }
 
+      // Map account type from Portuguese to English
+      const accountType = bankData.type === 'conta_corrente' ? 'checking' : 'savings';
+
+      // Send flat payload with correct English field names
       const { data, error } = await supabase.functions.invoke('create-pagarme-recipient', {
         body: {
-          full_name: profile.full_name,
+          legal_name: profile.full_name,
           cpf: profile.cpf,
-          bank_account: bankData
+          bank_code: bankData.bank_code,
+          agency_number: bankData.agency,
+          agency_digit: bankData.agency_digit || undefined,
+          account_number: bankData.account,
+          account_digit: bankData.account_digit,
+          account_type: accountType
         }
       });
 
