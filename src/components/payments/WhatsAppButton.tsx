@@ -1,8 +1,8 @@
 
 import { useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import type { PaymentWithPatient } from "@/types/payment";
@@ -36,17 +36,20 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
       return;
     }
 
-    // Use template variables for the payment reminder
-    const templateVariables = [
-      patientName,
-      'seu psicólogo(a)',
-      formatCurrency(Number(payment.amount)),
-      formatDate(payment.due_date)
-    ];
+    // Garante que temos um nome de psicólogo para a mensagem
+    const psychologistName = user?.user_metadata?.full_name || "seu psicólogo(a)";
+
+    // CORREÇÃO: Usar objeto com chaves numeradas em vez de array
+    const templateVariables = {
+      "1": patientName,
+      "2": psychologistName,
+      "3": formatCurrency(Number(payment.amount)),
+      "4": formatDate(payment.due_date)
+    };
 
     sendWhatsApp({
       to: patientPhone,
-      templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE', // This will be replaced with actual SID in edge function
+      templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE',
       templateVariables,
       paymentId: payment.id,
       messageType: 'payment_reminder'
@@ -64,39 +67,42 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <MessageCircle className="w-4 h-4" />
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Lembrete WhatsApp
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Enviar Lembrete via WhatsApp</DialogTitle>
+          <DialogTitle>Confirmar Envio</DialogTitle>
+          <DialogDescription>
+            Um lembrete de cobrança será enviado para o WhatsApp de <strong>{patientName}</strong> ({patientPhone}).
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              <strong>Para:</strong> {patientName} ({patientPhone})
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Valor:</strong> {formatCurrency(Number(payment.amount))}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Vencimento:</strong> {formatDate(payment.due_date)}
-            </p>
+          <div className="text-sm text-muted-foreground">
+            <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
+            <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
           </div>
           
           <p className="text-sm text-gray-600">
             Será enviado um lembrete padronizado sobre esta cobrança.
           </p>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
-              Cancelar
-            </Button>
-            <Button onClick={handleSend} disabled={isLoading} className="flex-1">
-              {isLoading ? 'Enviando...' : 'Enviar Lembrete'}
-            </Button>
-          </div>
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSend} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              'Enviar Lembrete'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
