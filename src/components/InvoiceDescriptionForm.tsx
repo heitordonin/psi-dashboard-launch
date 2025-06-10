@@ -30,6 +30,7 @@ export const InvoiceDescriptionForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Evita propagação do evento
     
     if (!formData.text.trim()) {
       toast.error('Texto é obrigatório');

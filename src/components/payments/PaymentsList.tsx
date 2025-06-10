@@ -9,20 +9,17 @@ interface PaymentsListProps {
   payments: PaymentWithPatient[];
   isLoading: boolean;
   onDeletePayment: (paymentId: string) => void;
+  onEditPayment: (payment: Payment) => void;
 }
 
 export const PaymentsList = ({
   payments,
   isLoading,
-  onDeletePayment
+  onDeletePayment,
+  onEditPayment
 }: PaymentsListProps) => {
   const hasFilters = false; // Since this is legacy, we'll assume no filters
   
-  const onEdit = (payment: Payment) => {
-    // Legacy function - not implemented in this version
-    console.log('Edit payment:', payment.id);
-  };
-
   const onNewPayment = () => {
     // Legacy function - not implemented in this version
     console.log('New payment clicked');
@@ -56,7 +53,7 @@ export const PaymentsList = ({
               <PaymentItem
                 key={payment.id}
                 payment={payment}
-                onEdit={onEdit}
+                onEdit={onEditPayment}
                 onDelete={onDeletePayment}
               />
             ))}

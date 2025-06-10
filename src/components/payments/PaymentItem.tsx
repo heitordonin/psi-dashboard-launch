@@ -70,11 +70,6 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
     setIsMarkingAsPaid(false);
   };
 
-  const handleCopyPixKey = () => {
-    const pixKey = "chavepix@exemplo.com";
-    copyToClipboard(pixKey, "Chave PIX");
-  };
-
   return (
     <Card className="mb-4 hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -192,12 +187,6 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               onEdit={onEdit}
               onDelete={onDelete}
             />
-
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyPixKey}>
-                PIX
-              </Button>
-            </div>
           </div>
         </div>
       </CardContent>
