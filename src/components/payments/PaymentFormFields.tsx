@@ -1,10 +1,9 @@
 
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { CurrencyInput } from '@/components/ui/currency-input';
 import { PatientAndPayer } from './PatientAndPayer';
 import { ReceivedCheckbox } from './ReceivedCheckbox';
 import { PaymentDescriptionField } from './PaymentDescriptionField';
+import { PaymentAmountField } from './PaymentAmountField';
+import { PaymentDueDateField } from './PaymentDueDateField';
 import type { Patient } from '@/types/patient';
 
 interface FormData {
@@ -65,33 +64,16 @@ export function PaymentFormFields({
         isEditing={isEditing}
       />
       
-      {!isReceived && (
-        <div className="space-y-2">
-          <Label htmlFor="due_date">Data de Vencimento *</Label>
-          <Input
-            id="due_date"
-            type="date"
-            value={formData.due_date}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, due_date: e.target.value }))
-            }
-            className="w-full"
-          />
-        </div>
-      )}
+      <PaymentDueDateField
+        value={formData.due_date}
+        onChange={(value) => setFormData((prev) => ({ ...prev, due_date: value }))}
+        isReceived={isReceived}
+      />
       
-      <div className="space-y-2">
-        <Label htmlFor="amount">Valor *</Label>
-        <CurrencyInput
-          value={formData.amount}
-          onChange={(value) => {
-            console.log('Currency input changed:', value);
-            setFormData(prev => ({ ...prev, amount: value }));
-          }}
-          placeholder="R$ 0,00"
-          className="w-full"
-        />
-      </div>
+      <PaymentAmountField
+        value={formData.amount}
+        onChange={(value) => setFormData(prev => ({ ...prev, amount: value }))}
+      />
 
       <PaymentDescriptionField
         value={formData.description}
