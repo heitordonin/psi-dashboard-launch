@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { generateOTP, formatPhoneForOTP } from '@/utils/otpGenerator';
 import { toast } from 'sonner';
 
 interface PhoneVerificationGuardProps {
@@ -12,6 +14,7 @@ interface PhoneVerificationGuardProps {
 const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const { sendWhatsApp } = useWhatsApp();
   const [isCheckingVerification, setIsCheckingVerification] = useState(true);
   const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
 
@@ -52,17 +55,23 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
           console.log('Telefone não verificado, enviando OTP...');
           
           try {
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-              phone: `+55${profile.phone}`
+            // Gerar OTP e enviar via template
+            const otp = generateOTP();
+            
+            // Armazenar OTP temporariamente no localStorage (em produção, usar base de dados)
+            localStorage.setItem('temp_otp', otp);
+            localStorage.setItem('temp_otp_timestamp', Date.now().toString());
+            
+            // Enviar OTP via WhatsApp usando template
+            sendWhatsApp({
+              to: profile.phone,
+              templateSid: 'TWILIO_TEMPLATE_SID_OTP',
+              templateVariables: [otp],
+              messageType: 'otp_verification'
             });
 
-            if (otpError) {
-              console.error('Erro ao enviar OTP:', otpError);
-              toast.error('Erro ao enviar código de verificação');
-            } else {
-              toast.success('Código de verificação enviado para seu WhatsApp!');
-              navigate('/verify-phone');
-            }
+            toast.success('Código de verificação enviado para seu WhatsApp!');
+            navigate('/verify-phone');
           } catch (otpSendError) {
             console.error('Erro no envio do OTP:', otpSendError);
             toast.error('Erro ao enviar código de verificação');
@@ -83,7 +92,7 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
     } else if (!isLoading) {
       setIsCheckingVerification(false);
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, sendWhatsApp]);
 
   // Mostrar loading enquanto verifica autenticação ou verificação do telefone
   if (isLoading || isCheckingVerification) {

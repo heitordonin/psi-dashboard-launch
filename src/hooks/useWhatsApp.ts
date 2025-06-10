@@ -5,18 +5,20 @@ import { toast } from "sonner";
 
 interface WhatsAppMessage {
   to: string;
-  message: string;
+  message?: string;
+  templateSid?: string;
+  templateVariables?: string[];
   paymentId?: string;
   messageType?: string;
 }
 
 export const useWhatsApp = () => {
   const sendWhatsApp = useMutation({
-    mutationFn: async ({ to, message, paymentId, messageType }: WhatsAppMessage) => {
-      console.log('Sending WhatsApp message:', { to, message, paymentId, messageType });
+    mutationFn: async ({ to, message, templateSid, templateVariables, paymentId, messageType }: WhatsAppMessage) => {
+      console.log('Sending WhatsApp message:', { to, message, templateSid, templateVariables, paymentId, messageType });
       
       const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-        body: { to, message, paymentId, messageType }
+        body: { to, message, templateSid, templateVariables, paymentId, messageType }
       });
 
       if (error) {

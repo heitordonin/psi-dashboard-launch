@@ -6,12 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { generateOTP } from '@/utils/otpGenerator';
 import { toast } from 'sonner';
 import { Smartphone, RefreshCw } from 'lucide-react';
 
 const VerifyPhone = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { sendWhatsApp } = useWhatsApp();
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -25,44 +28,96 @@ const VerifyPhone = () => {
     setIsVerifying(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('verify-phone-otp', {
-        body: { token: otp }
-      });
+      // Verificar OTP armazenado temporariamente
+      const storedOtp = localStorage.getItem('temp_otp');
+      const timestamp = localStorage.getItem('temp_otp_timestamp');
+      
+      if (!storedOtp || !timestamp) {
+        toast.error('Código expirado. Solicite um novo código.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Verificar se o código não expirou (10 minutos)
+      const now = Date.now();
+      const otpTime = parseInt(timestamp);
+      const tenMinutes = 10 * 60 * 1000;
+      
+      if (now - otpTime > tenMinutes) {
+        toast.error('Código expirado. Solicite um novo código.');
+        localStorage.removeItem('temp_otp');
+        localStorage.removeItem('temp_otp_timestamp');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Verificar se o OTP está correto
+      if (otp !== storedOtp) {
+        toast.error('Código inválido. Tente novamente.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Atualizar perfil como verificado
+      const { error } = await supabase
+        .from('profiles')
+        .update({ phone_verified: true })
+        .eq('id', user?.id);
 
       if (error) {
         throw error;
       }
 
-      if (data.success) {
-        toast.success('Telefone verificado com sucesso!');
-        navigate('/dashboard');
-      } else {
-        toast.error(data.error || 'Erro na verificação');
-      }
+      // Limpar OTP armazenado
+      localStorage.removeItem('temp_otp');
+      localStorage.removeItem('temp_otp_timestamp');
+
+      toast.success('Telefone verificado com sucesso!');
+      navigate('/dashboard');
     } catch (error: any) {
       console.error('Erro na verificação:', error);
-      toast.error('Código inválido ou expirado');
+      toast.error('Erro interno. Tente novamente.');
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleResendCode = async () => {
-    if (!user?.phone) {
-      toast.error('Número de telefone não encontrado');
+    if (!user?.id) {
+      toast.error('Usuário não encontrado');
       return;
     }
 
     setIsResending(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: user.phone
-      });
+      // Buscar telefone do usuário
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .single();
 
-      if (error) {
-        throw error;
+      if (error || !profile?.phone) {
+        toast.error('Telefone não encontrado');
+        setIsResending(false);
+        return;
       }
+
+      // Gerar novo OTP
+      const newOtp = generateOTP();
+      
+      // Armazenar novo OTP
+      localStorage.setItem('temp_otp', newOtp);
+      localStorage.setItem('temp_otp_timestamp', Date.now().toString());
+
+      // Enviar novo OTP via WhatsApp
+      sendWhatsApp({
+        to: profile.phone,
+        templateSid: 'TWILIO_TEMPLATE_SID_OTP',
+        templateVariables: [newOtp],
+        messageType: 'otp_verification'
+      });
 
       toast.success('Novo código enviado para seu WhatsApp!');
       setOtp('');

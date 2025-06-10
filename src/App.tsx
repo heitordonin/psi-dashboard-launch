@@ -42,7 +42,6 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              {/*
               <Route
                 path="/update-phone"
                 element={
@@ -51,8 +50,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              */}
-              {/*
               <Route
                 path="/verify-phone"
                 element={
@@ -61,7 +58,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              */}
               <Route
                 path="/dashboard"
                 element={

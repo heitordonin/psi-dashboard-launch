@@ -9,7 +9,9 @@ const corsHeaders = {
 
 interface WhatsAppRequest {
   to: string
-  message: string
+  message?: string
+  templateSid?: string
+  templateVariables?: string[]
   paymentId?: string
   messageType?: string
 }
@@ -27,7 +29,7 @@ serve(async (req) => {
     )
 
     // Get request data
-    const { to, message, paymentId, messageType = 'payment_reminder' }: WhatsAppRequest = await req.json()
+    const { to, message, templateSid, templateVariables, paymentId, messageType = 'payment_reminder' }: WhatsAppRequest = await req.json()
 
     // Get Twilio credentials from Supabase secrets
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
@@ -46,7 +48,7 @@ serve(async (req) => {
     const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:+55${to.replace(/\D/g, '')}`
     const formattedFrom = twilioPhoneNumber.startsWith('whatsapp:') ? twilioPhoneNumber : `whatsapp:${twilioPhoneNumber}`
 
-    console.log('Sending WhatsApp message:', { from: formattedFrom, to: formattedTo, message })
+    console.log('Sending WhatsApp message:', { from: formattedFrom, to: formattedTo, templateSid, templateVariables, message })
 
     // Send message via Twilio API
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
@@ -54,7 +56,16 @@ serve(async (req) => {
     const formData = new URLSearchParams()
     formData.append('From', formattedFrom)
     formData.append('To', formattedTo)
-    formData.append('Body', message)
+
+    // Use template if provided, otherwise use plain text message
+    if (templateSid && templateVariables) {
+      formData.append('ContentSid', templateSid)
+      formData.append('ContentVariables', JSON.stringify(templateVariables))
+    } else if (message) {
+      formData.append('Body', message)
+    } else {
+      throw new Error('Either templateSid with templateVariables or message must be provided')
+    }
 
     const twilioResponse = await fetch(twilioUrl, {
       method: 'POST',
@@ -91,7 +102,7 @@ serve(async (req) => {
         .insert({
           owner_id: userId,
           phone_number: to,
-          message_content: message,
+          message_content: message || `Template: ${templateSid}`,
           message_type: messageType,
           payment_id: paymentId,
           status: 'sent',

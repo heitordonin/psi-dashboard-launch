@@ -3,8 +3,6 @@ import { useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import type { PaymentWithPatient } from "@/types/payment";
@@ -16,7 +14,6 @@ interface WhatsAppButtonProps {
 
 export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [message, setMessage] = useState('');
   const { sendWhatsApp, isLoading } = useWhatsApp();
   const { user } = useAuth();
 
@@ -34,37 +31,23 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
     return format(new Date(dateString), 'dd/MM/yyyy');
   };
 
-  // Template da mensagem conforme especificado
-  const defaultMessage = `Olá, ${patientName}.
-
-Este é um lembrete sobre sua cobrança referente aos seus atendimentos - seu psicólogo(a).
-
-Valor: ${formatCurrency(Number(payment.amount))}
-Vencimento: ${formatDate(payment.due_date)}
-
-Se já realizou o pagamento, por favor, desconsidere esta mensagem.
-Qualquer dúvida, estou à disposição!
-
-Atenciosamente,
-Equipe Psiclo - App de cobrança para Psis Regulares`;
-
-  const handleOpen = () => {
-    setMessage(defaultMessage);
-    setIsOpen(true);
-  };
-
   const handleSend = () => {
     if (!patientPhone) {
       return;
     }
 
-    if (!message.trim()) {
-      return;
-    }
+    // Use template variables for the payment reminder
+    const templateVariables = [
+      patientName,
+      'seu psicólogo(a)',
+      formatCurrency(Number(payment.amount)),
+      formatDate(payment.due_date)
+    ];
 
     sendWhatsApp({
       to: patientPhone,
-      message: message.trim(),
+      templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE', // This will be replaced with actual SID in edge function
+      templateVariables,
       paymentId: payment.id,
       messageType: 'payment_reminder'
     });
@@ -80,7 +63,7 @@ Equipe Psiclo - App de cobrança para Psis Regulares`;
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" onClick={handleOpen}>
+        <Button variant="outline" size="sm">
           <MessageCircle className="w-4 h-4" />
         </Button>
       </DialogTrigger>
@@ -90,27 +73,27 @@ Equipe Psiclo - App de cobrança para Psis Regulares`;
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Para: {patientName}</Label>
-            <p className="text-sm text-muted-foreground">{patientPhone}</p>
+            <p className="text-sm text-muted-foreground">
+              <strong>Para:</strong> {patientName} ({patientPhone})
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <strong>Valor:</strong> {formatCurrency(Number(payment.amount))}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <strong>Vencimento:</strong> {formatDate(payment.due_date)}
+            </p>
           </div>
           
-          <div>
-            <Label htmlFor="message">Mensagem</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={10}
-              className="mt-1"
-            />
-          </div>
+          <p className="text-sm text-gray-600">
+            Será enviado um lembrete padronizado sobre esta cobrança.
+          </p>
 
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
               Cancelar
             </Button>
             <Button onClick={handleSend} disabled={isLoading} className="flex-1">
-              {isLoading ? 'Enviando...' : 'Enviar'}
+              {isLoading ? 'Enviando...' : 'Enviar Lembrete'}
             </Button>
           </div>
         </div>
