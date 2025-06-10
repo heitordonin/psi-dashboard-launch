@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { validateCpf } from '@/utils/validators';
+import { formatCpf, formatPhone } from '@/utils/inputFormatters';
 import { toast } from 'sonner';
 
 const Signup = () => {
@@ -16,10 +17,11 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signUp } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -56,27 +58,24 @@ const Signup = () => {
       newErrors.cpf = 'CPF deve ter um formato válido';
     }
 
+    if (!phone) {
+      newErrors.phone = 'Celular é obrigatório';
+    } else if (phone.replace(/\D/g, '').length < 10) {
+      newErrors.phone = 'Celular deve ter pelo menos 10 dígitos';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const formatCpf = (value: string) => {
-    // Remove all non-numeric characters
-    const numericValue = value.replace(/\D/g, '');
-    
-    // Apply CPF mask
-    if (numericValue.length <= 11) {
-      return numericValue
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})/, '$1-$2');
-    }
-    return value;
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCpf = formatCpf(e.target.value);
     setCpf(formattedCpf);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedPhone = formatPhone(e.target.value);
+    setPhone(formattedPhone);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,15 +88,10 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            cpf: cpf,
-          }
-        }
+      const { error } = await signUp(email, password, {
+        full_name: fullName,
+        cpf: cpf,
+        phone: phone
       });
 
       if (error) throw error;
@@ -160,6 +154,20 @@ const Signup = () => {
                 className={errors.cpf ? 'border-red-500' : ''}
               />
               {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="phone">Celular</Label>
+              <Input
+                id="phone"
+                type="text"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="(11) 99999-9999"
+                maxLength={15}
+                className={errors.phone ? 'border-red-500' : ''}
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
 
             <div>

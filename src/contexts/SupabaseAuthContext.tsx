@@ -9,7 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, metadata?: { full_name: string; cpf: string }) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: { full_name: string; cpf: string; phone: string }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -137,16 +137,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, metadata?: { full_name: string; cpf: string }) => {
+  const signUp = async (email: string, password: string, metadata?: { full_name: string; cpf: string; phone: string }) => {
     console.log('Attempting sign up for:', email);
     const redirectUrl = `${window.location.origin}/dashboard`;
+    
+    // Clean phone number by removing all non-digit characters
+    const cleanedPhoneNumber = metadata?.phone ? metadata.phone.replace(/\D/g, '') : '';
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      phone: cleanedPhoneNumber ? `+55${cleanedPhoneNumber}` : undefined,
       options: {
         emailRedirectTo: redirectUrl,
-        data: metadata || {}
+        data: {
+          ...metadata,
+          phone: cleanedPhoneNumber
+        }
       }
     });
     
