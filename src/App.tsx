@@ -42,6 +42,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              {/*
               <Route
                 path="/update-phone"
                 element={
@@ -50,6 +51,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              */}
+              {/*
               <Route
                 path="/verify-phone"
                 element={
@@ -58,13 +61,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              */}
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Dashboard />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -72,9 +76,9 @@ function App() {
                 path="/patients"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Patients />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -82,9 +86,9 @@ function App() {
                 path="/payments"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Payments />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -92,9 +96,9 @@ function App() {
                 path="/expenses"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Expenses />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -102,9 +106,9 @@ function App() {
                 path="/receita-saude-control"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <ReceitaSaudeControl />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -112,9 +116,9 @@ function App() {
                 path="/plans"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Plans />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -122,9 +126,9 @@ function App() {
                 path="/email-logs"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <EmailLogs />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -132,9 +136,9 @@ function App() {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Profile />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
@@ -143,9 +147,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminRoute>
-                      <PhoneVerificationGuard>
+                      {/* <PhoneVerificationGuard> */}
                         <Admin />
-                      </PhoneVerificationGuard>
+                      {/* </PhoneVerificationGuard> */}
                     </AdminRoute>
                   </ProtectedRoute>
                 }
@@ -155,9 +159,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminRoute>
-                      <PhoneVerificationGuard>
+                      {/* <PhoneVerificationGuard> */}
                         <AdminDashboard />
-                      </PhoneVerificationGuard>
+                      {/* </PhoneVerificationGuard> */}
                     </AdminRoute>
                   </ProtectedRoute>
                 }
@@ -167,9 +171,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminRoute>
-                      <PhoneVerificationGuard>
+                      {/* <PhoneVerificationGuard> */}
                         <AdminFinancials />
-                      </PhoneVerificationGuard>
+                      {/* </PhoneVerificationGuard> */}
                     </AdminRoute>
                   </ProtectedRoute>
                 }
@@ -179,9 +183,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminRoute>
-                      <PhoneVerificationGuard>
+                      {/* <PhoneVerificationGuard> */}
                         <PaymentConfig />
-                      </PhoneVerificationGuard>
+                      {/* </PhoneVerificationGuard> */}
                     </AdminRoute>
                   </ProtectedRoute>
                 }
@@ -190,9 +194,9 @@ function App() {
                 path="/referral"
                 element={
                   <ProtectedRoute>
-                    <PhoneVerificationGuard>
+                    {/* <PhoneVerificationGuard> */}
                       <Referral />
-                    </PhoneVerificationGuard>
+                    {/* </PhoneVerificationGuard> */}
                   </ProtectedRoute>
                 }
               />
