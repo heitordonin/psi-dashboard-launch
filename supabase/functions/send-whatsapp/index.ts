@@ -32,7 +32,7 @@ serve(async (req) => {
     // Get Twilio credentials from Supabase secrets
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN')
-    const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
+    const twilioPhoneNumber = '+18144747411';
 
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error('Missing Twilio credentials')
