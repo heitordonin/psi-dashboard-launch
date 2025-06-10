@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +19,7 @@ interface FormData {
 interface PaymentFormProps {
   payment?: Payment;
   patients: Patient[];
-  onSave?: () => void;
+  onSave?: (payment?: any) => void;
   onCancel?: () => void;
 }
 
@@ -79,10 +78,10 @@ export function PaymentForm({ payment, patients, onSave, onCancel }: PaymentForm
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (createdPayment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança criada com sucesso!');
-      onSave?.();
+      onSave?.(createdPayment);
     },
     onError: (error) => {
       console.error('Error creating payment:', error);
@@ -114,10 +113,10 @@ export function PaymentForm({ payment, patients, onSave, onCancel }: PaymentForm
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (updatedPayment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança atualizada com sucesso!');
-      onSave?.();
+      onSave?.(updatedPayment);
     },
     onError: (error) => {
       console.error('Error updating payment:', error);

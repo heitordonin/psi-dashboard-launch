@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Payment } from "@/types/payment";
+import type { Patient } from "@/types/patient";
 
 export const usePaymentData = (userId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -19,7 +19,12 @@ export const usePaymentData = (userId: string | undefined) => {
         .order('full_name');
       
       if (error) throw error;
-      return data;
+      
+      // Type cast to ensure patient_type is properly typed
+      return data.map(patient => ({
+        ...patient,
+        patient_type: (patient.patient_type || 'individual') as 'individual' | 'company'
+      })) as Patient[];
     },
     enabled: !!userId
   });
