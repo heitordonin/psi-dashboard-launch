@@ -36,7 +36,7 @@ export const useAdminFinancialData = (startDate?: string, endDate?: string) => {
           due_date,
           paid_date,
           owner_id,
-          profiles (
+          profiles!owner_id (
             full_name,
             display_name
           )

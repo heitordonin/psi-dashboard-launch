@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useDataExport } from '@/hooks/useDataExport';
 import { UserFilter } from '@/components/admin/UserFilter';
-import { Download, Users, CreditCard, FileText, Calendar } from 'lucide-react';
+import { Download, Users, CreditCard, FileText, Calendar, User } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const { exportPatients, exportPayments, exportExpenses, exportExpensesCarneLeao } = useDataExport();
   const [dateRange, setDateRange] = useState({
     start: '',
@@ -190,10 +193,29 @@ const Admin = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1">
+        <SidebarInset>
+          <div style={{ backgroundColor: '#002472' }} className="border-b px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-white hover:text-gray-200" />
+                <div>
+                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Painel Administrativo</h1>
+                  <p className="text-sm" style={{ color: '#03f6f9' }}>Controle total do sistema</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/profile")}
+                className="text-white hover:text-gray-200 hover:bg-white/10"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold">Painel Administrativo</h1>
               <Badge variant="secondary" className="text-sm">
                 Modo Administrador
               </Badge>
