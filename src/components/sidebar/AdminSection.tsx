@@ -1,5 +1,5 @@
 
-import { Settings, CreditCard } from "lucide-react";
+import { LayoutDashboard, Banknote, Settings } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -12,14 +12,19 @@ import {
 
 const adminItems = [
   {
-    title: "Admin",
-    url: "/admin",
-    icon: Settings,
+    title: "Dashboard Estratégico",
+    url: "/admin/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    title: "Config. Pagamentos",
+    title: "Central Financeira",
+    url: "/admin/financials",
+    icon: Banknote,
+  },
+  {
+    title: "Configurações",
     url: "/payment-config",
-    icon: CreditCard,
+    icon: Settings,
   },
 ];
 

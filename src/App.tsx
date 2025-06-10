@@ -14,7 +14,8 @@ import Payments from './pages/Payments';
 import Expenses from './pages/Expenses';
 import ReceitaSaudeControl from './pages/ReceitaSaudeControl';
 import Profile from './pages/Profile';
-import Admin from './pages/Admin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminFinancials from './pages/AdminFinancials';
 import PaymentConfig from './pages/PaymentConfig';
 import Referral from './pages/Referral';
 import NotFound from './pages/NotFound';
@@ -102,11 +103,21 @@ function App() {
                 }
               />
               <Route
-                path="/admin"
+                path="/admin/dashboard"
                 element={
                   <ProtectedRoute>
                     <AdminRoute>
-                      <Admin />
+                      <AdminDashboard />
+                    </AdminRoute>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/financials"
+                element={
+                  <ProtectedRoute>
+                    <AdminRoute>
+                      <AdminFinancials />
                     </AdminRoute>
                   </ProtectedRoute>
                 }

@@ -534,6 +534,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_financial_overview: {
+        Args: { start_date: string; end_date: string }
+        Returns: {
+          total_issued: number
+          total_paid: number
+          total_overdue: number
+        }[]
+      }
+      get_admin_user_kpis: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users: number
+          new_users_last_30_days: number
+          inactive_users: number
+        }[]
+      }
+      get_daily_user_growth: {
+        Args: { start_date: string; end_date: string }
+        Returns: {
+          date: string
+          count: number
+        }[]
+      }
+      get_top_earning_users: {
+        Args: { limit_count: number }
+        Returns: {
+          user_id: string
+          user_name: string
+          total_revenue: number
+        }[]
+      }
       get_user_patient_limit: {
         Args: { user_id?: string }
         Returns: number
