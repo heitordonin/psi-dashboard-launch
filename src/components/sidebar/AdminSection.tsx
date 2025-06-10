@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Banknote, Settings } from "lucide-react";
+import { LayoutDashboard, Banknote, Settings, Users } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -11,6 +11,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const adminItems = [
+  {
+    title: "Painel Administrativo",
+    url: "/admin",
+    icon: Users,
+  },
   {
     title: "Dashboard Estratégico",
     url: "/admin/dashboard",
