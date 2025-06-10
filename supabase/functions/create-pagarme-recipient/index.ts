@@ -39,9 +39,9 @@ serve(async (req) => {
       throw new Error('Missing required fields: full_name, cpf, bank_account')
     }
 
-    // Validate bank account fields
+    // Validate bank account fields with correct field names
     if (!bank_account.bank_code || !bank_account.agency || !bank_account.account || !bank_account.account_digit) {
-      throw new Error('Missing required bank account fields')
+      throw new Error('Missing required bank account fields: bank_code, agency, account, account_digit')
     }
 
     const pagarmeApiKey = Deno.env.get('PAGARME_API_KEY')
@@ -49,24 +49,37 @@ serve(async (req) => {
       throw new Error('PAGARME_API_KEY not configured')
     }
 
-    // Create recipient data with default_bank_account at root level
+    // Map account type from Portuguese to English
+    const mapAccountType = (type: string) => {
+      switch (type) {
+        case 'conta_corrente':
+          return 'checking'
+        case 'conta_poupanca':
+          return 'savings'
+        default:
+          return 'checking' // Default fallback
+      }
+    }
+
+    // Create recipient data with correct field names for Pagar.me API
     const recipientData = {
       name: full_name,
       email: user.email,
       document: cpf.replace(/\D/g, ''), // Remove non-digits
       type: 'individual',
       default_bank_account: {
+        holder_name: full_name,
+        holder_type: 'individual',
         bank_code: bank_account.bank_code,
-        agencia: bank_account.agency,
-        agencia_dv: bank_account.agency_digit || '',
-        conta: bank_account.account,
-        conta_dv: bank_account.account_digit,
-        type: bank_account.type || 'conta_corrente',
-        legal_name: full_name
+        agency_number: bank_account.agency,
+        agency_digit: bank_account.agency_digit || '',
+        account_number: bank_account.account,
+        account_digit: bank_account.account_digit,
+        account_type: mapAccountType(bank_account.type || 'conta_corrente')
       }
     }
 
-    console.log('Creating Pagar.me recipient:', JSON.stringify(recipientData, null, 2))
+    console.log('Creating Pagar.me recipient with correct field structure:', JSON.stringify(recipientData, null, 2))
 
     const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/recipients', {
       method: 'POST',
