@@ -15,6 +15,7 @@ export interface Payment {
   pagarme_transaction_id?: string;
   pix_qr_code?: string;
   created_at: string;
+  owner_id: string;
 }
 
 export interface PaymentWithPatient extends Payment {
@@ -24,4 +25,18 @@ export interface PaymentWithPatient extends Payment {
     phone?: string;
     email?: string;
   };
+}
+
+export interface AdminTransaction {
+  id: string;
+  status: 'draft' | 'pending' | 'paid' | 'failed';
+  amount: number;
+  created_at: string;
+  due_date: string;
+  paid_date?: string;
+  owner_id: string;
+  profiles: {
+    full_name?: string;
+    display_name?: string;
+  } | null;
 }

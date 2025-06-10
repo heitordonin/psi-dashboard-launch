@@ -246,7 +246,7 @@ export type Database = {
           due_date: string
           email_reminder_sent_at: string | null
           id: string
-          owner_id: string | null
+          owner_id: string
           pagarme_transaction_id: string | null
           paid_date: string | null
           patient_id: string
@@ -263,7 +263,7 @@ export type Database = {
           due_date: string
           email_reminder_sent_at?: string | null
           id?: string
-          owner_id?: string | null
+          owner_id: string
           pagarme_transaction_id?: string | null
           paid_date?: string | null
           patient_id: string
@@ -280,7 +280,7 @@ export type Database = {
           due_date?: string
           email_reminder_sent_at?: string | null
           id?: string
-          owner_id?: string | null
+          owner_id?: string
           pagarme_transaction_id?: string | null
           paid_date?: string | null
           patient_id?: string
@@ -291,6 +291,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["payment_status"]
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_owner_id"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_patient_id_fkey"
             columns: ["patient_id"]

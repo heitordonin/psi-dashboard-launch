@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import type { AdminTransaction } from "@/types/payment";
 
 const AdminFinancials = () => {
   const [startDate, setStartDate] = useState<string>("");
@@ -195,7 +196,7 @@ const AdminFinancials = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions?.map((transaction) => (
+                    {(transactions as AdminTransaction[])?.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell className="font-mono text-xs">
                           {transaction.id.slice(0, 8)}...
