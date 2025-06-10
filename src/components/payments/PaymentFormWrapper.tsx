@@ -31,12 +31,14 @@ export const PaymentFormWrapper = ({ payment, onSave, onCancel }: PaymentFormWra
 
   return (
     <>
-      <PaymentForm 
-        patients={patients} 
-        onSave={handlePaymentCreated}
-        payment={payment}
-        onCancel={onCancel}
-      />
+      <div className="p-1">
+        <PaymentForm 
+          patients={patients} 
+          onSave={handlePaymentCreated}
+          payment={payment}
+          onCancel={onCancel}
+        />
+      </div>
 
       <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
         <DialogContent className="max-w-md">

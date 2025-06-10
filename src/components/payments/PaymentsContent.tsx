@@ -5,6 +5,7 @@ import { PaymentsHeader } from "./PaymentsHeader";
 import { PaymentFormWrapper } from "./PaymentFormWrapper";
 import { PaymentsList } from "./PaymentsList";
 import { RecipientSetup } from "./RecipientSetup";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface PaymentsContentProps {
   userId: string;
@@ -30,14 +31,17 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         <RecipientSetup />
       </div>
 
-      {showForm && (
-        <div className="mb-6">
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova Cobrança</DialogTitle>
+          </DialogHeader>
           <PaymentFormWrapper 
             onSave={handleSavePayment}
             onCancel={() => setShowForm(false)}
           />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <PaymentsList 
         payments={payments}
