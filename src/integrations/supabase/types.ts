@@ -321,6 +321,7 @@ export type Database = {
           nit_nis_pis: string | null
           pagarme_recipient_id: string | null
           phone: string | null
+          phone_verified: boolean
           updated_at: string
         }
         Insert: {
@@ -336,6 +337,7 @@ export type Database = {
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
+          phone_verified?: boolean
           updated_at?: string
         }
         Update: {
@@ -351,6 +353,7 @@ export type Database = {
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
+          phone_verified?: boolean
           updated_at?: string
         }
         Relationships: []
