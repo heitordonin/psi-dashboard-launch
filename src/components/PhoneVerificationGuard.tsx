@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useWhatsApp } from '@/hooks/useWhatsApp';
-import { generateOTP, formatPhoneForOTP } from '@/utils/otpGenerator';
+import { generateOTP } from '@/utils/otpGenerator';
 import { toast } from 'sonner';
 
 interface PhoneVerificationGuardProps {
@@ -62,7 +62,7 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
             localStorage.setItem('temp_otp', otp);
             localStorage.setItem('temp_otp_timestamp', Date.now().toString());
             
-            // Enviar OTP via WhatsApp usando template
+            // Enviar OTP via WhatsApp usando template correto
             sendWhatsApp({
               to: profile.phone,
               templateSid: 'TWILIO_TEMPLATE_SID_OTP',

@@ -44,11 +44,27 @@ serve(async (req) => {
       )
     }
 
+    // Resolve template SID from environment variables if it's a placeholder
+    let resolvedTemplateSid = templateSid
+    if (templateSid === 'TWILIO_TEMPLATE_SID_LEMBRETE') {
+      resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_LEMBRETE')
+    } else if (templateSid === 'TWILIO_TEMPLATE_SID_OTP') {
+      resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_OTP_BUSINESS')
+    }
+
+    if (!resolvedTemplateSid && templateSid) {
+      console.error('Template SID not found:', templateSid)
+      return new Response(
+        JSON.stringify({ error: 'Template SID not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Format phone number for WhatsApp (must include country code)
     const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:+55${to.replace(/\D/g, '')}`
     const formattedFrom = twilioPhoneNumber.startsWith('whatsapp:') ? twilioPhoneNumber : `whatsapp:${twilioPhoneNumber}`
 
-    console.log('Sending WhatsApp message:', { from: formattedFrom, to: formattedTo, templateSid, templateVariables, message })
+    console.log('Sending WhatsApp message:', { from: formattedFrom, to: formattedTo, templateSid: resolvedTemplateSid, templateVariables, message })
 
     // Send message via Twilio API
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
@@ -58,8 +74,8 @@ serve(async (req) => {
     formData.append('To', formattedTo)
 
     // Use template if provided, otherwise use plain text message
-    if (templateSid && templateVariables) {
-      formData.append('ContentSid', templateSid)
+    if (resolvedTemplateSid && templateVariables) {
+      formData.append('ContentSid', resolvedTemplateSid)
       formData.append('ContentVariables', JSON.stringify(templateVariables))
     } else if (message) {
       formData.append('Body', message)
@@ -102,7 +118,7 @@ serve(async (req) => {
         .insert({
           owner_id: userId,
           phone_number: to,
-          message_content: message || `Template: ${templateSid}`,
+          message_content: message || `Template: ${resolvedTemplateSid}`,
           message_type: messageType,
           payment_id: paymentId,
           status: 'sent',
