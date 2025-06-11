@@ -8,11 +8,11 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, isCheckingAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !isCheckingAdmin) {
       if (!user) {
         console.log('User not authenticated, redirecting to login');
         navigate('/login');
@@ -23,9 +23,9 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         console.log('User is admin, granting access');
       }
     }
-  }, [user, isAdmin, isLoading, navigate]);
+  }, [user, isAdmin, isLoading, isCheckingAdmin, navigate]);
 
-  if (isLoading) {
+  if (isLoading || isCheckingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

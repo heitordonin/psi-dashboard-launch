@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isCheckingAdmin: boolean;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -28,6 +29,7 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
     // Set up the auth state listener
@@ -41,6 +43,7 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Check admin status when user logs in or session changes
         if (session?.user) {
           setTimeout(async () => {
+            setIsCheckingAdmin(true);
             try {
               const { data: profile } = await supabase
                 .from('profiles')
@@ -53,10 +56,13 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
             } catch (error) {
               console.error('Error checking admin status:', error);
               setIsAdmin(false);
+            } finally {
+              setIsCheckingAdmin(false);
             }
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsCheckingAdmin(false);
         }
       }
     );
@@ -115,6 +121,7 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     session,
     isLoading,
     isAdmin,
+    isCheckingAdmin,
     signUp,
     signIn,
     signOut,
