@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
+import { PaymentLinkButton } from "./PaymentLinkButton";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { toast } from "sonner";
@@ -115,6 +117,11 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
           )}
         </div>
         <div className="flex gap-2">
+          {/* Payment link button */}
+          {payment.has_payment_link && payment.status === 'pending' && (
+            <PaymentLinkButton onClick={() => { console.log('Get link clicked'); }} />
+          )}
+          
           {/* Email reminder button */}
           <EmailReminderButton payment={payment} />
           
