@@ -13,13 +13,15 @@ interface ActionDropdownProps {
   onDelete?: () => void;
   onMarkAsPaid?: () => void;
   showMarkAsPaid?: boolean;
+  deleteDisabled?: boolean;
 }
 
 export function ActionDropdown({ 
   onEdit, 
   onDelete, 
   onMarkAsPaid, 
-  showMarkAsPaid = false 
+  showMarkAsPaid = false,
+  deleteDisabled = false
 }: ActionDropdownProps) {
   return (
     <DropdownMenu>
@@ -40,7 +42,11 @@ export function ActionDropdown({
           </DropdownMenuItem>
         )}
         {onDelete && (
-          <DropdownMenuItem onClick={onDelete} className="text-red-600">
+          <DropdownMenuItem 
+            onClick={onDelete} 
+            className="text-red-600"
+            disabled={deleteDisabled}
+          >
             Excluir
           </DropdownMenuItem>
         )}

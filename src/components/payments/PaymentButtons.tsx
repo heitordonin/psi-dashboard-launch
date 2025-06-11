@@ -2,8 +2,7 @@
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { WhatsAppButton } from "./WhatsAppButton";
-import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { ActionDropdown } from "@/components/ui/action-dropdown";
 import type { PaymentWithPatient } from "@/types/payment";
 
 interface PaymentButtonsProps {
@@ -23,22 +22,12 @@ export const PaymentButtons = ({ payment, onEdit, onDelete }: PaymentButtonsProp
         {/* WhatsApp reminder button */}
         <WhatsAppButton payment={payment} />
         
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onEdit(payment)}
-          className="h-8 w-8"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onDelete(payment.id)}
-          className="h-8 w-8 text-red-600 hover:text-red-700"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {/* Action dropdown with edit and delete options */}
+        <ActionDropdown
+          onEdit={() => onEdit(payment)}
+          onDelete={() => onDelete(payment.id)}
+          deleteDisabled={payment.status === 'paid'}
+        />
       </div>
     </div>
   );
