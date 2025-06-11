@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatCpf, formatCnpj } from '@/utils/inputFormatters';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
 
@@ -23,6 +24,31 @@ export function WizardStep4PayerDetails({
   onNext
 }: WizardStep4Props) {
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
+  const isCompanyPatient = selectedPatient?.patient_type === 'company';
+
+  const handlePatientChange = (patientId: string) => {
+    const patient = patients.find(p => p.id === patientId);
+    
+    updateFormData({
+      patient_id: patientId,
+      // Para empresas, usar CNPJ; para pessoas físicas, limpar o campo
+      payer_cpf: patient?.patient_type === 'company' ? (patient.cnpj || '') : '',
+      // Para empresas, sempre é a própria empresa que paga
+      paymentTitular: patient?.patient_type === 'company' ? 'patient' : 'patient'
+    });
+  };
+
+  const handleDocumentChange = (value: string) => {
+    if (isCompanyPatient) {
+      // Para empresa, aplicar máscara de CNPJ
+      const formattedValue = formatCnpj(value);
+      updateFormData({ payer_cpf: formattedValue });
+    } else {
+      // Para pessoa física, aplicar máscara de CPF
+      const formattedValue = formatCpf(value);
+      updateFormData({ payer_cpf: formattedValue });
+    }
+  };
 
   const handleNext = () => {
     if (formData.patient_id && formData.payer_cpf) {
@@ -40,13 +66,7 @@ export function WizardStep4PayerDetails({
             <Label htmlFor="patient_id">Paciente *</Label>
             <Select
               value={formData.patient_id}
-              onValueChange={(value) => {
-                const patient = patients.find(p => p.id === value);
-                updateFormData({
-                  patient_id: value,
-                  payer_cpf: patient?.cpf || ''
-                });
-              }}
+              onValueChange={handlePatientChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um paciente" />
@@ -54,40 +74,57 @@ export function WizardStep4PayerDetails({
               <SelectContent>
                 {patients.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
-                    {patient.full_name}
+                    {patient.full_name} {patient.patient_type === 'company' && '(Empresa)'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label>Quem irá pagar?</Label>
-            <RadioGroup
-              value={formData.paymentTitular}
-              onValueChange={(value: 'patient' | 'other') => updateFormData({ paymentTitular: value })}
-              className="mt-2"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="patient" id="patient" />
-                <Label htmlFor="patient">O próprio paciente</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="other" id="other" />
-                <Label htmlFor="other">Outra pessoa</Label>
-              </div>
-            </RadioGroup>
-          </div>
+          {!isCompanyPatient && (
+            <div>
+              <Label>Quem irá pagar?</Label>
+              <RadioGroup
+                value={formData.paymentTitular}
+                onValueChange={(value: 'patient' | 'other') => {
+                  updateFormData({ paymentTitular: value });
+                  if (value === 'patient') {
+                    updateFormData({ payer_cpf: selectedPatient?.cpf || '' });
+                  } else {
+                    updateFormData({ payer_cpf: selectedPatient?.guardian_cpf || '' });
+                  }
+                }}
+                className="mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="patient" id="patient" />
+                  <Label htmlFor="patient">O próprio paciente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="other" id="other" />
+                  <Label htmlFor="other">Outra pessoa (responsável)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
 
           <div>
-            <Label htmlFor="payer_cpf">CPF do Pagador *</Label>
+            <Label htmlFor="payer_document">
+              {isCompanyPatient ? 'CNPJ da Empresa *' : 'CPF do Pagador *'}
+            </Label>
             <Input
-              id="payer_cpf"
+              id="payer_document"
               value={formData.payer_cpf}
-              onChange={(e) => updateFormData({ payer_cpf: e.target.value })}
-              placeholder="000.000.000-00"
+              onChange={(e) => handleDocumentChange(e.target.value)}
+              placeholder={isCompanyPatient ? '00.000.000/0000-00' : '000.000.000-00'}
+              maxLength={isCompanyPatient ? 18 : 14}
               required
             />
+            {isCompanyPatient && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Para empresas, sempre utilizamos o CNPJ da empresa como pagador
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -2,10 +2,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, CreditCard, QrCode, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
@@ -27,6 +26,15 @@ export function WizardStep2PaymentDetails({
     if (formData.amount > 0 && formData.due_date && formData.description) {
       onNext();
     }
+  };
+
+  const togglePaymentMethod = (method: 'boleto' | 'creditCard') => {
+    updateFormData({
+      paymentMethods: {
+        ...formData.paymentMethods,
+        [method]: !formData.paymentMethods[method]
+      }
+    });
   };
 
   return (
@@ -72,37 +80,65 @@ export function WizardStep2PaymentDetails({
           />
 
           <div>
-            <Label>Métodos de Pagamento</Label>
-            <div className="space-y-2 mt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="boleto"
-                  checked={formData.paymentMethods.boleto}
-                  onCheckedChange={(checked) =>
-                    updateFormData({
-                      paymentMethods: {
-                        ...formData.paymentMethods,
-                        boleto: !!checked
-                      }
-                    })
-                  }
-                />
-                <Label htmlFor="boleto">Boleto</Label>
+            <Label className="text-base font-medium">Métodos de Pagamento</Label>
+            <p className="text-sm text-muted-foreground mb-3">Selecione os métodos que o cliente poderá usar</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div
+                onClick={() => togglePaymentMethod('boleto')}
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all hover:border-primary/50",
+                  formData.paymentMethods.boleto
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border"
+                )}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={cn(
+                    "rounded-full p-2",
+                    formData.paymentMethods.boleto ? "bg-primary text-primary-foreground" : "bg-muted"
+                  )}>
+                    <Receipt className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Boleto</div>
+                    <div className="text-xs text-muted-foreground">Pagamento bancário</div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="creditCard"
-                  checked={formData.paymentMethods.creditCard}
-                  onCheckedChange={(checked) =>
-                    updateFormData({
-                      paymentMethods: {
-                        ...formData.paymentMethods,
-                        creditCard: !!checked
-                      }
-                    })
-                  }
-                />
-                <Label htmlFor="creditCard">Cartão de Crédito</Label>
+
+              <div
+                onClick={() => togglePaymentMethod('creditCard')}
+                className={cn(
+                  "border rounded-lg p-4 cursor-pointer transition-all hover:border-primary/50",
+                  formData.paymentMethods.creditCard
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border"
+                )}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={cn(
+                    "rounded-full p-2",
+                    formData.paymentMethods.creditCard ? "bg-primary text-primary-foreground" : "bg-muted"
+                  )}>
+                    <CreditCard className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">Cartão de Crédito</div>
+                    <div className="text-xs text-muted-foreground">Pagamento online</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4 bg-muted/50 opacity-60">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-full p-2 bg-muted">
+                    <QrCode className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">PIX</div>
+                    <div className="text-xs text-muted-foreground">Em breve</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
