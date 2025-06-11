@@ -1,71 +1,60 @@
 
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface WizardNavigationProps {
   currentStep: number;
   totalSteps: number;
   onPrevious: () => void;
   onNext: () => void;
-  isNextDisabled?: boolean;
-  isLoading?: boolean;
-  nextButtonText?: string;
-  onClose?: () => void;
+  isNextDisabled: boolean;
+  onClose: () => void;
+  canGoBack?: boolean;
+  canGoNext?: boolean;
 }
 
-export function WizardNavigation({ 
-  currentStep, 
-  totalSteps, 
-  onPrevious, 
+export function WizardNavigation({
+  currentStep,
+  totalSteps,
+  onPrevious,
   onNext,
-  isNextDisabled = false,
-  isLoading = false,
-  nextButtonText = "Próximo",
-  onClose
+  isNextDisabled,
+  onClose,
+  canGoBack = true,
+  canGoNext = true
 }: WizardNavigationProps) {
-  const showBackButton = currentStep > 0;
-  const showCancelButton = currentStep === 0 && onClose;
   const isLastStep = currentStep === totalSteps - 1;
 
-  // Não mostra navegação na última etapa (Step 5 tem seus próprios botões)
-  if (isLastStep) {
-    return null;
-  }
-
   return (
-    <div className="flex justify-between pt-4 border-t">
-      {showBackButton ? (
+    <div className="flex justify-between border-t pt-4">
+      <div className="flex gap-2">
+        {canGoBack && (
+          <Button
+            variant="outline"
+            onClick={onPrevious}
+          >
+            Voltar
+          </Button>
+        )}
+      </div>
+
+      <div className="flex gap-2">
         <Button
-          variant="outline"
-          onClick={onPrevious}
-          className="flex items-center gap-2"
-          disabled={isLoading}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Voltar
-        </Button>
-      ) : showCancelButton ? (
-        <Button
-          variant="outline"
+          variant="ghost"
           onClick={onClose}
-          className="flex items-center gap-2"
-          disabled={isLoading}
         >
-          <X className="h-4 w-4" />
           Cancelar
         </Button>
-      ) : (
-        <div />
-      )}
-      
-      <Button
-        onClick={onNext}
-        className="flex items-center gap-2"
-        disabled={isNextDisabled || isLoading}
-      >
-        {isLoading ? 'Processando...' : nextButtonText}
-        {!isLoading && <ChevronRight className="h-4 w-4" />}
-      </Button>
+        
+        {canGoNext && !isLastStep && (
+          <Button
+            onClick={onNext}
+            disabled={isNextDisabled}
+          >
+            Próximo
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

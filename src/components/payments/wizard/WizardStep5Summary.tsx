@@ -63,7 +63,7 @@ export function WizardStep5Summary({
             </div>
           )}
 
-          {/* Botão de ação */}
+          {/* Botões de ação */}
           <div className="flex gap-2 pt-4">
             <Button
               variant="outline"

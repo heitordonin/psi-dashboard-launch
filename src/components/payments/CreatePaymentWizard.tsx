@@ -30,21 +30,28 @@ export function CreatePaymentWizard({
     nextStep,
     prevStep,
     resetWizard,
-    getTotalSteps
+    getTotalSteps,
+    getCurrentStepIndex,
+    getValidSteps,
+    goToStep
   } = useWizardState();
 
-  const totalSteps = getTotalSteps();
   const isEditMode = !!paymentToEdit;
 
   // Initialize form data when editing a payment
   useEffect(() => {
     if (isEditMode && paymentToEdit) {
+      console.log('Inicializando modo de edição com:', paymentToEdit);
+      
       // Reset wizard first
       resetWizard();
       
+      // Determine charge type from has_payment_link
+      const chargeType = paymentToEdit.has_payment_link ? 'link' : 'manual';
+      
       // Populate form data with payment data
       updateFormData({
-        chargeType: paymentToEdit.has_payment_link ? 'link' : 'manual',
+        chargeType,
         paymentType: 'single', // Default for existing payments
         amount: Number(paymentToEdit.amount),
         due_date: paymentToEdit.due_date,
@@ -63,34 +70,24 @@ export function CreatePaymentWizard({
         sendEmailNotification: false,
         email: ''
       });
+
+      // Se for manual charge, ir direto para o step 2 (pular configurações de tipo)
+      if (chargeType === 'manual') {
+        goToStep(2);
+      }
     } else if (!isEditMode) {
       // Reset wizard for new payment
       resetWizard();
     }
-  }, [isEditMode, paymentToEdit, resetWizard, updateFormData]);
+  }, [isEditMode, paymentToEdit, resetWizard, updateFormData, goToStep]);
 
   const handleClose = () => {
     resetWizard();
     onClose();
   };
 
-  // Get current step title based on actual step and charge type
+  // Get current step title based on actual step
   const getCurrentStepTitle = () => {
-    if (formData.chargeType === 'manual') {
-      // For manual charges, map the actual step numbers to appropriate titles
-      const manualStepTitles = [
-        'Tipo de Cobrança',      // Step 0
-        'Tipo de Pagamento',     // Step 1
-        'Dados do Pagador',      // Step 4 (mapped)
-        'Resumo e Confirmação'   // Step 5 (mapped)
-      ];
-      
-      if (currentStep === 0) return manualStepTitles[0];
-      if (currentStep === 1) return manualStepTitles[1];
-      if (currentStep === 4) return manualStepTitles[2];
-      if (currentStep === 5) return manualStepTitles[3];
-    }
-    
     return STEP_TITLES[currentStep] || 'Etapa';
   };
 
@@ -113,7 +110,7 @@ export function CreatePaymentWizard({
       case 3:
         return false; // This step has no required fields
       case 4:
-        // Validação mais complexa para o Step 4
+        // Validação para o Step 4 (Dados do Pagador)
         if (!formData.patient_id) return true;
         
         // Para pacientes do exterior, não precisa de CPF
@@ -124,8 +121,12 @@ export function CreatePaymentWizard({
           return !formData.payer_cpf;
         }
         
-        // Para pacientes individuais, precisa do CPF
-        return !formData.payer_cpf;
+        // Para pacientes individuais, precisa do CPF se não for o próprio paciente
+        if (formData.paymentTitular === 'other') {
+          return !formData.payer_cpf;
+        }
+        
+        return false;
       case 5:
         return false; // Summary step
       default:
@@ -133,12 +134,34 @@ export function CreatePaymentWizard({
     }
   };
 
+  // Check if we can show previous button
+  const canGoBack = () => {
+    const currentIndex = getCurrentStepIndex();
+    return currentIndex > 0;
+  };
+
+  // Check if we can show next button (not on last step)
+  const canGoNext = () => {
+    const currentIndex = getCurrentStepIndex();
+    const totalSteps = getTotalSteps();
+    return currentIndex < totalSteps - 1;
+  };
+
+  console.log('Wizard State:', {
+    currentStep,
+    currentStepIndex: getCurrentStepIndex(),
+    totalSteps: getTotalSteps(),
+    validSteps: getValidSteps(),
+    chargeType: formData.chargeType,
+    isEditMode
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <WizardHeader
-          currentStep={currentStep + 1}
-          totalSteps={totalSteps}
+          currentStep={getCurrentStepIndex() + 1}
+          totalSteps={getTotalSteps()}
           stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
           wizardTitle={getWizardTitle()}
@@ -160,12 +183,14 @@ export function CreatePaymentWizard({
         </div>
 
         <WizardNavigation
-          currentStep={currentStep}
-          totalSteps={totalSteps}
+          currentStep={getCurrentStepIndex()}
+          totalSteps={getTotalSteps()}
           onPrevious={prevStep}
           onNext={nextStep}
           isNextDisabled={isNextDisabled()}
           onClose={handleClose}
+          canGoBack={canGoBack()}
+          canGoNext={canGoNext()}
         />
       </DialogContent>
     </Dialog>

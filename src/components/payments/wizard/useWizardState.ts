@@ -42,38 +42,38 @@ export function useWizardState() {
     });
   };
 
-  const getTotalSteps = () => {
-    // Dynamic step calculation based on charge type
+  // Definir quais steps são válidos para cada tipo de charge
+  const getValidSteps = () => {
     if (formData.chargeType === 'manual') {
-      return 5; // Steps: 0,1,2,4,5 (skip step 3)
+      return [0, 1, 2, 4, 5]; // Pula step 3 (taxas/juros)
     }
-    return 6; // All steps for link charges: 0,1,2,3,4,5
+    return [0, 1, 2, 3, 4, 5]; // Todos os steps para link
+  };
+
+  const getTotalSteps = () => {
+    return getValidSteps().length;
+  };
+
+  const getCurrentStepIndex = () => {
+    const validSteps = getValidSteps();
+    return validSteps.indexOf(currentStep);
   };
 
   const nextStep = () => {
-    const totalSteps = getTotalSteps();
-    if (currentStep < totalSteps - 1) {
-      let nextStepNumber = currentStep + 1;
-      
-      // Skip only step 3 (Fees and Interest) for manual charges
-      if (formData.chargeType === 'manual') {
-        if (nextStepNumber === 3) nextStepNumber = 4; // Skip fees step
-      }
-      
-      setCurrentStep(nextStepNumber);
+    const validSteps = getValidSteps();
+    const currentIndex = getCurrentStepIndex();
+    
+    if (currentIndex < validSteps.length - 1) {
+      setCurrentStep(validSteps[currentIndex + 1]);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
-      let prevStepNumber = currentStep - 1;
-      
-      // Skip only step 3 (Fees and Interest) when going back for manual charges
-      if (formData.chargeType === 'manual') {
-        if (prevStepNumber === 3) prevStepNumber = 2; // Skip fees step when going back
-      }
-      
-      setCurrentStep(prevStepNumber);
+    const validSteps = getValidSteps();
+    const currentIndex = getCurrentStepIndex();
+    
+    if (currentIndex > 0) {
+      setCurrentStep(validSteps[currentIndex - 1]);
     }
   };
 
@@ -98,6 +98,14 @@ export function useWizardState() {
     });
   };
 
+  // Função para ir para um step específico (útil no modo edição)
+  const goToStep = (stepNumber: number) => {
+    const validSteps = getValidSteps();
+    if (validSteps.includes(stepNumber)) {
+      setCurrentStep(stepNumber);
+    }
+  };
+
   return {
     currentStep,
     formData,
@@ -105,6 +113,9 @@ export function useWizardState() {
     nextStep,
     prevStep,
     resetWizard,
-    getTotalSteps
+    getTotalSteps,
+    getCurrentStepIndex,
+    getValidSteps,
+    goToStep
   };
 }
