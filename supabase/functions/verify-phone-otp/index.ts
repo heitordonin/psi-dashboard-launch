@@ -59,10 +59,10 @@ serve(async (req) => {
 
     console.log('Verificando OTP para telefone:', phone, 'token:', token)
 
-    // Verificar o token OTP usando o sistema nativo do Supabase
+    // Verificar o token OTP usando o sistema nativo do Supabase - CORREÇÃO CRÍTICA AQUI
     const { data: verifyData, error: verifyError } = await supabaseClient.auth.verifyOtp({
       token,
-      type: 'phone',
+      type: 'sms', // Alterado de 'phone' para 'sms' - este é o tipo correto para OTPs de sign-in
       phone: phone
     })
 
