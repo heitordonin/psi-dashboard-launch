@@ -1,13 +1,16 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Copy, Calendar, User, FileText, CreditCard, Link } from "lucide-react";
+import { CheckCircle, Copy, Calendar, User, FileText, CreditCard, Link, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PaymentButtons } from "./PaymentButtons";
+import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
+import { EmailReminderButton } from "./EmailReminderButton";
+import { WhatsAppButton } from "./WhatsAppButton";
 import { toast } from "sonner";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
@@ -193,12 +196,39 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               </Button>
             </div>
 
-            {/* Use PaymentButtons component */}
-            <PaymentButtons
-              payment={payment}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+            {/* Replace PaymentButtons with direct icon buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
+              <PaymentStatusBadge status={payment.status} />
+              <div className="flex gap-2">
+                {/* Email reminder button */}
+                <EmailReminderButton payment={payment} />
+                
+                {/* WhatsApp reminder button */}
+                <WhatsAppButton payment={payment} />
+                
+                {/* Direct action buttons replacing ActionDropdown */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(payment)}
+                    disabled={payment.has_payment_link === true}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => onDelete(payment.id)}
+                    disabled={payment.status === 'paid'}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
