@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CheckCircle, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
@@ -82,24 +83,58 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
           
           {/* Direct action buttons */}
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(payment)}
-              disabled={payment.has_payment_link === true}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            {/* Edit button with tooltip when disabled */}
+            {payment.has_payment_link ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button variant="ghost" size="icon" disabled={true}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Não é possível editar uma cobrança com link de pagamento.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(payment)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
             
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-red-600 hover:text-red-700"
-              onClick={() => onDelete(payment.id)}
-              disabled={payment.status === 'paid'}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {/* Delete button with tooltip when disabled */}
+            {payment.status === 'paid' ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button variant="ghost" size="icon" className="text-red-600" disabled={true}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Não é possível excluir uma cobrança já recebida.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-600 hover:text-red-700"
+                onClick={() => onDelete(payment.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
