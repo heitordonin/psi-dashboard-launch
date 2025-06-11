@@ -45,6 +45,7 @@ interface CreatePaymentWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  patients: Patient[];
 }
 
 const STEP_TITLES = [
@@ -55,9 +56,8 @@ const STEP_TITLES = [
   'Resumo e Confirmação'
 ];
 
-export function CreatePaymentWizard({ isOpen, onClose, onSuccess }: CreatePaymentWizardProps) {
+export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: CreatePaymentWizardProps) {
   const { user } = useAuth();
-  const { patients } = usePaymentData(user?.id);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>({
     paymentType: 'single',
