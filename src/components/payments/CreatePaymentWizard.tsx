@@ -82,13 +82,12 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
   };
 
   const getTotalSteps = () => {
-    // Return 5 steps for edit mode (skip charge type), 6 for create mode
-    return isEditMode ? 5 : 6;
+    // Always return 6 for consistent internal step calculation
+    return 6;
   };
 
   const nextStep = () => {
-    const totalSteps = getTotalSteps();
-    const maxStep = isEditMode ? 5 : 5; // Adjusted for 0-based indexing
+    const maxStep = 5; // 0-based indexing, so step 5 is the last step
     
     if (currentStep < maxStep) {
       let nextStepNumber = currentStep + 1;
@@ -228,7 +227,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     }
   };
 
-  // Calculate display step number for the header
+  // Calculate display step number for the header - this is only for visual display
   const getDisplayStepNumber = () => {
     if (isEditMode) {
       // In edit mode, show steps as 1-5 instead of 1-6
@@ -246,12 +245,28 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     return currentStep + 1;
   };
 
+  // Calculate display total steps for the header - this is only for visual display
+  const getDisplayTotalSteps = () => {
+    if (isEditMode) {
+      if (formData.chargeType === 'manual') {
+        return 4; // Manual charges skip the fees step in edit mode
+      }
+      return 5; // Edit mode skips the charge type step
+    }
+    
+    if (formData.chargeType === 'manual') {
+      return 5; // Manual charges skip the fees step
+    }
+    
+    return 6; // All steps for link charges in create mode
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <WizardHeader
           currentStep={getDisplayStepNumber()}
-          totalSteps={getTotalSteps()}
+          totalSteps={getDisplayTotalSteps()}
           stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
           title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
