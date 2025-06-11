@@ -38,7 +38,7 @@ export function WizardStep5Summary({
         amount: formData.amount,
         due_date: formData.due_date,
         description: formData.description,
-        status: formData.isReceived ? 'paid' : 'pending',
+        status: (formData.isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: formData.isReceived ? formData.receivedDate : null,
         payer_cpf: formData.payer_cpf,
         receita_saude_receipt_issued: false,
@@ -47,7 +47,7 @@ export function WizardStep5Summary({
 
       const { data, error } = await supabase
         .from('payments')
-        .insert([paymentData])
+        .insert(paymentData)
         .select()
         .single();
 
@@ -137,12 +137,9 @@ export function WizardStep5Summary({
               id="isReceived"
               checked={formData.isReceived}
               onCheckedChange={(checked) => {
-                const updates: Partial<WizardFormData> = { isReceived: !!checked };
-                if (checked) {
-                  updates.receivedDate = new Date().toISOString().split('T')[0];
-                }
-                // This would need to be passed from parent component
-                // updateFormData(updates);
+                // This functionality would need to be passed from parent component
+                // For now, this is just display-only
+                console.log('Checkbox changed:', checked);
               }}
             />
             <Label htmlFor="isReceived">Marcar como já recebido</Label>
