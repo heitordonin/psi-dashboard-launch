@@ -1,4 +1,3 @@
-// src/components/payments/wizard/WizardStepRenderer.tsx
 
 import { WizardStep0ChargeType } from './WizardStep0ChargeType';
 import { WizardStep1PaymentType } from './WizardStep1PaymentType';
@@ -6,29 +5,82 @@ import { WizardStep2PaymentDetails } from './WizardStep2PaymentDetails';
 import { WizardStep3FeesInterest } from './WizardStep3FeesInterest';
 import { WizardStep4PayerDetails } from './WizardStep4PayerDetails';
 import { WizardStep5Summary } from './WizardStep5Summary';
-import type { WizardStepProps } from './types';
+import type { WizardFormData } from './types';
+import type { Patient } from '@/types/patient';
 
-interface WizardStepRendererProps extends WizardStepProps {
+interface WizardStepRendererProps {
   currentStep: number;
+  formData: WizardFormData;
+  updateFormData: (updates: Partial<WizardFormData>) => void;
+  patients: Patient[];
+  onNext: () => void;
+  onPrevious: () => void;
+  onSuccess?: () => void;
+  onClose: () => void;
 }
 
-export const WizardStepRenderer = ({ currentStep, formData, setFormData, patients, onNext }: WizardStepRendererProps) => {
-  const commonProps = { formData, setFormData, patients, onNext };
-
+export function WizardStepRenderer({
+  currentStep,
+  formData,
+  updateFormData,
+  patients,
+  onNext,
+  onPrevious,
+  onSuccess,
+  onClose
+}: WizardStepRendererProps) {
   switch (currentStep) {
+    case 0:
+      return (
+        <WizardStep0ChargeType
+          selectedType={formData.chargeType}
+          onSelect={(type) => updateFormData({ chargeType: type })}
+        />
+      );
     case 1:
-      return <WizardStep0ChargeType {...commonProps} />;
+      return (
+        <WizardStep1PaymentType
+          selectedType={formData.paymentType}
+          onSelect={(type) => updateFormData({ paymentType: type })}
+          onNext={onNext}
+        />
+      );
     case 2:
-      return <WizardStep1PaymentType {...commonProps} />;
+      return (
+        <WizardStep2PaymentDetails
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      );
     case 3:
-      return <WizardStep2PaymentDetails {...commonProps} />;
+      return (
+        <WizardStep3FeesInterest
+          monthlyInterest={formData.monthlyInterest}
+          lateFee={formData.lateFee}
+          updateFormData={updateFormData}
+          onNext={onNext}
+        />
+      );
     case 4:
-      return <WizardStep3FeesInterest {...commonProps} />;
+      return (
+        <WizardStep4PayerDetails
+          formData={formData}
+          updateFormData={updateFormData}
+          patients={patients}
+        />
+      );
     case 5:
-      return <WizardStep4PayerDetails {...commonProps} />;
-    case 6:
-      return <WizardStep5Summary {...commonProps} />;
+      return (
+        <WizardStep5Summary
+          formData={formData}
+          patients={patients}
+          onSuccess={onSuccess}
+          onClose={onClose}
+          onPrevious={onPrevious}
+          updateFormData={updateFormData}
+        />
+      );
     default:
       return null;
   }
-};
+}

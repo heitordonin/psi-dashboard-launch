@@ -13,8 +13,7 @@ interface PaymentsContentProps {
 }
 
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [showCreateWizard, setShowCreateWizard] = useState(false);
 
   const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
   const { searchTerm, setSearchTerm, filters, setFilters, getFilteredPayments, hasFilters } = usePaymentFilters();
@@ -22,18 +21,16 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   const filteredPayments = getFilteredPayments(payments);
 
   const handleAddPayment = () => {
-    setEditingPayment(null);
-    setIsWizardOpen(true);
+    setShowCreateWizard(true);
   };
 
   const handleEditPayment = (payment: Payment) => {
-    setEditingPayment(payment);
-    setIsWizardOpen(true);
+    // TODO: Implement edit functionality
+    console.log('Edit payment:', payment);
   };
 
   const handleCloseWizard = () => {
-    setIsWizardOpen(false);
-    setEditingPayment(null);
+    setShowCreateWizard(false);
   };
 
   const handleDeletePayment = (paymentId: string) => {
@@ -67,15 +64,12 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         />
       </div>
 
-      {isWizardOpen && (
-        <CreatePaymentWizard
-          isOpen={isWizardOpen}
-          onClose={handleCloseWizard}
-          onSuccess={handleCloseWizard}
-          patients={patients}
-          paymentToEdit={editingPayment}
-        />
-      )}
+      <CreatePaymentWizard
+        isOpen={showCreateWizard}
+        onClose={handleCloseWizard}
+        onSuccess={handleCloseWizard}
+        patients={patients}
+      />
     </div>
   );
 };

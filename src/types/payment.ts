@@ -14,7 +14,6 @@ export interface Payment {
   email_reminder_sent_at?: string;
   pagarme_transaction_id?: string;
   pix_qr_code?: string;
-  has_payment_link: boolean;
   created_at: string;
   owner_id: string;
 }

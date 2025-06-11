@@ -12,7 +12,9 @@ interface WizardStep1PaymentTypeProps {
 export function WizardStep1PaymentType({ selectedType, onSelect, onNext }: WizardStep1PaymentTypeProps) {
   const handleSelect = (type: 'single' | 'subscription') => {
     onSelect(type);
-    // Removido o auto-next que estava causando problemas
+    if (type === 'single') {
+      onNext();
+    }
   };
 
   return (

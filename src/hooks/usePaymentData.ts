@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -74,31 +73,10 @@ export const usePaymentData = (userId: string | undefined) => {
     }
   });
 
-  const updatePaymentMutation = useMutation({
-    mutationFn: async (data: { paymentId: string; updateData: Partial<Payment> }) => {
-      const { paymentId, updateData } = data;
-      const { error } = await supabase
-        .from('payments')
-        .update(updateData)
-        .eq('id', paymentId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Cobrança atualizada com sucesso!');
-    },
-    onError: (error) => {
-      console.error('Error updating payment:', error);
-      toast.error('Erro ao atualizar cobrança');
-    }
-  });
-
   return {
     patients,
     payments,
     paymentsLoading,
-    deletePaymentMutation,
-    updatePaymentMutation
+    deletePaymentMutation
   };
 };

@@ -13,17 +13,13 @@ interface ActionDropdownProps {
   onDelete?: () => void;
   onMarkAsPaid?: () => void;
   showMarkAsPaid?: boolean;
-  deleteDisabled?: boolean;
-  editDisabled?: boolean;
 }
 
 export function ActionDropdown({ 
   onEdit, 
   onDelete, 
   onMarkAsPaid, 
-  showMarkAsPaid = false,
-  deleteDisabled = false,
-  editDisabled = false
+  showMarkAsPaid = false 
 }: ActionDropdownProps) {
   return (
     <DropdownMenu>
@@ -34,10 +30,7 @@ export function ActionDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onEdit && (
-          <DropdownMenuItem 
-            onClick={onEdit}
-            disabled={editDisabled}
-          >
+          <DropdownMenuItem onClick={onEdit}>
             Editar
           </DropdownMenuItem>
         )}
@@ -47,11 +40,7 @@ export function ActionDropdown({
           </DropdownMenuItem>
         )}
         {onDelete && (
-          <DropdownMenuItem 
-            onClick={onDelete} 
-            className="text-red-600"
-            disabled={deleteDisabled}
-          >
+          <DropdownMenuItem onClick={onDelete} className="text-red-600">
             Excluir
           </DropdownMenuItem>
         )}
