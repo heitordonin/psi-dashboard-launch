@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -103,6 +104,26 @@ export function WizardStep5Summary({
         .map(([method]) => method === 'boleto' ? 'Boleto' : 'Cartão de Crédito')
     : [];
 
+  const getPayerInfo = () => {
+    if (selectedPatient?.patient_type === 'company') {
+      return formData.payer_cpf; // CNPJ
+    }
+    if (selectedPatient?.is_payment_from_abroad) {
+      return formData.payer_cpf || 'Paciente do exterior';
+    }
+    return formData.payer_cpf;
+  };
+
+  const getPayerLabel = () => {
+    if (selectedPatient?.patient_type === 'company') {
+      return 'CNPJ do Pagador:';
+    }
+    if (selectedPatient?.is_payment_from_abroad) {
+      return 'Documento do Pagador:';
+    }
+    return 'CPF do Pagador:';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -156,10 +177,12 @@ export function WizardStep5Summary({
                 <span className="text-sm text-muted-foreground">Paciente:</span>
                 <span>{selectedPatient?.full_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">CPF/CNPJ do Pagador:</span>
-                <span>{formData.payer_cpf}</span>
-              </div>
+              {!selectedPatient?.is_payment_from_abroad && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">{getPayerLabel()}</span>
+                  <span>{getPayerInfo()}</span>
+                </div>
+              )}
               {formData.chargeType === 'link' && (
                 <>
                   <div className="flex justify-between">
@@ -177,13 +200,34 @@ export function WizardStep5Summary({
             </CardContent>
           </Card>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isReceived"
-              checked={formData.isReceived}
-              onCheckedChange={(checked) => updateFormData({ isReceived: !!checked })}
-            />
-            <Label htmlFor="isReceived">Marcar como já recebido</Label>
+          {/* Checkbox "Marcar como já recebido" apenas para charges manuais */}
+          {formData.chargeType === 'manual' && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isReceived"
+                checked={formData.isReceived}
+                onCheckedChange={(checked) => updateFormData({ isReceived: !!checked })}
+              />
+              <Label htmlFor="isReceived">Marcar como já recebido</Label>
+            </div>
+          )}
+
+          {/* Botão de ação */}
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="outline"
+              onClick={onPrevious}
+              disabled={createPaymentMutation.isPending}
+            >
+              Voltar
+            </Button>
+            <Button
+              onClick={() => createPaymentMutation.mutate()}
+              disabled={createPaymentMutation.isPending}
+              className="flex-1"
+            >
+              {createPaymentMutation.isPending ? 'Criando...' : 'Concluir'}
+            </Button>
           </div>
         </div>
       </div>

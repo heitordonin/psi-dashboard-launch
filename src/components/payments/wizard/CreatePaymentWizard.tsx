@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { WizardHeader } from './WizardHeader';
 import { WizardStepRenderer } from './WizardStepRenderer';
@@ -40,14 +39,16 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
       const manualStepTitles = [
         'Tipo de Cobrança',      // Step 0
         'Tipo de Pagamento',     // Step 1
+        'Detalhes do Pagamento', // Step 2
         'Dados do Pagador',      // Step 4 (mapped)
         'Resumo e Confirmação'   // Step 5 (mapped)
       ];
       
       if (currentStep === 0) return manualStepTitles[0];
       if (currentStep === 1) return manualStepTitles[1];
-      if (currentStep === 4) return manualStepTitles[2];
-      if (currentStep === 5) return manualStepTitles[3];
+      if (currentStep === 2) return manualStepTitles[2];
+      if (currentStep === 4) return manualStepTitles[3];
+      if (currentStep === 5) return manualStepTitles[4];
     }
     
     return STEP_TITLES[currentStep] || 'Etapa';
@@ -55,6 +56,8 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
 
   // Determine if next button should be disabled based on current step validation
   const isNextDisabled = () => {
+    const selectedPatient = patients.find(p => p.id === formData.patient_id);
+    
     switch (currentStep) {
       case 0:
         return !formData.chargeType;
@@ -65,7 +68,19 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
       case 3:
         return false; // This step has no required fields
       case 4:
-        return !formData.patient_id || !formData.payer_cpf;
+        // Validação mais complexa para o Step 4
+        if (!formData.patient_id) return true;
+        
+        // Para pacientes do exterior, não precisa de CPF
+        if (selectedPatient?.is_payment_from_abroad) return false;
+        
+        // Para empresas, sempre precisa do CNPJ
+        if (selectedPatient?.patient_type === 'company') {
+          return !formData.payer_cpf;
+        }
+        
+        // Para pacientes individuais, precisa do CPF
+        return !formData.payer_cpf;
       case 5:
         return false; // Summary step
       default:
@@ -102,6 +117,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
           onPrevious={prevStep}
           onNext={nextStep}
           isNextDisabled={isNextDisabled()}
+          onClose={handleClose}
         />
       </DialogContent>
     </Dialog>
