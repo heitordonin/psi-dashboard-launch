@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -54,18 +53,50 @@ export function WizardStep5Summary({
         owner_id: user.id
       };
 
-      const { data, error } = await supabase
+      const { data: newPayment, error: insertError } = await supabase
         .from('payments')
         .insert(paymentData)
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (insertError) throw insertError;
+
+      // If it's a link payment, call Pagar.me to create the transaction
+      if (newPayment.has_payment_link) {
+        // Determine payment methods to create
+        const paymentMethods = [];
+        if (formData.paymentMethods.boleto) paymentMethods.push('pix');
+        if (formData.paymentMethods.creditCard) paymentMethods.push('credit_card');
+
+        // For now, we'll create a PIX transaction by default
+        // In a future enhancement, we could create multiple transactions for different methods
+        const primaryMethod = paymentMethods.includes('pix') ? 'pix' : 'credit_card';
+
+        const { error: pagarmeError } = await supabase.functions.invoke('create-pagarme-transaction', {
+          body: {
+            payment_id: newPayment.id,
+            payment_method: primaryMethod
+          }
+        });
+
+        if (pagarmeError) {
+          console.error('Pagar.me transaction creation failed:', pagarmeError);
+          // Don't throw here - the payment was created successfully
+          // We'll show a different message to the user
+          throw new Error('Cobrança criada, mas houve erro ao gerar o link de pagamento. Tente novamente.');
+        }
+      }
+
+      return newPayment;
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Cobrança criada com sucesso!');
+      
+      if (data.has_payment_link) {
+        toast.success('Cobrança criada e link de pagamento gerado com sucesso!');
+      } else {
+        toast.success('Cobrança criada com sucesso!');
+      }
       
       // Send email if notification is enabled and it's a link charge
       if (formData.chargeType === 'link' && formData.sendEmailNotification && formData.email && selectedPatient) {
@@ -98,7 +129,7 @@ export function WizardStep5Summary({
     },
     onError: (error) => {
       console.error('Error creating payment:', error);
-      toast.error('Erro ao criar cobrança');
+      toast.error(error.message || 'Erro ao criar cobrança');
     }
   });
 
