@@ -16,7 +16,8 @@ const STEP_TITLES = [
 ];
 
 export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paymentToEdit }: CreatePaymentWizardProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const isEditMode = !!paymentToEdit;
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0);
   const [formData, setFormData] = useState<WizardFormData>({
     chargeType: 'link',
     paymentType: 'single',
@@ -37,8 +38,6 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     isReceived: false,
     receivedDate: ''
   });
-
-  const isEditMode = !!paymentToEdit;
 
   // Initialize form data when editing a payment
   useEffect(() => {
@@ -83,13 +82,15 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
   };
 
   const getTotalSteps = () => {
-    // Always return 6 steps total (0-5 indexing)
-    return 6;
+    // Return 5 steps for edit mode (skip charge type), 6 for create mode
+    return isEditMode ? 5 : 6;
   };
 
   const nextStep = () => {
     const totalSteps = getTotalSteps();
-    if (currentStep < totalSteps - 1) {
+    const maxStep = isEditMode ? 5 : 5; // Adjusted for 0-based indexing
+    
+    if (currentStep < maxStep) {
       let nextStepNumber = currentStep + 1;
       
       // Skip step 3 (Fees and Interest) for manual charges
@@ -102,7 +103,9 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
+    const minStep = isEditMode ? 1 : 0; // In edit mode, can't go below step 1
+    
+    if (currentStep > minStep) {
       let prevStepNumber = currentStep - 1;
       
       // Skip step 3 (Fees and Interest) when going back for manual charges
@@ -115,7 +118,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
   };
 
   const resetWizard = () => {
-    setCurrentStep(0);
+    setCurrentStep(isEditMode ? 1 : 0);
     setFormData({
       chargeType: 'link',
       paymentType: 'single',
@@ -140,8 +143,37 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     onClose();
   };
 
-  // Get current step title based on actual step and charge type
+  // Get current step title based on actual step and edit mode
   const getCurrentStepTitle = () => {
+    if (isEditMode) {
+      // For edit mode, map steps to skip the charge type step
+      const editStepTitles = [
+        'Tipo de Pagamento',     // Step 1 (was Step 1)
+        'Detalhes do Pagamento', // Step 2 (was Step 2)
+        'Juros e Multa',         // Step 3 (was Step 3)
+        'Dados do Pagador',      // Step 4 (was Step 4)
+        'Resumo e Confirmação'   // Step 5 (was Step 5)
+      ];
+      
+      if (formData.chargeType === 'manual') {
+        // For manual charges in edit mode, also map around the skipped fees step
+        const manualEditStepTitles = [
+          'Tipo de Pagamento',     // Step 1
+          'Detalhes do Pagamento', // Step 2
+          'Dados do Pagador',      // Step 4 (mapped)
+          'Resumo e Confirmação'   // Step 5 (mapped)
+        ];
+        
+        if (currentStep === 1) return manualEditStepTitles[0];
+        if (currentStep === 2) return manualEditStepTitles[1];
+        if (currentStep === 4) return manualEditStepTitles[2];
+        if (currentStep === 5) return manualEditStepTitles[3];
+      }
+      
+      return editStepTitles[currentStep - 1] || 'Etapa';
+    }
+    
+    // For create mode, use the original logic
     if (formData.chargeType === 'manual') {
       // For manual charges, map the actual step numbers to appropriate titles
       const manualStepTitles = [
@@ -196,11 +228,29 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     }
   };
 
+  // Calculate display step number for the header
+  const getDisplayStepNumber = () => {
+    if (isEditMode) {
+      // In edit mode, show steps as 1-5 instead of 1-6
+      if (formData.chargeType === 'manual') {
+        // For manual charges, adjust for skipped fees step
+        if (currentStep === 1) return 1;
+        if (currentStep === 2) return 2;
+        if (currentStep === 4) return 3;
+        if (currentStep === 5) return 4;
+      }
+      return currentStep; // For link charges, just use the current step
+    }
+    
+    // For create mode, use the original logic
+    return currentStep + 1;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <WizardHeader
-          currentStep={currentStep + 1}
+          currentStep={getDisplayStepNumber()}
           totalSteps={getTotalSteps()}
           stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
