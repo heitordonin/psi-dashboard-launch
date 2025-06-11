@@ -18,14 +18,14 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
       payment.receita_saude_receipt_issued && "bg-green-50 border-green-200"
     )}>
       <CardContent className="p-6">
-        <div className="flex justify-between items-start gap-6">
-          {/* Left side - Main info */}
+        <div className="flex flex-col lg:flex-row lg:justify-between gap-6">
+          {/* Main info section */}
           <div className="flex-1 min-w-0">
             <PaymentMainInfo payment={payment} />
           </div>
 
-          {/* Right side - Actions */}
-          <div className="flex-shrink-0">
+          {/* Actions section */}
+          <div className="flex-shrink-0 w-full lg:w-auto">
             <PaymentActions 
               payment={payment}
               onEdit={onEdit}

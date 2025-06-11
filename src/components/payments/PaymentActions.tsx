@@ -78,9 +78,20 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
   };
 
   return (
-    <div className="flex flex-col gap-3 lg:items-end">
-      <div className="flex items-center gap-2">
-        {/* Only show "Mark as Paid" button for pending manual charges */}
+    <div className="space-y-4">
+      {/* Status and badges row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <PaymentStatusBadge status={payment.status} />
+        {payment.has_payment_link && (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+            Com link de cobrança
+          </Badge>
+        )}
+      </div>
+
+      {/* Main action buttons row */}
+      <div className="flex flex-wrap gap-2">
+        {/* Mark as Paid/Unpaid button */}
         {payment.status !== 'paid' && !payment.has_payment_link && (
           <Button
             variant="outline"
@@ -104,85 +115,77 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
             Marcar como não pago
           </Button>
         )}
+
+        {/* Payment link button */}
+        {payment.has_payment_link && payment.status === 'pending' && (
+          <PaymentLinkButton payment={payment} />
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
-        <div className="flex items-center gap-2">
-          <PaymentStatusBadge status={payment.status} />
-          {payment.has_payment_link && (
-            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-              Com link de cobrança
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {/* Payment link button */}
-          {payment.has_payment_link && payment.status === 'pending' && (
-            <PaymentLinkButton payment={payment} />
-          )}
-          
-          {/* Email reminder button */}
-          <EmailReminderButton payment={payment} />
-          
-          {/* WhatsApp reminder button */}
-          <WhatsAppButton payment={payment} />
-          
-          {/* Direct action buttons */}
-          <div className="flex items-center gap-1">
-            {/* Edit button with tooltip when disabled */}
-            {payment.has_payment_link ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button variant="ghost" size="icon" disabled={true}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Não é possível editar uma cobrança com link de pagamento.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onEdit(payment)}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {/* Delete button with tooltip when disabled */}
-            {payment.status === 'paid' ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button variant="ghost" size="icon" className="text-red-600" disabled={true}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Não é possível excluir uma cobrança já recebida.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-red-600 hover:text-red-700"
-                onClick={() => onDelete(payment.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
+      {/* Communication buttons row */}
+      <div className="flex flex-wrap gap-2">
+        <EmailReminderButton payment={payment} />
+        <WhatsAppButton payment={payment} />
+      </div>
+
+      {/* Edit/Delete actions row */}
+      <div className="flex gap-2">
+        {/* Edit button with tooltip when disabled */}
+        {payment.has_payment_link ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button variant="ghost" size="sm" disabled={true}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Não é possível editar uma cobrança com link de pagamento.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(payment)}
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Editar
+          </Button>
+        )}
+        
+        {/* Delete button with tooltip when disabled */}
+        {payment.status === 'paid' ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button variant="ghost" size="sm" className="text-red-600" disabled={true}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Excluir
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Não é possível excluir uma cobrança já recebida.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700"
+            onClick={() => onDelete(payment.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Excluir
+          </Button>
+        )}
       </div>
     </div>
   );
