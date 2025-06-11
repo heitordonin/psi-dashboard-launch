@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
@@ -64,7 +65,14 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
-        <PaymentStatusBadge status={payment.status} />
+        <div className="flex items-center gap-2">
+          <PaymentStatusBadge status={payment.status} />
+          {payment.has_payment_link && (
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+              Com link de cobrança
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2">
           {/* Email reminder button */}
           <EmailReminderButton payment={payment} />

@@ -1,9 +1,8 @@
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Copy, Calendar, User, FileText, CreditCard, Link } from "lucide-react";
+import { CheckCircle, Copy, Calendar, User, FileText, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import type { PaymentWithPatient } from "@/types/payment";
 
@@ -56,18 +55,6 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
           <span className="font-semibold text-green-600">
             {formatCurrency(Number(payment.amount))}
           </span>
-          {payment.has_payment_link && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Link className="h-4 w-4 text-blue-500" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Cobrança com link de pagamento</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
           <Button
             variant="ghost"
             size="sm"
