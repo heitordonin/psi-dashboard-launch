@@ -25,42 +25,54 @@ export const checkForDuplicates = async (
   // Check CPF duplicates for individual patients
   if (data.patient_type === 'individual' && data.cpf && !data.is_payment_from_abroad) {
     const cleanCpf = data.cpf.replace(/\D/g, '');
-    queries.push(
-      supabase
-        .from('patients')
-        .select('id')
-        .eq('owner_id', userId)
-        .eq('cpf', cleanCpf)
-        .neq('id', patientId || '')
-        .limit(1)
-    );
+    let cpfQuery = supabase
+      .from('patients')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('cpf', cleanCpf)
+      .limit(1);
+    
+    // Only apply ID filter if we have a patientId (during edit)
+    if (patientId) {
+      cpfQuery = cpfQuery.neq('id', patientId);
+    }
+    
+    queries.push(cpfQuery);
   }
 
   // Check CNPJ duplicates for company patients
   if (data.patient_type === 'company' && data.cnpj && !data.is_payment_from_abroad) {
     const cleanCnpj = data.cnpj.replace(/\D/g, '');
-    queries.push(
-      supabase
-        .from('patients')
-        .select('id')
-        .eq('owner_id', userId)
-        .eq('cnpj', cleanCnpj)
-        .neq('id', patientId || '')
-        .limit(1)
-    );
+    let cnpjQuery = supabase
+      .from('patients')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('cnpj', cleanCnpj)
+      .limit(1);
+    
+    // Only apply ID filter if we have a patientId (during edit)
+    if (patientId) {
+      cnpjQuery = cnpjQuery.neq('id', patientId);
+    }
+    
+    queries.push(cnpjQuery);
   }
 
   // Check email duplicates
   if (data.email) {
-    queries.push(
-      supabase
-        .from('patients')
-        .select('id')
-        .eq('owner_id', userId)
-        .eq('email', data.email.trim())
-        .neq('id', patientId || '')
-        .limit(1)
-    );
+    let emailQuery = supabase
+      .from('patients')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('email', data.email.trim())
+      .limit(1);
+    
+    // Only apply ID filter if we have a patientId (during edit)
+    if (patientId) {
+      emailQuery = emailQuery.neq('id', patientId);
+    }
+    
+    queries.push(emailQuery);
   }
 
   try {
