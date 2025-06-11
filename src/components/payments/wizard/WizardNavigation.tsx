@@ -23,13 +23,13 @@ export function WizardNavigation({
   nextButtonText = "Próximo",
   onClose
 }: WizardNavigationProps) {
-  const showBackButton = currentStep > 0;
-  const showCancelButton = currentStep === 0 && onClose;
+  const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 
   return (
     <div className="flex justify-between pt-4 border-t">
-      {showBackButton ? (
+      {/* Left side: Back button or Cancel button */}
+      {!isFirstStep ? (
         <Button
           variant="outline"
           onClick={onPrevious}
@@ -39,7 +39,7 @@ export function WizardNavigation({
           <ChevronLeft className="h-4 w-4" />
           Voltar
         </Button>
-      ) : showCancelButton ? (
+      ) : onClose ? (
         <Button
           variant="outline"
           onClick={onClose}
@@ -53,6 +53,7 @@ export function WizardNavigation({
         <div />
       )}
       
+      {/* Right side: Next button (shown on all steps except the last) */}
       {!isLastStep && (
         <Button
           onClick={onNext}
