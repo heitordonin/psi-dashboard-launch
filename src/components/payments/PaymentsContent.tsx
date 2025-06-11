@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { PaymentsHeader } from './PaymentsHeader';
 import { PaymentsSearchFilter } from './PaymentsSearchFilter';
 import { PaymentsList } from './PaymentsList';
-import { PaymentFormWrapper } from './PaymentFormWrapper';
 import { CreatePaymentWizard } from './CreatePaymentWizard';
 import { usePaymentData } from '@/hooks/usePaymentData';
 import { usePaymentFilters } from '@/hooks/usePaymentFilters';
@@ -14,9 +13,7 @@ interface PaymentsContentProps {
 }
 
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
   const { searchTerm, setSearchTerm, filters, setFilters, getFilteredPayments, hasFilters } = usePaymentFilters();
@@ -28,13 +25,8 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   };
 
   const handleEditPayment = (payment: Payment) => {
-    setEditingPayment(payment);
-    setShowPaymentForm(true);
-  };
-
-  const handleClosePaymentForm = () => {
-    setShowPaymentForm(false);
-    setEditingPayment(null);
+    // TODO: Implement edit functionality
+    console.log('Edit payment:', payment);
   };
 
   const handleCloseWizard = () => {
@@ -72,21 +64,12 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         />
       </div>
 
-      {/* Create Payment Wizard */}
       <CreatePaymentWizard
         isOpen={showCreateWizard}
         onClose={handleCloseWizard}
         onSuccess={handleCloseWizard}
+        patients={patients}
       />
-
-      {/* Edit Payment Form (existing modal) */}
-      {showPaymentForm && editingPayment && (
-        <PaymentFormWrapper
-          payment={editingPayment}
-          patients={patients}
-          onClose={handleClosePaymentForm}
-        />
-      )}
     </div>
   );
 };

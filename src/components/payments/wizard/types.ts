@@ -1,0 +1,37 @@
+import type { Patient } from '@/types/patient';
+
+export interface WizardFormData {
+  // Step 1: Payment type
+  paymentType: 'single' | 'subscription';
+  
+  // Step 2: Payment details
+  amount: number;
+  due_date: string;
+  description: string;
+  paymentMethods: {
+    boleto: boolean;
+    creditCard: boolean;
+  };
+  
+  // Step 3: Fees (future feature)
+  monthlyInterest: number;
+  lateFee: number;
+  
+  // Step 4: Payer details
+  patient_id: string;
+  paymentTitular: 'patient' | 'other';
+  payer_cpf: string;
+  sendEmailNotification: boolean;
+  email: string;
+  
+  // Existing logic
+  isReceived: boolean;
+  receivedDate: string;
+}
+
+export interface CreatePaymentWizardProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  patients: Patient[];
+}
