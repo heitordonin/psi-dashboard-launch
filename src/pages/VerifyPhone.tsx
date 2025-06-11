@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -28,7 +27,6 @@ const VerifyPhone = () => {
     setIsVerifying(true);
 
     try {
-      // Verificar OTP armazenado temporariamente
       const storedOtp = localStorage.getItem('temp_otp');
       const timestamp = localStorage.getItem('temp_otp_timestamp');
       
@@ -38,7 +36,6 @@ const VerifyPhone = () => {
         return;
       }
 
-      // Verificar se o código não expirou (10 minutos)
       const now = Date.now();
       const otpTime = parseInt(timestamp);
       const tenMinutes = 10 * 60 * 1000;
@@ -51,14 +48,12 @@ const VerifyPhone = () => {
         return;
       }
 
-      // Verificar se o OTP está correto
       if (otp !== storedOtp) {
         toast.error('Código inválido. Tente novamente.');
         setIsVerifying(false);
         return;
       }
 
-      // Atualizar perfil como verificado
       const { error } = await supabase
         .from('profiles')
         .update({ phone_verified: true })
@@ -68,7 +63,6 @@ const VerifyPhone = () => {
         throw error;
       }
 
-      // Limpar OTP armazenado
       localStorage.removeItem('temp_otp');
       localStorage.removeItem('temp_otp_timestamp');
 
@@ -91,7 +85,6 @@ const VerifyPhone = () => {
     setIsResending(true);
 
     try {
-      // Buscar telefone do usuário
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('phone')
@@ -104,10 +97,8 @@ const VerifyPhone = () => {
         return;
       }
 
-      // Gerar novo OTP
       const newOtp = generateOTP();
       
-      // Armazenar novo OTP
       localStorage.setItem('temp_otp', newOtp);
       localStorage.setItem('temp_otp_timestamp', Date.now().toString());
 
