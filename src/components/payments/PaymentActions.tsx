@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,7 +118,7 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
         <div className="flex gap-2">
           {/* Payment link button */}
           {payment.has_payment_link && payment.status === 'pending' && (
-            <PaymentLinkButton onClick={() => { console.log('Get link clicked'); }} />
+            <PaymentLinkButton payment={payment} />
           )}
           
           {/* Email reminder button */}
