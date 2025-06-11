@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
+import type { Payment } from '@/types/payment';
 
 interface WizardStep5Props {
   formData: WizardFormData;
@@ -19,6 +20,8 @@ interface WizardStep5Props {
   onClose: () => void;
   onPrevious: () => void;
   updateFormData: (updates: Partial<WizardFormData>) => void;
+  isEditMode?: boolean;
+  paymentToEdit?: Payment | null;
 }
 
 export function WizardStep5Summary({
@@ -27,7 +30,9 @@ export function WizardStep5Summary({
   onSuccess,
   onClose,
   onPrevious,
-  updateFormData
+  updateFormData,
+  isEditMode = false,
+  paymentToEdit = null
 }: WizardStep5Props) {
   const queryClient = useQueryClient();
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
@@ -50,21 +55,33 @@ export function WizardStep5Summary({
         owner_id: user.id
       };
 
-      const { data, error } = await supabase
-        .from('payments')
-        .insert(paymentData)
-        .select()
-        .single();
+      if (isEditMode && paymentToEdit) {
+        const { data, error } = await supabase
+          .from('payments')
+          .update(paymentData)
+          .eq('id', paymentToEdit.id)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('payments')
+          .insert(paymentData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
-      toast.success('Cobrança criada com sucesso!');
+      toast.success(isEditMode ? 'Cobrança atualizada com sucesso!' : 'Cobrança criada com sucesso!');
       
-      // Send email if notification is enabled and it's a link charge
-      if (formData.chargeType === 'link' && formData.sendEmailNotification && formData.email && selectedPatient) {
+      // Send email if notification is enabled and it's a link charge (only for new payments)
+      if (!isEditMode && formData.chargeType === 'link' && formData.sendEmailNotification && formData.email && selectedPatient) {
         try {
           const { error: emailError } = await supabase.functions.invoke('send-email-reminder', {
             body: {
@@ -93,8 +110,8 @@ export function WizardStep5Summary({
       onClose();
     },
     onError: (error) => {
-      console.error('Error creating payment:', error);
-      toast.error('Erro ao criar cobrança');
+      console.error('Error creating/updating payment:', error);
+      toast.error(isEditMode ? 'Erro ao atualizar cobrança' : 'Erro ao criar cobrança');
     }
   });
 
@@ -226,7 +243,10 @@ export function WizardStep5Summary({
               disabled={createPaymentMutation.isPending}
               className="flex-1"
             >
-              {createPaymentMutation.isPending ? 'Criando...' : 'Concluir'}
+              {createPaymentMutation.isPending 
+                ? (isEditMode ? 'Salvando...' : 'Criando...') 
+                : (isEditMode ? 'Salvar Alterações' : 'Concluir')
+              }
             </Button>
           </div>
         </div>
