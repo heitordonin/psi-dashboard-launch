@@ -70,6 +70,10 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
     setIsMarkingAsPaid(false);
   };
 
+  // Business rules for edit/delete permissions
+  const editDisabled = payment.has_payment_link === true;
+  const deleteDisabled = payment.status === 'paid';
+
   return (
     <Card className="mb-4 hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -181,12 +185,13 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               </Button>
             </div>
 
-            {/* Use PaymentButtons component with deleteDisabled prop */}
+            {/* Use PaymentButtons component with business rules */}
             <PaymentButtons
               payment={payment}
               onEdit={onEdit}
               onDelete={onDelete}
-              deleteDisabled={payment.status === 'paid'}
+              editDisabled={editDisabled}
+              deleteDisabled={deleteDisabled}
             />
           </div>
         </div>

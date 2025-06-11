@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { WizardHeader } from './wizard/WizardHeader';
 import { WizardStepRenderer } from './wizard/WizardStepRenderer';
@@ -15,7 +16,13 @@ const STEP_TITLES = [
   'Resumo e Confirmação'
 ];
 
-export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: CreatePaymentWizardProps) {
+export function CreatePaymentWizard({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  patients, 
+  paymentToEdit = null 
+}: CreatePaymentWizardProps) {
   const {
     currentStep,
     formData,
@@ -27,6 +34,40 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
   } = useWizardState();
 
   const totalSteps = getTotalSteps();
+  const isEditMode = !!paymentToEdit;
+
+  // Initialize form data when editing a payment
+  useEffect(() => {
+    if (isEditMode && paymentToEdit) {
+      // Reset wizard first
+      resetWizard();
+      
+      // Populate form data with payment data
+      updateFormData({
+        chargeType: paymentToEdit.has_payment_link ? 'link' : 'manual',
+        paymentType: 'single', // Default for existing payments
+        amount: Number(paymentToEdit.amount),
+        due_date: paymentToEdit.due_date,
+        description: paymentToEdit.description || '',
+        patient_id: paymentToEdit.patient_id,
+        payer_cpf: paymentToEdit.payer_cpf || '',
+        paymentTitular: paymentToEdit.payer_cpf ? 'other' : 'patient',
+        isReceived: paymentToEdit.status === 'paid',
+        receivedDate: paymentToEdit.paid_date || '',
+        paymentMethods: {
+          boleto: true,
+          creditCard: true
+        },
+        monthlyInterest: 0,
+        lateFee: 0,
+        sendEmailNotification: false,
+        email: ''
+      });
+    } else if (!isEditMode) {
+      // Reset wizard for new payment
+      resetWizard();
+    }
+  }, [isEditMode, paymentToEdit, resetWizard, updateFormData]);
 
   const handleClose = () => {
     resetWizard();
@@ -53,8 +94,15 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
     return STEP_TITLES[currentStep] || 'Etapa';
   };
 
+  // Get wizard title based on mode
+  const getWizardTitle = () => {
+    return isEditMode ? 'Editar Cobrança' : 'Nova Cobrança';
+  };
+
   // Determine if next button should be disabled based on current step validation
   const isNextDisabled = () => {
+    const selectedPatient = patients.find(p => p.id === formData.patient_id);
+    
     switch (currentStep) {
       case 0:
         return !formData.chargeType;
@@ -65,7 +113,19 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
       case 3:
         return false; // This step has no required fields
       case 4:
-        return !formData.patient_id || !formData.payer_cpf;
+        // Validação mais complexa para o Step 4
+        if (!formData.patient_id) return true;
+        
+        // Para pacientes do exterior, não precisa de CPF
+        if (selectedPatient?.is_payment_from_abroad) return false;
+        
+        // Para empresas, sempre precisa do CNPJ
+        if (selectedPatient?.patient_type === 'company') {
+          return !formData.payer_cpf;
+        }
+        
+        // Para pacientes individuais, precisa do CPF
+        return !formData.payer_cpf;
       case 5:
         return false; // Summary step
       default:
@@ -81,6 +141,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
           totalSteps={totalSteps}
           stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
+          wizardTitle={getWizardTitle()}
         />
 
         <div className="py-6">
@@ -93,6 +154,8 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
             onPrevious={prevStep}
             onSuccess={onSuccess}
             onClose={handleClose}
+            isEditMode={isEditMode}
+            paymentToEdit={paymentToEdit}
           />
         </div>
 

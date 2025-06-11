@@ -11,13 +11,15 @@ interface PaymentButtonsProps {
   onEdit: (payment: any) => void;
   onDelete: (paymentId: string) => void;
   deleteDisabled?: boolean;
+  editDisabled?: boolean;
 }
 
 export const PaymentButtons = ({ 
   payment, 
   onEdit, 
   onDelete, 
-  deleteDisabled = false 
+  deleteDisabled = false,
+  editDisabled = false
 }: PaymentButtonsProps) => {
   return (
     <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
@@ -34,6 +36,7 @@ export const PaymentButtons = ({
           size="icon"
           onClick={() => onEdit(payment)}
           className="h-8 w-8"
+          disabled={editDisabled}
         >
           <Pencil className="h-4 w-4" />
         </Button>
