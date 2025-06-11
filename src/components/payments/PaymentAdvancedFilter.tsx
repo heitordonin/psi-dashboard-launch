@@ -6,15 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter } from "lucide-react";
-
-export interface PaymentFilters {
-  patientId: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  minAmount: string;
-  maxAmount: string;
-}
+import type { PaymentFilters } from "@/hooks/usePaymentFilters";
 
 interface PaymentAdvancedFilterProps {
   onFilterChange: (filters: PaymentFilters) => void;

@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { PaymentsHeader } from './PaymentsHeader';
-import { PaymentsSearchFilter, PaymentFilters } from './PaymentsSearchFilter';
+import { PaymentsSearchFilter } from './PaymentsSearchFilter';
 import { PaymentsList } from './PaymentsList';
 import { PaymentFormWrapper } from './PaymentFormWrapper';
 import { CreatePaymentWizard } from './CreatePaymentWizard';
@@ -14,20 +14,14 @@ interface PaymentsContentProps {
 }
 
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<PaymentFilters>({
-    status: '',
-    patientId: '',
-    startDate: '',
-    endDate: ''
-  });
-  
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
-  const filteredPayments = usePaymentFilters(payments, searchTerm, filters);
+  const { searchTerm, setSearchTerm, filters, setFilters, getFilteredPayments, hasFilters } = usePaymentFilters();
+
+  const filteredPayments = getFilteredPayments(payments);
 
   const handleAddPayment = () => {
     setShowCreateWizard(true);
@@ -53,8 +47,6 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
     }
   };
 
-  const hasFiltersApplied = searchTerm || filters.status || filters.patientId || filters.startDate || filters.endDate;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <PaymentsHeader 
@@ -76,7 +68,7 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
           isLoading={paymentsLoading}
           onDeletePayment={handleDeletePayment}
           onEditPayment={handleEditPayment}
-          hasFilters={hasFiltersApplied}
+          hasFilters={hasFilters}
         />
       </div>
 
@@ -90,9 +82,9 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
       {/* Edit Payment Form (existing modal) */}
       {showPaymentForm && editingPayment && (
         <PaymentFormWrapper
-          onClose={handleClosePaymentForm}
           payment={editingPayment}
           patients={patients}
+          onClose={handleClosePaymentForm}
         />
       )}
     </div>

@@ -3,13 +3,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentAdvancedFilter } from "@/components/payments/PaymentAdvancedFilter";
-
-export interface PaymentFilters {
-  status: string;
-  patientId: string;
-  startDate: string;
-  endDate: string;
-}
+import type { PaymentFilters } from "@/hooks/usePaymentFilters";
 
 interface Patient {
   id: string;
