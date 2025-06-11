@@ -74,12 +74,24 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/login`;
     
+    // Se userData contém phone, criar o número completo E.164
+    let processedUserData = userData;
+    if (userData?.phone) {
+      const cleanedPhone = userData.phone.replace(/\D/g, '');
+      const fullPhoneNumber = `+55${cleanedPhone}`;
+      processedUserData = {
+        ...userData,
+        phone: cleanedPhone, // Armazenar apenas a parte local no metadata
+        full_phone: fullPhoneNumber // Número completo para o Supabase Auth
+      };
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: userData
+        data: processedUserData
       }
     });
     return { error };

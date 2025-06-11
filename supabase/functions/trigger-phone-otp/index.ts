@@ -25,6 +25,17 @@ serve(async (req) => {
       )
     }
 
+    // Validar formato E.164 (deve começar com +)
+    if (!phone.startsWith('+')) {
+      return new Response(
+        JSON.stringify({ error: 'Número deve estar no formato E.164 (+55XXXXXXXXXXX)' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
     // Criar cliente Supabase com a autorização do usuário
     const authHeader = req.headers.get('Authorization')!
     const supabaseClient = createClient(
@@ -46,6 +57,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Enviando OTP para:', phone)
 
     // Gerar OTP usando o sistema nativo do Supabase
     const { data, error } = await supabaseClient.auth.signInWithOtp({

@@ -24,7 +24,7 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
       if (user) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('phone, phone_verified')
+          .select('phone, phone_verified, phone_country_code')
           .eq('id', user.id)
           .single();
 
@@ -50,8 +50,12 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
 
     setSendingOtp(true);
     try {
+      // Concatenar código do país com o número local para formar E.164
+      const countryCode = profile.phone_country_code || '+55';
+      const fullPhoneNumber = `${countryCode}${profile.phone}`;
+
       const { error } = await supabase.functions.invoke('trigger-phone-otp', {
-        body: { phone: profile.phone }
+        body: { phone: fullPhoneNumber }
       });
 
       if (error) {
@@ -92,6 +96,9 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
   }
 
   // Se o telefone não está verificado, mostra tela de verificação
+  const countryCode = profile.phone_country_code || '+55';
+  const formattedPhone = `${countryCode} ${profile.phone}`;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
@@ -107,7 +114,7 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
         <CardContent className="space-y-6">
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-4">
-              Número cadastrado: <span className="font-medium">{profile.phone}</span>
+              Número cadastrado: <span className="font-medium">{formattedPhone}</span>
             </p>
           </div>
 

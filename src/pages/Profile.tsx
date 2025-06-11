@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -75,6 +74,7 @@ const Profile = () => {
           crp_number: profile.crp_number,
           nit_nis_pis: profile.nit_nis_pis,
           phone: cleanedPhone,
+          phone_country_code: profile.phone_country_code || '+55',
           email_reminders_enabled: profile.email_reminders_enabled
         })
         .eq('id', user?.id);
@@ -180,14 +180,20 @@ const Profile = () => {
 
                         <div>
                           <Label htmlFor="phone">Telefone</Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={profile.phone ? formatPhone(profile.phone) : ''}
-                            onChange={handlePhoneChange}
-                            placeholder="(11) 99999-9999"
-                            maxLength={15}
-                          />
+                          <div className="flex">
+                            <div className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm text-gray-600">
+                              {profile.phone_country_code || '+55'}
+                            </div>
+                            <Input
+                              id="phone"
+                              type="tel"
+                              value={profile.phone ? formatPhone(profile.phone) : ''}
+                              onChange={handlePhoneChange}
+                              placeholder="(11) 99999-9999"
+                              maxLength={15}
+                              className="rounded-l-none"
+                            />
+                          </div>
                         </div>
                       </div>
 

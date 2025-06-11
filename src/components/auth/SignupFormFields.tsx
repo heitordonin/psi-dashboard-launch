@@ -57,15 +57,20 @@ export const SignupFormFields: React.FC<SignupFormFieldsProps> = ({
 
       <div>
         <Label htmlFor="phone">Celular</Label>
-        <Input
-          id="phone"
-          type="text"
-          value={formData.phone}
-          onChange={handlePhoneChange}
-          placeholder="(11) 99999-9999"
-          maxLength={15}
-          className={errors.phone ? 'border-red-500' : ''}
-        />
+        <div className="flex">
+          <div className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm text-gray-600">
+            +55
+          </div>
+          <Input
+            id="phone"
+            type="text"
+            value={formData.phone}
+            onChange={handlePhoneChange}
+            placeholder="(11) 99999-9999"
+            maxLength={15}
+            className={`rounded-l-none ${errors.phone ? 'border-red-500' : ''}`}
+          />
+        </div>
         {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
       </div>
 

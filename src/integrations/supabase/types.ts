@@ -321,6 +321,7 @@ export type Database = {
           nit_nis_pis: string | null
           pagarme_recipient_id: string | null
           phone: string | null
+          phone_country_code: string
           phone_verified: boolean
           updated_at: string
         }
@@ -337,6 +338,7 @@ export type Database = {
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
+          phone_country_code?: string
           phone_verified?: boolean
           updated_at?: string
         }
@@ -353,6 +355,7 @@ export type Database = {
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
+          phone_country_code?: string
           phone_verified?: boolean
           updated_at?: string
         }
