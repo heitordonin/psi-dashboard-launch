@@ -27,6 +27,7 @@ export const PaymentButtons = ({ payment, onEdit, onDelete }: PaymentButtonsProp
           onEdit={() => onEdit(payment)}
           onDelete={() => onDelete(payment.id)}
           deleteDisabled={payment.status === 'paid'}
+          editDisabled={payment.has_payment_link === true}
         />
       </div>
     </div>

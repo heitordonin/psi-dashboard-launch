@@ -14,6 +14,7 @@ interface ActionDropdownProps {
   onMarkAsPaid?: () => void;
   showMarkAsPaid?: boolean;
   deleteDisabled?: boolean;
+  editDisabled?: boolean;
 }
 
 export function ActionDropdown({ 
@@ -21,7 +22,8 @@ export function ActionDropdown({
   onDelete, 
   onMarkAsPaid, 
   showMarkAsPaid = false,
-  deleteDisabled = false
+  deleteDisabled = false,
+  editDisabled = false
 }: ActionDropdownProps) {
   return (
     <DropdownMenu>
@@ -32,7 +34,7 @@ export function ActionDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onEdit && (
-          <DropdownMenuItem onClick={onEdit}>
+          <DropdownMenuItem onClick={onEdit} disabled={editDisabled}>
             Editar
           </DropdownMenuItem>
         )}
