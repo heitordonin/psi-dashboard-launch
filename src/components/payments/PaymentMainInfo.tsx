@@ -1,9 +1,7 @@
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle, Copy, Calendar, User, FileText, CreditCard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { CheckCircle, Calendar, User, FileText, CreditCard } from "lucide-react";
 import type { PaymentWithPatient } from "@/types/payment";
 
 interface PaymentMainInfoProps {
@@ -22,15 +20,6 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copiado para a área de transferência!`);
-    } catch (err) {
-      toast.error('Erro ao copiar para a área de transferência');
-    }
-  };
-
   return (
     <div className="flex-1 space-y-3">
       <div className="flex items-start justify-between">
@@ -39,14 +28,6 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
           <span className="font-medium text-gray-900">
             {payment.patients?.full_name || 'Paciente não encontrado'}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyToClipboard(payment.patients?.full_name || '', 'Nome do paciente')}
-            className="h-6 w-6 p-0"
-          >
-            <Copy className="w-3 h-3" />
-          </Button>
         </div>
       </div>
 
@@ -55,27 +36,11 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
           <span className="font-semibold text-green-600">
             {formatCurrency(Number(payment.amount))}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyToClipboard(Number(payment.amount).toFixed(2).replace('.', ','), 'Valor')}
-            className="h-6 w-6 p-0"
-          >
-            <Copy className="w-3 h-3" />
-          </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
           <span>Vencimento: {formatDate(payment.due_date)}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyToClipboard(formatDate(payment.due_date), 'Data de vencimento')}
-            className="h-6 w-6 p-0"
-          >
-            <Copy className="w-3 h-3" />
-          </Button>
         </div>
 
         {payment.paid_date && (
@@ -89,14 +54,6 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
           <div className="flex items-center gap-2 md:col-span-2">
             <FileText className="w-4 h-4 text-gray-500" />
             <span className="text-gray-600 truncate">{payment.description}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => copyToClipboard(payment.description!, 'Descrição')}
-              className="h-6 w-6 p-0"
-            >
-              <Copy className="w-3 h-3" />
-            </Button>
           </div>
         )}
       </div>
@@ -112,14 +69,6 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
           >
             Link de pagamento
           </a>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyToClipboard(payment.payment_url!, 'Link de pagamento')}
-            className="h-6 w-6 p-0"
-          >
-            <Copy className="w-3 h-3" />
-          </Button>
         </div>
       )}
     </div>
