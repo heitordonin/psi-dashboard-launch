@@ -45,9 +45,9 @@ export function useWizardState() {
   const getTotalSteps = () => {
     // Dynamic step calculation based on charge type
     if (formData.chargeType === 'manual') {
-      return 5; // Skip payment methods and fees steps
+      return 5; // Steps: 0,1,2,4,5 (skip step 3)
     }
-    return 6; // All steps for link charges
+    return 6; // All steps for link charges: 0,1,2,3,4,5
   };
 
   const nextStep = () => {
@@ -55,10 +55,9 @@ export function useWizardState() {
     if (currentStep < totalSteps - 1) {
       let nextStepNumber = currentStep + 1;
       
-      // Skip steps for manual charges
+      // Skip only step 3 (Fees and Interest) for manual charges
       if (formData.chargeType === 'manual') {
-        if (nextStepNumber === 2) nextStepNumber = 4; // Skip payment methods (step 2)
-        if (nextStepNumber === 3) nextStepNumber = 4; // Skip fees (step 3)
+        if (nextStepNumber === 3) nextStepNumber = 4; // Skip fees step
       }
       
       setCurrentStep(nextStepNumber);
@@ -69,10 +68,9 @@ export function useWizardState() {
     if (currentStep > 0) {
       let prevStepNumber = currentStep - 1;
       
-      // Skip steps for manual charges when going back
+      // Skip only step 3 (Fees and Interest) when going back for manual charges
       if (formData.chargeType === 'manual') {
-        if (prevStepNumber === 3) prevStepNumber = 1; // Skip fees (step 3)
-        if (prevStepNumber === 2) prevStepNumber = 1; // Skip payment methods (step 2)
+        if (prevStepNumber === 3) prevStepNumber = 2; // Skip fees step when going back
       }
       
       setCurrentStep(prevStepNumber);
