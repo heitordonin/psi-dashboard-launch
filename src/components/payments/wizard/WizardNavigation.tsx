@@ -23,12 +23,12 @@ export function WizardNavigation({
   canGoBack = true,
   canGoNext = true
 }: WizardNavigationProps) {
-  const isLastStep = currentStep === totalSteps - 1;
+  const isLastStep = currentStep === 5; // Always use step 5 as last step
 
   return (
     <div className="flex justify-between border-t pt-4">
       <div className="flex gap-2">
-        {canGoBack && (
+        {canGoBack && currentStep > 0 && (
           <Button
             variant="outline"
             onClick={onPrevious}

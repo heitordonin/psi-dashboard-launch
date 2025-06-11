@@ -30,10 +30,9 @@ export function CreatePaymentWizard({
     nextStep,
     prevStep,
     resetWizard,
-    getTotalSteps,
-    getCurrentStepIndex,
-    getValidSteps,
-    goToStep
+    goToStep,
+    getDisplayStep,
+    getDisplayTotalSteps
   } = useWizardState();
 
   const isEditMode = !!paymentToEdit;
@@ -42,9 +41,6 @@ export function CreatePaymentWizard({
   useEffect(() => {
     if (isEditMode && paymentToEdit) {
       console.log('Inicializando modo de edição com:', paymentToEdit);
-      
-      // Reset wizard first
-      resetWizard();
       
       // Determine charge type from has_payment_link
       const chargeType = paymentToEdit.has_payment_link ? 'link' : 'manual';
@@ -86,7 +82,7 @@ export function CreatePaymentWizard({
     onClose();
   };
 
-  // Get current step title based on actual step
+  // Get current step title
   const getCurrentStepTitle = () => {
     return STEP_TITLES[currentStep] || 'Etapa';
   };
@@ -136,22 +132,16 @@ export function CreatePaymentWizard({
 
   // Check if we can show previous button
   const canGoBack = () => {
-    const currentIndex = getCurrentStepIndex();
-    return currentIndex > 0;
+    return currentStep > 0;
   };
 
   // Check if we can show next button (not on last step)
   const canGoNext = () => {
-    const currentIndex = getCurrentStepIndex();
-    const totalSteps = getTotalSteps();
-    return currentIndex < totalSteps - 1;
+    return currentStep < 5;
   };
 
   console.log('Wizard State:', {
     currentStep,
-    currentStepIndex: getCurrentStepIndex(),
-    totalSteps: getTotalSteps(),
-    validSteps: getValidSteps(),
     chargeType: formData.chargeType,
     isEditMode
   });
@@ -160,8 +150,8 @@ export function CreatePaymentWizard({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <WizardHeader
-          currentStep={getCurrentStepIndex() + 1}
-          totalSteps={getTotalSteps()}
+          currentStep={getDisplayStep()}
+          totalSteps={getDisplayTotalSteps()}
           stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
           wizardTitle={getWizardTitle()}
@@ -183,8 +173,8 @@ export function CreatePaymentWizard({
         </div>
 
         <WizardNavigation
-          currentStep={getCurrentStepIndex()}
-          totalSteps={getTotalSteps()}
+          currentStep={currentStep}
+          totalSteps={6}
           onPrevious={prevStep}
           onNext={nextStep}
           isNextDisabled={isNextDisabled()}

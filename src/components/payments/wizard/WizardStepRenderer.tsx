@@ -1,4 +1,3 @@
-
 import { WizardStep0ChargeType } from './WizardStep0ChargeType';
 import { WizardStep1PaymentType } from './WizardStep1PaymentType';
 import { WizardStep2PaymentDetails } from './WizardStep2PaymentDetails';
@@ -34,6 +33,19 @@ export function WizardStepRenderer({
   isEditMode = false,
   paymentToEdit = null
 }: WizardStepRendererProps) {
+  // Don't render step 3 for manual charges, but keep the step number consistent
+  if (currentStep === 3 && formData.chargeType === 'manual') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            Juros e multa não se aplicam a cobranças manuais.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   switch (currentStep) {
     case 0:
       return (

@@ -42,38 +42,25 @@ export function useWizardState() {
     });
   };
 
-  // Definir quais steps são válidos para cada tipo de charge
-  const getValidSteps = () => {
-    if (formData.chargeType === 'manual') {
-      return [0, 1, 2, 4, 5]; // Pula step 3 (taxas/juros)
-    }
-    return [0, 1, 2, 3, 4, 5]; // Todos os steps para link
-  };
-
   const getTotalSteps = () => {
-    return getValidSteps().length;
-  };
-
-  const getCurrentStepIndex = () => {
-    const validSteps = getValidSteps();
-    return validSteps.indexOf(currentStep);
+    return 6; // Always 6 steps, but step 3 is skipped for manual charges
   };
 
   const nextStep = () => {
-    const validSteps = getValidSteps();
-    const currentIndex = getCurrentStepIndex();
-    
-    if (currentIndex < validSteps.length - 1) {
-      setCurrentStep(validSteps[currentIndex + 1]);
+    if (currentStep === 2 && formData.chargeType === 'manual') {
+      // Skip step 3 (fees) for manual charges
+      setCurrentStep(4);
+    } else if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
-    const validSteps = getValidSteps();
-    const currentIndex = getCurrentStepIndex();
-    
-    if (currentIndex > 0) {
-      setCurrentStep(validSteps[currentIndex - 1]);
+    if (currentStep === 4 && formData.chargeType === 'manual') {
+      // Skip step 3 (fees) when going back from step 4 for manual charges
+      setCurrentStep(2);
+    } else if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -98,12 +85,21 @@ export function useWizardState() {
     });
   };
 
-  // Função para ir para um step específico (útil no modo edição)
   const goToStep = (stepNumber: number) => {
-    const validSteps = getValidSteps();
-    if (validSteps.includes(stepNumber)) {
-      setCurrentStep(stepNumber);
+    setCurrentStep(stepNumber);
+  };
+
+  // Get the current step for display purposes (adjusting for skipped steps)
+  const getDisplayStep = () => {
+    if (formData.chargeType === 'manual' && currentStep > 2) {
+      return currentStep; // Step 4 and 5 show as they are for manual
     }
+    return currentStep + 1;
+  };
+
+  // Get total display steps (5 for manual, 6 for link)
+  const getDisplayTotalSteps = () => {
+    return formData.chargeType === 'manual' ? 5 : 6;
   };
 
   return {
@@ -114,8 +110,8 @@ export function useWizardState() {
     prevStep,
     resetWizard,
     getTotalSteps,
-    getCurrentStepIndex,
-    getValidSteps,
-    goToStep
+    goToStep,
+    getDisplayStep,
+    getDisplayTotalSteps
   };
 }
