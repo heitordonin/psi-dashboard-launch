@@ -1,4 +1,3 @@
-
 import type { Patient } from '@/types/patient';
 import type { Payment } from '@/types/payment';
 
@@ -41,3 +40,6 @@ export interface CreatePaymentWizardProps {
   patients: Patient[];
   paymentToEdit?: Payment | null;
 }
+
+// Re-export Patient type for convenience
+export type { Patient };
