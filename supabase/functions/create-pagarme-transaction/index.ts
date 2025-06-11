@@ -76,25 +76,10 @@ serve(async (req) => {
     const psychologistAmount = Math.round(totalAmount * 0.9)
     const platformAmount = totalAmount - psychologistAmount
 
-    // Build transaction data
-    const transactionData = {
+    // Build the charge object with split rules
+    const chargeData = {
       amount: totalAmount,
       payment_method: payment_method,
-      customer: {
-        name: payment.patients?.full_name || 'Cliente',
-        email: payment.patients?.email || user.email,
-        document: payment.patients?.cpf?.replace(/\D/g, '') || '',
-        type: 'individual'
-      },
-      items: [
-        {
-          id: payment_id,
-          title: payment.description || 'Consulta psicológica',
-          unit_price: totalAmount,
-          quantity: 1,
-          tangible: false
-        }
-      ],
       split_rules: [
         {
           recipient_id: profile.pagarme_recipient_id,
@@ -111,13 +96,13 @@ serve(async (req) => {
       ]
     }
 
-    // Add payment method specific data
+    // Add payment method specific data to charge
     if (payment_method === 'pix') {
-      transactionData.pix = {
+      chargeData.pix = {
         expires_in: 3600 // 1 hour expiration
       }
     } else if (payment_method === 'credit_card' && card_data) {
-      transactionData.card = {
+      chargeData.card = {
         number: card_data.number,
         holder_name: card_data.holder_name,
         exp_month: card_data.exp_month,
@@ -126,19 +111,42 @@ serve(async (req) => {
       }
     }
 
-    console.log('Creating Pagar.me transaction:', {
-      ...transactionData,
-      card: transactionData.card ? { ...transactionData.card, number: '****', cvv: '***' } : undefined
+    // Build order data using Orders API structure
+    const orderData = {
+      customer: {
+        name: payment.patients?.full_name || 'Cliente',
+        email: payment.patients?.email || user.email,
+        document: payment.patients?.cpf?.replace(/\D/g, '') || '',
+        type: 'individual'
+      },
+      items: [
+        {
+          id: payment_id,
+          title: payment.description || 'Consulta psicológica',
+          unit_price: totalAmount,
+          quantity: 1,
+          tangible: false
+        }
+      ],
+      charges: [chargeData]
+    }
+
+    console.log('Creating Pagar.me order:', {
+      ...orderData,
+      charges: orderData.charges.map(charge => ({
+        ...charge,
+        card: charge.card ? { ...charge.card, number: '****', cvv: '***' } : undefined
+      }))
     })
 
-    // Create transaction on Pagar.me
-    const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/transactions', {
+    // Create order on Pagar.me using Orders API
+    const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/orders', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${btoa(pagarmeApiKey + ':')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(transactionData)
+      body: JSON.stringify(orderData)
     })
 
     if (!pagarmeResponse.ok) {
@@ -147,17 +155,30 @@ serve(async (req) => {
       throw new Error(`Pagar.me API error: ${pagarmeResponse.status} - ${errorData}`)
     }
 
-    const transaction = await pagarmeResponse.json()
-    console.log('Pagar.me transaction created:', transaction)
+    const order = await pagarmeResponse.json()
+    console.log('Pagar.me order created:', order)
+
+    // Extract transaction details from the order response
+    const charge = order.charges?.[0]
+    const transaction = charge?.last_transaction
+
+    if (!charge || !transaction) {
+      throw new Error('Invalid order response from Pagar.me')
+    }
 
     // Update payment with Pagar.me data
     const updateData: any = {
-      pagarme_transaction_id: transaction.id,
+      pagarme_transaction_id: charge.id,
       status: 'pending'
     }
 
+    // Extract payment details based on payment method
     if (payment_method === 'pix' && transaction.pix_qr_code) {
       updateData.pix_qr_code = transaction.pix_qr_code
+    }
+
+    if (transaction.url) {
+      updateData.payment_url = transaction.url
     }
 
     const { error: updateError } = await supabaseClient
@@ -173,10 +194,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        transaction_id: transaction.id,
-        status: transaction.status,
+        transaction_id: charge.id,
+        status: charge.status,
         pix_qr_code: transaction.pix_qr_code,
-        payment_url: transaction.charges?.[0]?.payment_method?.pix?.qr_code_url
+        payment_url: transaction.url
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -185,7 +206,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error creating transaction:', error)
+    console.error('Error creating order:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Internal server error',
