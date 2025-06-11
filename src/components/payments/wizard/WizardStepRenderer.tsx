@@ -7,6 +7,7 @@ import { WizardStep4PayerDetails } from './WizardStep4PayerDetails';
 import { WizardStep5Summary } from './WizardStep5Summary';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
+import type { Payment } from '@/types/payment';
 
 interface WizardStepRendererProps {
   currentStep: number;
@@ -17,6 +18,8 @@ interface WizardStepRendererProps {
   onPrevious: () => void;
   onSuccess?: () => void;
   onClose: () => void;
+  isEditMode?: boolean;
+  paymentToEdit?: Payment | null;
 }
 
 export function WizardStepRenderer({
@@ -27,7 +30,9 @@ export function WizardStepRenderer({
   onNext,
   onPrevious,
   onSuccess,
-  onClose
+  onClose,
+  isEditMode = false,
+  paymentToEdit = null
 }: WizardStepRendererProps) {
   switch (currentStep) {
     case 0:
@@ -78,6 +83,8 @@ export function WizardStepRenderer({
           onClose={onClose}
           onPrevious={onPrevious}
           updateFormData={updateFormData}
+          isEditMode={isEditMode}
+          paymentToEdit={paymentToEdit}
         />
       );
     default:

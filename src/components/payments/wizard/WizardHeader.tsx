@@ -8,15 +8,22 @@ interface WizardHeaderProps {
   totalSteps: number;
   stepTitle: string;
   onClose: () => void;
+  wizardTitle?: string;
 }
 
-export function WizardHeader({ currentStep, totalSteps, stepTitle, onClose }: WizardHeaderProps) {
+export function WizardHeader({ 
+  currentStep, 
+  totalSteps, 
+  stepTitle, 
+  onClose, 
+  wizardTitle = 'Nova Cobrança' 
+}: WizardHeaderProps) {
   const progress = (currentStep / totalSteps) * 100;
 
   return (
     <div className="border-b pb-4">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Nova Cobrança</h2>
+        <h2 className="text-xl font-semibold">{wizardTitle}</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
