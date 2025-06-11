@@ -10,15 +10,16 @@ interface PaymentsListProps {
   isLoading: boolean;
   onDeletePayment: (paymentId: string) => void;
   onEditPayment: (payment: Payment) => void;
+  hasFilters?: boolean;
 }
 
 export const PaymentsList = ({
   payments,
   isLoading,
   onDeletePayment,
-  onEditPayment
+  onEditPayment,
+  hasFilters = false
 }: PaymentsListProps) => {
-  const hasFilters = false; // Since this is legacy, we'll assume no filters
   
   const onNewPayment = () => {
     // Legacy function - not implemented in this version

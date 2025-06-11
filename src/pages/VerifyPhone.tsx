@@ -111,11 +111,11 @@ const VerifyPhone = () => {
       localStorage.setItem('temp_otp', newOtp);
       localStorage.setItem('temp_otp_timestamp', Date.now().toString());
 
-      // Enviar novo OTP via WhatsApp usando template correto
+      // Enviar novo OTP via WhatsApp usando template correto - CORREÇÃO: usar objeto
       sendWhatsApp({
         to: profile.phone,
         templateSid: 'TWILIO_TEMPLATE_SID_OTP',
-        templateVariables: [newOtp],
+        templateVariables: { "1": newOtp },
         messageType: 'otp_verification'
       });
 

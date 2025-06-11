@@ -62,11 +62,11 @@ const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ childre
             localStorage.setItem('temp_otp', otp);
             localStorage.setItem('temp_otp_timestamp', Date.now().toString());
             
-            // Enviar OTP via WhatsApp usando template correto
+            // Enviar OTP via WhatsApp usando template correto - CORREÇÃO: usar objeto
             sendWhatsApp({
               to: profile.phone,
               templateSid: 'TWILIO_TEMPLATE_SID_OTP',
-              templateVariables: [otp],
+              templateVariables: { "1": otp },
               messageType: 'otp_verification'
             });
 

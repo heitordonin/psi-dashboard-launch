@@ -1,9 +1,11 @@
 
 import { useState } from "react";
 import { usePaymentData } from "@/hooks/usePaymentData";
+import { usePaymentFilters } from "@/hooks/usePaymentFilters";
 import { PaymentsHeader } from "./PaymentsHeader";
 import { PaymentFormWrapper } from "./PaymentFormWrapper";
 import { PaymentsList } from "./PaymentsList";
+import { PaymentsSearchFilter } from "./PaymentsSearchFilter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Payment } from "@/types/payment";
 
@@ -14,7 +16,18 @@ interface PaymentsContentProps {
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const { payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
+  const { payments, paymentsLoading, deletePaymentMutation, patients } = usePaymentData(userId);
+  
+  const {
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    getFilteredPayments,
+    hasFilters
+  } = usePaymentFilters();
+
+  const filteredPayments = getFilteredPayments(payments);
 
   const handleSavePayment = () => {
     setShowForm(false);
@@ -43,6 +56,14 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         totalPayments={payments.length}
       />
 
+      <PaymentsSearchFilter
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filters={filters}
+        onFilterChange={setFilters}
+        patients={patients}
+      />
+
       <Dialog open={showForm} onOpenChange={handleCloseForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -59,10 +80,11 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
       </Dialog>
 
       <PaymentsList 
-        payments={payments}
+        payments={filteredPayments}
         isLoading={paymentsLoading}
         onDeletePayment={deletePaymentMutation.mutate}
         onEditPayment={handleEditPayment}
+        hasFilters={hasFilters}
       />
     </div>
   );
