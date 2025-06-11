@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 interface Patient {
   id: string;
   full_name: string;
+  patient_type?: "individual" | "company";
+  cpf?: string;
+  cnpj?: string;
   guardian_cpf?: string;
   is_payment_from_abroad?: boolean;
 }
@@ -49,11 +52,18 @@ export const PatientAndPayer = ({
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  const selectedPatient = patients.find(p => p.id === formData.patient_id);
+  const isCompanyPatient = selectedPatient?.patient_type === 'company';
+
   const handlePatientChange = (patientId: string) => {
     setFormData({ ...formData, patient_id: patientId });
     const patient = patients.find(p => p.id === patientId);
     
-    if (patient?.guardian_cpf && paymentTitular === 'other') {
+    // Se for empresa, define automaticamente como 'patient' e limpa o CPF
+    if (patient?.patient_type === 'company') {
+      setPaymentTitular('patient');
+      setPayerCpf('');
+    } else if (patient?.guardian_cpf && paymentTitular === 'other') {
       setPayerCpf(patient.guardian_cpf);
     } else if (paymentTitular === 'other' && !patient?.guardian_cpf) {
       setPayerCpf('');
@@ -94,38 +104,42 @@ export const PatientAndPayer = ({
         {errors.patient_id && <p className="text-red-500 text-sm mt-1">{errors.patient_id}</p>}
       </div>
 
-      <div>
-        <Label>CPF do Titular *</Label>
-        <RadioGroup
-          value={paymentTitular}
-          onValueChange={handleTitularChange}
-          className="mt-2"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="patient" id="patient" />
-            <Label htmlFor="patient">CPF do Paciente</Label>
+      {!isCompanyPatient && (
+        <>
+          <div>
+            <Label>CPF do Titular *</Label>
+            <RadioGroup
+              value={paymentTitular}
+              onValueChange={handleTitularChange}
+              className="mt-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="patient" id="patient" />
+                <Label htmlFor="patient">CPF do Paciente</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="other" id="other" />
+                <Label htmlFor="other">Outro CPF</Label>
+              </div>
+            </RadioGroup>
           </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="other" id="other" />
-            <Label htmlFor="other">Outro CPF</Label>
-          </div>
-        </RadioGroup>
-      </div>
 
-      {paymentTitular === 'other' && (
-        <div>
-          <Label htmlFor="payer_cpf">CPF do Titular *</Label>
-          <Input
-            id="payer_cpf"
-            type="text"
-            value={formatCpf(payerCpf)}
-            onChange={(e) => setPayerCpf(e.target.value)}
-            placeholder="000.000.000-00"
-            maxLength={14}
-            className={errors.payerCpf ? 'border-red-500' : ''}
-          />
-          {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
-        </div>
+          {paymentTitular === 'other' && (
+            <div>
+              <Label htmlFor="payer_cpf">CPF do Titular *</Label>
+              <Input
+                id="payer_cpf"
+                type="text"
+                value={formatCpf(payerCpf)}
+                onChange={(e) => setPayerCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={errors.payerCpf ? 'border-red-500' : ''}
+              />
+              {errors.payerCpf && <p className="text-red-500 text-sm mt-1">{errors.payerCpf}</p>}
+            </div>
+          )}
+        </>
       )}
     </>
   );
