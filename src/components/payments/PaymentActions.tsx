@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,7 +79,8 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
   return (
     <div className="flex flex-col gap-3 lg:items-end">
       <div className="flex items-center gap-2">
-        {payment.status !== 'paid' && (
+        {/* Only show "Mark as Paid" button for pending manual charges */}
+        {payment.status !== 'paid' && !payment.has_payment_link && (
           <Button
             variant="outline"
             size="sm"
