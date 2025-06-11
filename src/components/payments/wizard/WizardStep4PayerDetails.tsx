@@ -19,11 +19,25 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
 
   const handlePatientChange = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
+    
+    // Use CNPJ for company patients, CPF for individual patients
+    const payerDocument = patient?.patient_type === 'company' 
+      ? patient?.cnpj || '' 
+      : patient?.cpf || '';
+    
     updateFormData({ 
       patient_id: patientId,
-      payer_cpf: patient?.cpf || '',
+      payer_cpf: payerDocument,
       email: patient?.email || ''
     });
+  };
+
+  const getDocumentLabel = () => {
+    return selectedPatient?.patient_type === 'company' ? 'CNPJ do Pagador' : 'CPF do Pagador';
+  };
+
+  const getDocumentPlaceholder = () => {
+    return selectedPatient?.patient_type === 'company' ? '00.000.000/0000-00' : '000.000.000-00';
   };
 
   return (
@@ -42,6 +56,7 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
                 {patients.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
                     {patient.full_name}
+                    {patient.patient_type === 'company' && ' (PJ)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -49,15 +64,15 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
           </div>
 
           <div>
-            <Label htmlFor="payer_cpf">CPF/CNPJ do Pagador</Label>
+            <Label htmlFor="payer_cpf">{getDocumentLabel()}</Label>
             <Input
               id="payer_cpf"
               value={formData.payer_cpf}
               onChange={(e) => updateFormData({ payer_cpf: e.target.value })}
-              placeholder="000.000.000-00"
+              placeholder={getDocumentPlaceholder()}
             />
             <p className="text-sm text-muted-foreground mt-1">
-              Pode ser diferente do CPF do paciente (ex: responsável financeiro)
+              Pode ser diferente do {selectedPatient?.patient_type === 'company' ? 'CNPJ' : 'CPF'} do paciente (ex: responsável financeiro)
             </p>
           </div>
 

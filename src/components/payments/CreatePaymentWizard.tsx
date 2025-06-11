@@ -102,6 +102,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
           onPrevious={prevStep}
           onNext={nextStep}
           isNextDisabled={isNextDisabled()}
+          onClose={handleClose}
         />
       </DialogContent>
     </Dialog>

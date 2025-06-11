@@ -2,9 +2,10 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
+import { PaymentDescriptionField } from '@/components/payments/PaymentDescriptionField';
 import type { WizardFormData } from './types';
 
 interface WizardStep2Props {
@@ -28,17 +29,10 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
         <h3 className="text-lg font-medium mb-4">Detalhes do Pagamento</h3>
         
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="amount">Valor (R$)</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              value={formData.amount || ''}
-              onChange={(e) => updateFormData({ amount: parseFloat(e.target.value) || 0 })}
-              placeholder="0,00"
-            />
-          </div>
+          <PaymentAmountField
+            value={formData.amount}
+            onChange={(value) => updateFormData({ amount: value })}
+          />
 
           <div>
             <Label htmlFor="due_date">Data de Vencimento</Label>
@@ -50,16 +44,10 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
             />
           </div>
 
-          <div>
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => updateFormData({ description: e.target.value })}
-              placeholder="Descrição da cobrança..."
-              rows={3}
-            />
-          </div>
+          <PaymentDescriptionField
+            value={formData.description}
+            onChange={(value) => updateFormData({ description: value })}
+          />
 
           {/* Only show payment methods for link charges */}
           {formData.chargeType === 'link' && (

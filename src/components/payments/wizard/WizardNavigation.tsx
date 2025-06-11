@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface WizardNavigationProps {
   currentStep: number;
@@ -10,6 +10,7 @@ interface WizardNavigationProps {
   isNextDisabled?: boolean;
   isLoading?: boolean;
   nextButtonText?: string;
+  onClose?: () => void;
 }
 
 export function WizardNavigation({ 
@@ -19,11 +20,15 @@ export function WizardNavigation({
   onNext,
   isNextDisabled = false,
   isLoading = false,
-  nextButtonText = "Próximo"
+  nextButtonText = "Próximo",
+  onClose
 }: WizardNavigationProps) {
+  const showBackButton = currentStep > 0;
+  const showCancelButton = currentStep === 0 && onClose;
+
   return (
     <div className="flex justify-between pt-4 border-t">
-      {currentStep > 1 ? (
+      {showBackButton ? (
         <Button
           variant="outline"
           onClick={onPrevious}
@@ -32,6 +37,16 @@ export function WizardNavigation({
         >
           <ChevronLeft className="h-4 w-4" />
           Voltar
+        </Button>
+      ) : showCancelButton ? (
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="flex items-center gap-2"
+          disabled={isLoading}
+        >
+          <X className="h-4 w-4" />
+          Cancelar
         </Button>
       ) : (
         <div />
