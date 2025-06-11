@@ -6,15 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
-import { useWhatsApp } from '@/hooks/useWhatsApp';
-import { generateOTP } from '@/utils/otpGenerator';
 import { toast } from 'sonner';
 import { Smartphone, RefreshCw } from 'lucide-react';
 
 const VerifyPhone = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { sendWhatsApp } = useWhatsApp();
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -41,10 +38,6 @@ const VerifyPhone = () => {
       }
 
       if (data?.success) {
-        // Limpar OTP do localStorage após verificação bem-sucedida
-        localStorage.removeItem('temp_otp');
-        localStorage.removeItem('temp_otp_timestamp');
-
         toast.success('Telefone verificado com sucesso!');
         navigate('/dashboard');
       } else {
@@ -79,21 +72,18 @@ const VerifyPhone = () => {
         return;
       }
 
-      const newOtp = generateOTP();
-      
-      localStorage.setItem('temp_otp', newOtp);
-      localStorage.setItem('temp_otp_timestamp', Date.now().toString());
-
-      // Enviar novo OTP via WhatsApp usando template correto
-      sendWhatsApp({
-        to: profile.phone,
-        templateSid: 'TWILIO_TEMPLATE_SID_OTP',
-        templateVariables: { "1": newOtp },
-        messageType: 'otp_verification'
+      // Chamar a edge function para reenviar o OTP
+      const { data: otpData, error: otpError } = await supabase.functions.invoke('trigger-phone-otp', {
+        body: { phone: profile.phone }
       });
 
-      toast.success('Novo código enviado para seu WhatsApp!');
-      setOtp('');
+      if (otpError) {
+        console.error('Erro ao reenviar código:', otpError);
+        toast.error('Erro ao reenviar código. Tente novamente.');
+      } else {
+        toast.success('Novo código enviado para seu WhatsApp!');
+        setOtp('');
+      }
     } catch (error: any) {
       console.error('Erro ao reenviar código:', error);
       toast.error('Erro ao reenviar código. Tente novamente.');

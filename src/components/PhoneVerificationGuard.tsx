@@ -1,127 +1,135 @@
-import React, { useEffect, useState } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useWhatsApp } from '@/hooks/useWhatsApp';
-import { generateOTP } from '@/utils/otpGenerator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PhoneVerificationGuardProps {
   children: React.ReactNode;
 }
 
-const PhoneVerificationGuard: React.FC<PhoneVerificationGuardProps> = ({ children }) => {
-  const navigate = useNavigate();
+const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
   const { user, isLoading } = useAuth();
-  const { sendWhatsApp } = useWhatsApp();
-  const [isCheckingVerification, setIsCheckingVerification] = useState(true);
-  const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   useEffect(() => {
-    const checkPhoneVerification = async () => {
-      if (!user?.id) {
-        setIsCheckingVerification(false);
-        return;
-      }
-
-      try {
-        console.log('Verificando status de verificação do telefone para usuário:', user.id);
-        
-        // Buscar o perfil do usuário
-        const { data: profile, error } = await supabase
+    const fetchProfile = async () => {
+      if (user) {
+        const { data, error } = await supabase
           .from('profiles')
-          .select('phone_verified, phone')
+          .select('phone, phone_verified')
           .eq('id', user.id)
           .single();
 
         if (error) {
-          console.error('Erro ao buscar perfil:', error);
-          setIsCheckingVerification(false);
-          return;
-        }
-
-        console.log('Dados do perfil:', profile);
-
-        // Se o usuário não tem telefone cadastrado, redirecionar para atualizar
-        if (!profile?.phone) {
-          console.log('Usuário sem telefone cadastrado, redirecionando para /update-phone');
-          navigate('/update-phone');
-          return;
-        }
-
-        // Se o telefone não está verificado, enviar OTP e redirecionar
-        if (!profile?.phone_verified) {
-          console.log('Telefone não verificado, enviando OTP...');
-          
-          try {
-            // Gerar OTP e enviar via template
-            const otp = generateOTP();
-            
-            // Armazenar OTP temporariamente no localStorage (em produção, usar base de dados)
-            localStorage.setItem('temp_otp', otp);
-            localStorage.setItem('temp_otp_timestamp', Date.now().toString());
-            
-            // Enviar OTP via WhatsApp usando template correto - CORREÇÃO: usar objeto
-            sendWhatsApp({
-              to: profile.phone,
-              templateSid: 'TWILIO_TEMPLATE_SID_OTP',
-              templateVariables: { "1": otp },
-              messageType: 'otp_verification'
-            });
-
-            toast.success('Código de verificação enviado para seu WhatsApp!');
-            navigate('/verify-phone');
-          } catch (otpSendError) {
-            console.error('Erro no envio do OTP:', otpSendError);
-            toast.error('Erro ao enviar código de verificação');
-          }
+          console.error('Error fetching profile:', error);
         } else {
-          // Telefone está verificado
-          setPhoneVerified(true);
+          setProfile(data);
         }
-      } catch (error) {
-        console.error('Erro na verificação do telefone:', error);
-      } finally {
-        setIsCheckingVerification(false);
+        setLoadingProfile(false);
       }
     };
 
     if (!isLoading && user) {
-      checkPhoneVerification();
-    } else if (!isLoading) {
-      setIsCheckingVerification(false);
+      fetchProfile();
     }
-  }, [user, isLoading, navigate, sendWhatsApp]);
+  }, [user, isLoading]);
 
-  // Mostrar loading enquanto verifica autenticação ou verificação do telefone
-  if (isLoading || isCheckingVerification) {
+  const handleSendOtp = async () => {
+    if (!profile?.phone) {
+      navigate('/update-phone');
+      return;
+    }
+
+    setSendingOtp(true);
+    try {
+      const { error } = await supabase.functions.invoke('trigger-phone-otp', {
+        body: { phone: profile.phone }
+      });
+
+      if (error) {
+        console.error('Erro ao enviar OTP:', error);
+        toast.error('Erro ao enviar código de verificação');
+      } else {
+        toast.success('Código enviado para seu WhatsApp!');
+        navigate('/verify-phone');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      toast.error('Erro ao enviar código de verificação');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  if (isLoading || loadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4">Verificando...</p>
+          <p className="mt-4">Carregando...</p>
         </div>
       </div>
     );
   }
 
-  // Se não há usuário, não renderizar nada (ProtectedRoute cuidará disso)
-  if (!user) {
+  // Se não tem telefone cadastrado, redireciona para cadastro
+  if (!profile?.phone) {
+    navigate('/update-phone');
     return null;
   }
 
-  // Se o telefone está verificado, renderizar children
-  if (phoneVerified === true) {
+  // Se o telefone já está verificado, renderiza o children
+  if (profile?.phone_verified) {
     return <>{children}</>;
   }
 
-  // Se chegou aqui, significa que estamos redirecionando
+  // Se o telefone não está verificado, mostra tela de verificação
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        <p className="mt-4">Redirecionando...</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+            <Smartphone className="h-6 w-6 text-blue-600" />
+          </div>
+          <CardTitle className="text-2xl font-bold">Verificação de WhatsApp</CardTitle>
+          <CardDescription>
+            Precisamos verificar seu número de WhatsApp para continuar
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Número cadastrado: <span className="font-medium">{profile.phone}</span>
+            </p>
+          </div>
+
+          <Button 
+            onClick={handleSendOtp} 
+            className="w-full" 
+            disabled={sendingOtp}
+          >
+            {sendingOtp ? 'Enviando código...' : 'Enviar código de verificação'}
+          </Button>
+
+          <div className="text-center">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/update-phone')}
+              className="text-sm"
+            >
+              Alterar número de telefone
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

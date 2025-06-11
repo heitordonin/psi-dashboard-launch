@@ -13,11 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json()
+    const { phone } = await req.json()
 
-    if (!token) {
+    if (!phone) {
       return new Response(
-        JSON.stringify({ error: 'Token é obrigatório' }),
+        JSON.stringify({ error: 'Número de telefone é obrigatório' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -47,39 +47,18 @@ serve(async (req) => {
       )
     }
 
-    // Verificar o token OTP usando o sistema nativo do Supabase
-    const { data: verifyData, error: verifyError } = await supabaseClient.auth.verifyOtp({
-      token,
-      type: 'phone'
+    // Gerar OTP usando o sistema nativo do Supabase
+    const { data, error } = await supabaseClient.auth.signInWithOtp({
+      phone: phone,
+      options: {
+        channel: 'whatsapp'
+      }
     })
 
-    if (verifyError) {
-      console.error('Erro na verificação OTP:', verifyError)
+    if (error) {
+      console.error('Erro ao enviar OTP:', error)
       return new Response(
-        JSON.stringify({ error: 'Código inválido ou expirado' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Criar cliente admin para atualizar o perfil
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Atualizar o perfil do usuário marcando o telefone como verificado
-    const { error: updateError } = await supabaseAdmin
-      .from('profiles')
-      .update({ phone_verified: true })
-      .eq('id', user.id)
-
-    if (updateError) {
-      console.error('Erro ao atualizar perfil:', updateError)
-      return new Response(
-        JSON.stringify({ error: 'Erro interno do servidor' }),
+        JSON.stringify({ error: 'Erro ao enviar código de verificação' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500 
@@ -87,8 +66,10 @@ serve(async (req) => {
       )
     }
 
+    console.log('OTP enviado com sucesso:', data)
+
     return new Response(
-      JSON.stringify({ success: true, message: 'Telefone verificado com sucesso!' }),
+      JSON.stringify({ success: true, message: 'Código enviado com sucesso!' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -96,7 +77,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Erro na função verify-phone-otp:', error)
+    console.error('Erro na função trigger-phone-otp:', error)
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
       { 

@@ -15,6 +15,7 @@ import { Crown, User, Mail } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { formatPhone } from "@/utils/inputFormatters";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -51,11 +52,19 @@ const Profile = () => {
     fetchProfile();
   }, [user]);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setProfile({ ...profile, phone: formatted });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
+      // Limpar o telefone removendo caracteres não numéricos
+      const cleanedPhone = profile.phone ? profile.phone.replace(/\D/g, '') : '';
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -65,6 +74,7 @@ const Profile = () => {
           birth_date: profile.birth_date,
           crp_number: profile.crp_number,
           nit_nis_pis: profile.nit_nis_pis,
+          phone: cleanedPhone,
           email_reminders_enabled: profile.email_reminders_enabled
         })
         .eq('id', user?.id);
@@ -169,6 +179,20 @@ const Profile = () => {
                         </div>
 
                         <div>
+                          <Label htmlFor="phone">Telefone</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={profile.phone ? formatPhone(profile.phone) : ''}
+                            onChange={handlePhoneChange}
+                            placeholder="(11) 99999-9999"
+                            maxLength={15}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
                           <Label htmlFor="birth_date">Data de Nascimento</Label>
                           <Input
                             id="birth_date"
@@ -177,9 +201,7 @@ const Profile = () => {
                             onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
                           />
                         </div>
-                      </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="crp_number">Número do CRP</Label>
                           <Input
@@ -189,16 +211,16 @@ const Profile = () => {
                             placeholder="CRP 00/000000"
                           />
                         </div>
+                      </div>
 
-                        <div>
-                          <Label htmlFor="nit_nis_pis">NIT/NIS/PIS</Label>
-                          <Input
-                            id="nit_nis_pis"
-                            value={profile.nit_nis_pis || ''}
-                            onChange={(e) => setProfile({ ...profile, nit_nis_pis: e.target.value })}
-                            placeholder="000.00000.00-0"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor="nit_nis_pis">NIT/NIS/PIS</Label>
+                        <Input
+                          id="nit_nis_pis"
+                          value={profile.nit_nis_pis || ''}
+                          onChange={(e) => setProfile({ ...profile, nit_nis_pis: e.target.value })}
+                          placeholder="000.00000.00-0"
+                        />
                       </div>
 
                       <div className="flex justify-end pt-4">
