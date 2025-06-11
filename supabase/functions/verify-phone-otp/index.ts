@@ -33,19 +33,16 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Verificar o token OTP
-    const { data: verifyData, error: verifyError } = await supabaseClient.auth.verifyOtp({
-      token,
-      type: 'phone'
-    })
+    // Obter o usuário autenticado
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
 
-    if (verifyError) {
-      console.error('Erro na verificação OTP:', verifyError)
+    if (userError || !user) {
+      console.error('Erro ao obter usuário:', userError)
       return new Response(
-        JSON.stringify({ error: 'Código inválido ou expirado' }),
+        JSON.stringify({ error: 'Usuário não autenticado' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
+          status: 401 
         }
       )
     }
@@ -60,7 +57,7 @@ serve(async (req) => {
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ phone_verified: true })
-      .eq('id', verifyData.user?.id)
+      .eq('id', user.id)
 
     if (updateError) {
       console.error('Erro ao atualizar perfil:', updateError)

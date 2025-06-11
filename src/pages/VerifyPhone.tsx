@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -27,47 +28,28 @@ const VerifyPhone = () => {
     setIsVerifying(true);
 
     try {
-      const storedOtp = localStorage.getItem('temp_otp');
-      const timestamp = localStorage.getItem('temp_otp_timestamp');
-      
-      if (!storedOtp || !timestamp) {
-        toast.error('Código expirado. Solicite um novo código.');
-        setIsVerifying(false);
-        return;
-      }
-
-      const now = Date.now();
-      const otpTime = parseInt(timestamp);
-      const tenMinutes = 10 * 60 * 1000;
-      
-      if (now - otpTime > tenMinutes) {
-        toast.error('Código expirado. Solicite um novo código.');
-        localStorage.removeItem('temp_otp');
-        localStorage.removeItem('temp_otp_timestamp');
-        setIsVerifying(false);
-        return;
-      }
-
-      if (otp !== storedOtp) {
-        toast.error('Código inválido. Tente novamente.');
-        setIsVerifying(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ phone_verified: true })
-        .eq('id', user?.id);
+      // Chamar a edge function para verificar o OTP
+      const { data, error } = await supabase.functions.invoke('verify-phone-otp', {
+        body: { token: otp }
+      });
 
       if (error) {
-        throw error;
+        console.error('Erro na verificação:', error);
+        toast.error(error.message || 'Erro ao verificar código');
+        setIsVerifying(false);
+        return;
       }
 
-      localStorage.removeItem('temp_otp');
-      localStorage.removeItem('temp_otp_timestamp');
+      if (data?.success) {
+        // Limpar OTP do localStorage após verificação bem-sucedida
+        localStorage.removeItem('temp_otp');
+        localStorage.removeItem('temp_otp_timestamp');
 
-      toast.success('Telefone verificado com sucesso!');
-      navigate('/dashboard');
+        toast.success('Telefone verificado com sucesso!');
+        navigate('/dashboard');
+      } else {
+        toast.error('Código inválido ou expirado');
+      }
     } catch (error: any) {
       console.error('Erro na verificação:', error);
       toast.error('Erro interno. Tente novamente.');
@@ -102,7 +84,7 @@ const VerifyPhone = () => {
       localStorage.setItem('temp_otp', newOtp);
       localStorage.setItem('temp_otp_timestamp', Date.now().toString());
 
-      // Enviar novo OTP via WhatsApp usando template correto - CORREÇÃO: usar objeto
+      // Enviar novo OTP via WhatsApp usando template correto
       sendWhatsApp({
         to: profile.phone,
         templateSid: 'TWILIO_TEMPLATE_SID_OTP',
