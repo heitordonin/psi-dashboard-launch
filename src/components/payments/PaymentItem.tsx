@@ -181,11 +181,12 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               </Button>
             </div>
 
-            {/* Use PaymentButtons component */}
+            {/* Use PaymentButtons component with deleteDisabled prop */}
             <PaymentButtons
               payment={payment}
               onEdit={onEdit}
               onDelete={onDelete}
+              deleteDisabled={payment.status === 'paid'}
             />
           </div>
         </div>
