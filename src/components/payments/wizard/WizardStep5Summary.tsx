@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, CreditCard, QrCode, Mail, MailX } from 'lucide-react';
-import { usePaymentFormMutations } from '../PaymentFormMutations';
+import { usePaymentMutations } from '../PaymentFormMutations';
 import { toast } from 'sonner';
 import type { WizardFormData } from '../CreatePaymentWizard';
 import type { Patient } from '@/types/patient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface WizardStep5SummaryProps {
   formData: WizardFormData;
@@ -21,7 +22,8 @@ export function WizardStep5Summary({
   onSuccess, 
   onClose 
 }: WizardStep5SummaryProps) {
-  const { createPaymentMutation } = usePaymentFormMutations();
+  const { user } = useAuth();
+  const { createPaymentMutation } = usePaymentMutations(user?.id);
   
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
 
@@ -32,19 +34,17 @@ export function WizardStep5Summary({
     }
 
     // Transform wizard data to payment form format
-    const paymentData = {
+    const paymentFormData = {
       patient_id: formData.patient_id,
       amount: formData.amount,
       due_date: formData.due_date,
       description: formData.description,
       payer_cpf: formData.paymentTitular === 'other' ? formData.payer_cpf : '',
-      status: formData.isReceived ? 'paid' as const : 'pending' as const,
-      received_date: formData.isReceived ? formData.receivedDate : null
     };
 
     try {
       await createPaymentMutation.mutateAsync({
-        paymentData,
+        formData: paymentFormData,
         isReceived: formData.isReceived,
         receivedDate: formData.receivedDate,
         paymentTitular: formData.paymentTitular
@@ -68,13 +68,6 @@ export function WizardStep5Summary({
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('pt-BR');
-  };
-
-  const getPaymentMethods = () => {
-    const methods = [];
-    if (formData.paymentMethods.boleto) methods.push('Boleto/PIX');
-    if (formData.paymentMethods.creditCard) methods.push('Cartão');
-    return methods.join(', ') || 'Nenhuma selecionada';
   };
 
   return (

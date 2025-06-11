@@ -88,12 +88,13 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
       />
 
       {/* Edit Payment Form (existing modal) */}
-      <PaymentFormWrapper
-        isOpen={showPaymentForm}
-        onClose={handleClosePaymentForm}
-        payment={editingPayment}
-        patients={patients}
-      />
+      {showPaymentForm && editingPayment && (
+        <PaymentFormWrapper
+          onClose={handleClosePaymentForm}
+          payment={editingPayment}
+          patients={patients}
+        />
+      )}
     </div>
   );
 };

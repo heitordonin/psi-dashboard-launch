@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useMemo } from "react";
 import type { PaymentWithPatient } from "@/types/payment";
 
 export interface PaymentFilters {
@@ -11,18 +11,12 @@ export interface PaymentFilters {
   maxAmount: string;
 }
 
-export const usePaymentFilters = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<PaymentFilters>({
-    patientId: "",
-    startDate: "",
-    endDate: "",
-    status: "",
-    minAmount: "",
-    maxAmount: "",
-  });
-
-  const getFilteredPayments = (payments: PaymentWithPatient[]) => {
+export const usePaymentFilters = (
+  payments: PaymentWithPatient[],
+  searchTerm: string,
+  filters: PaymentFilters
+) => {
+  const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
       const patientName = payment.patients?.full_name || '';
       const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,16 +50,7 @@ export const usePaymentFilters = () => {
 
       return matchesSearch && matchesPatientId && matchesStatus && matchesDateRange && matchesAmountRange;
     });
-  };
+  }, [payments, searchTerm, filters]);
 
-  const hasFilters = searchTerm || filters.patientId || filters.status || filters.startDate || filters.endDate || filters.minAmount || filters.maxAmount;
-
-  return {
-    searchTerm,
-    setSearchTerm,
-    filters,
-    setFilters,
-    getFilteredPayments,
-    hasFilters: !!hasFilters
-  };
+  return filteredPayments;
 };
