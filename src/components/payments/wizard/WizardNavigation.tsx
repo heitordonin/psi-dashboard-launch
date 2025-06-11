@@ -27,11 +27,6 @@ export function WizardNavigation({
   const showCancelButton = currentStep === 0 && onClose;
   const isLastStep = currentStep === totalSteps - 1;
 
-  // Não mostra navegação na última etapa (Step 5 tem seus próprios botões)
-  if (isLastStep) {
-    return null;
-  }
-
   return (
     <div className="flex justify-between pt-4 border-t">
       {showBackButton ? (
@@ -58,14 +53,16 @@ export function WizardNavigation({
         <div />
       )}
       
-      <Button
-        onClick={onNext}
-        className="flex items-center gap-2"
-        disabled={isNextDisabled || isLoading}
-      >
-        {isLoading ? 'Processando...' : nextButtonText}
-        {!isLoading && <ChevronRight className="h-4 w-4" />}
-      </Button>
+      {!isLastStep && (
+        <Button
+          onClick={onNext}
+          className="flex items-center gap-2"
+          disabled={isNextDisabled || isLoading}
+        >
+          {isLoading ? 'Processando...' : nextButtonText}
+          {!isLoading && <ChevronRight className="h-4 w-4" />}
+        </Button>
+      )}
     </div>
   );
 }

@@ -83,8 +83,8 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
   };
 
   const getTotalSteps = () => {
-    // For manual charges, we skip step 3 (Fees and Interest)
-    return formData.chargeType === 'manual' ? 5 : 6;
+    // Always return 6 steps total (0-5 indexing)
+    return 6;
   };
 
   const nextStep = () => {
