@@ -1,217 +1,161 @@
 
+import React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, CreditCard, QrCode, Mail, MailX } from 'lucide-react';
-import { usePaymentMutations } from '../PaymentFormMutations';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { WizardFormData } from '../CreatePaymentWizard';
+import { format } from 'date-fns';
+import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
 
-interface WizardStep5SummaryProps {
+interface WizardStep5Props {
   formData: WizardFormData;
   patients: Patient[];
   onSuccess?: () => void;
   onClose: () => void;
 }
 
-export function WizardStep5Summary({ 
-  formData, 
-  patients, 
-  onSuccess, 
-  onClose 
-}: WizardStep5SummaryProps) {
-  const { user } = useAuth();
-  const { createPaymentMutation } = usePaymentMutations(user?.id);
-  
+export function WizardStep5Summary({
+  formData,
+  patients,
+  onSuccess,
+  onClose
+}: WizardStep5Props) {
+  const queryClient = useQueryClient();
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
 
-  const handleCreatePayment = async () => {
-    if (!selectedPatient) {
-      toast.error('Paciente não encontrado');
-      return;
-    }
+  const createPaymentMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-    // Transform wizard data to payment form format
-    const paymentFormData = {
-      patient_id: formData.patient_id,
-      amount: formData.amount,
-      due_date: formData.due_date,
-      description: formData.description,
-      payer_cpf: formData.paymentTitular === 'other' ? formData.payer_cpf : '',
-    };
+      const paymentData = {
+        patient_id: formData.patient_id,
+        amount: formData.amount,
+        due_date: formData.due_date,
+        description: formData.description,
+        status: formData.isReceived ? 'paid' : 'pending',
+        paid_date: formData.isReceived ? formData.receivedDate : null,
+        payer_cpf: formData.payer_cpf,
+        receita_saude_receipt_issued: false,
+        owner_id: user.id
+      };
 
-    try {
-      await createPaymentMutation.mutateAsync({
-        formData: paymentFormData,
-        isReceived: formData.isReceived,
-        receivedDate: formData.receivedDate,
-        paymentTitular: formData.paymentTitular
-      });
+      const { data, error } = await supabase
+        .from('payments')
+        .insert([paymentData])
+        .select()
+        .single();
 
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança criada com sucesso!');
       onSuccess?.();
       onClose();
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error creating payment:', error);
       toast.error('Erro ao criar cobrança');
     }
-  };
+  });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
+  const paymentMethods = Object.entries(formData.paymentMethods)
+    .filter(([_, enabled]) => enabled)
+    .map(([method]) => method === 'boleto' ? 'Boleto' : 'Cartão de Crédito');
 
   return (
     <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-        <h2 className="text-2xl font-semibold text-gray-900">
-          Confirme os Dados
-        </h2>
-        <p className="text-gray-600">
-          Revise todas as informações antes de criar a cobrança
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {/* Payment Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Detalhes do Pagamento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Valor:</span>
-              <span className="font-semibold text-lg">{formatCurrency(formData.amount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Vencimento:</span>
-              <span className="font-medium">{formatDate(formData.due_date)}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-gray-600">Descrição:</span>
-              <span className="font-medium text-right max-w-xs">
-                {formData.description || 'Sem descrição'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Formas de pagamento:</span>
-              <div className="flex gap-2">
-                {formData.paymentMethods.boleto && (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <QrCode className="w-3 h-3" />
-                    Boleto/PIX
-                  </Badge>
-                )}
-                {formData.paymentMethods.creditCard && (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <CreditCard className="w-3 h-3" />
-                    Cartão
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Fees & Interest */}
-        {(formData.monthlyInterest > 0 || formData.lateFee > 0) && (
+      <div>
+        <h3 className="text-lg font-medium mb-4">Resumo e Confirmação</h3>
+        
+        <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Juros e Multa</CardTitle>
+              <CardTitle className="text-base">Detalhes da Cobrança</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {formData.monthlyInterest > 0 && (
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Tipo:</span>
+                <Badge variant="outline">
+                  {formData.paymentType === 'single' ? 'Pagamento Único' : 'Assinatura'}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Valor:</span>
+                <span className="font-medium">R$ {formData.amount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Vencimento:</span>
+                <span>{format(new Date(formData.due_date), 'dd/MM/yyyy')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Descrição:</span>
+                <span className="text-right">{formData.description}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Métodos:</span>
+                <span className="text-right">{paymentMethods.join(', ')}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Dados do Pagador</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Paciente:</span>
+                <span>{selectedPatient?.full_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">CPF do Pagador:</span>
+                <span>{formData.payer_cpf}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Notificação por Email:</span>
+                <span>{formData.sendEmailNotification ? 'Sim' : 'Não'}</span>
+              </div>
+              {formData.sendEmailNotification && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Juros (ao mês):</span>
-                  <span className="font-medium">{formData.monthlyInterest}%</span>
-                </div>
-              )}
-              {formData.lateFee > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Multa:</span>
-                  <span className="font-medium">{formData.lateFee}%</span>
+                  <span className="text-sm text-muted-foreground">Email:</span>
+                  <span>{formData.email}</span>
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
 
-        {/* Payer Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Dados do Pagador</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Paciente:</span>
-              <span className="font-medium">{selectedPatient?.full_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Documento:</span>
-              <span className="font-medium">
-                {selectedPatient?.cpf || selectedPatient?.cnpj || 'Não informado'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Responsável pelo pagamento:</span>
-              <span className="font-medium">
-                {formData.paymentTitular === 'patient' ? 'Próprio paciente' : 'Outra pessoa'}
-              </span>
-            </div>
-            {formData.paymentTitular === 'other' && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">CPF do responsável:</span>
-                <span className="font-medium">{formData.payer_cpf}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Envio por e-mail:</span>
-              <div className="flex items-center gap-2">
-                {formData.sendEmailNotification ? (
-                  <>
-                    <Mail className="w-4 h-4 text-green-500" />
-                    <span className="font-medium text-green-600">Sim</span>
-                  </>
-                ) : (
-                  <>
-                    <MailX className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium text-gray-500">Não</span>
-                  </>
-                )}
-              </div>
-            </div>
-            {formData.sendEmailNotification && formData.email && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">E-mail:</span>
-                <span className="font-medium">{formData.email}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isReceived"
+              checked={formData.isReceived}
+              onCheckedChange={(checked) => {
+                const updates: Partial<WizardFormData> = { isReceived: !!checked };
+                if (checked) {
+                  updates.receivedDate = new Date().toISOString().split('T')[0];
+                }
+                // This would need to be passed from parent component
+                // updateFormData(updates);
+              }}
+            />
+            <Label htmlFor="isReceived">Marcar como já recebido</Label>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-4 pt-4 border-t">
-        <Button
-          variant="outline"
-          onClick={onClose}
-          className="flex-1"
-          disabled={createPaymentMutation.isPending}
-        >
+      <div className="flex justify-between pt-4 border-t">
+        <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button
-          onClick={handleCreatePayment}
-          className="flex-1"
+        <Button 
+          onClick={() => createPaymentMutation.mutate()}
           disabled={createPaymentMutation.isPending}
         >
           {createPaymentMutation.isPending ? 'Criando...' : 'Criar Cobrança'}

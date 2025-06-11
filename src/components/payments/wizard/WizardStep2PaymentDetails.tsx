@@ -1,170 +1,136 @@
 
-import { Label } from '@/components/ui/label';
+import React from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CurrencyInput } from '@/components/ui/currency-input';
-import { DefaultDescriptionModal } from '@/components/DefaultDescriptionModal';
-import { InvoiceDescriptionsManager } from '@/components/InvoiceDescriptionsManager';
-import { Button } from '@/components/ui/button';
-import { FileText, CreditCard, QrCode } from 'lucide-react';
-import { useState } from 'react';
-import type { WizardFormData } from '../CreatePaymentWizard';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import type { WizardFormData } from './types';
 
-interface WizardStep2PaymentDetailsProps {
+interface WizardStep2Props {
   formData: WizardFormData;
   updateFormData: (updates: Partial<WizardFormData>) => void;
   onNext: () => void;
 }
 
-export function WizardStep2PaymentDetails({ formData, updateFormData, onNext }: WizardStep2PaymentDetailsProps) {
-  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [showDescriptionManager, setShowDescriptionManager] = useState(false);
-
-  const handleSelectDescription = (description: string) => {
-    updateFormData({ description });
-    setShowDescriptionModal(false);
-  };
-
-  const handleManageDescriptions = () => {
-    setShowDescriptionModal(false);
-    setShowDescriptionManager(true);
-  };
-
-  const handlePaymentMethodChange = (method: 'boleto' | 'creditCard', checked: boolean) => {
-    updateFormData({
-      paymentMethods: {
-        ...formData.paymentMethods,
-        [method]: checked
-      }
-    });
-  };
-
-  const isValid = () => {
-    return formData.amount > 0 && formData.due_date && formData.description.trim();
+export function WizardStep2PaymentDetails({
+  formData,
+  updateFormData,
+  onNext
+}: WizardStep2Props) {
+  const handleNext = () => {
+    if (formData.amount > 0 && formData.due_date && formData.description) {
+      onNext();
+    }
   };
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Detalhes do Pagamento
-          </h2>
-          <p className="text-gray-600">
-            Configure os dados básicos da cobrança
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {/* Payment Methods */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Formas de Pagamento</Label>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <Checkbox
-                  id="boleto"
-                  checked={formData.paymentMethods.boleto}
-                  onCheckedChange={(checked) => handlePaymentMethodChange('boleto', checked === true)}
-                />
-                <QrCode className="w-5 h-5 text-green-600" />
-                <Label htmlFor="boleto" className="cursor-pointer">
-                  Boleto Bancário / PIX
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                <Checkbox
-                  id="creditCard"
-                  checked={formData.paymentMethods.creditCard}
-                  onCheckedChange={(checked) => handlePaymentMethodChange('creditCard', checked === true)}
-                />
-                <CreditCard className="w-5 h-5 text-blue-600" />
-                <Label htmlFor="creditCard" className="cursor-pointer">
-                  Cartão de Crédito
-                </Label>
-              </div>
-            </div>
-          </div>
-
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="amount" className="text-base font-medium">
-              Valor *
-            </Label>
-            <CurrencyInput
-              value={formData.amount}
-              onChange={(value) => updateFormData({ amount: value })}
-              placeholder="R$ 0,00"
-              className="w-full"
-            />
-          </div>
-
-          {/* Due Date */}
-          <div className="space-y-2">
-            <Label htmlFor="due_date" className="text-base font-medium">
-              Data de Vencimento *
-            </Label>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-4">Detalhes do Pagamento</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="amount">Valor *</Label>
             <Input
-              id="due_date"
-              type="date"
-              value={formData.due_date}
-              onChange={(e) => updateFormData({ due_date: e.target.value })}
-              className="w-full"
-              min={new Date().toISOString().split('T')[0]}
+              id="amount"
+              type="number"
+              step="0.01"
+              value={formData.amount || ''}
+              onChange={(e) => updateFormData({ amount: parseFloat(e.target.value) || 0 })}
+              placeholder="0,00"
+              required
             />
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="description" className="text-base font-medium">
-                Descrição *
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDescriptionModal(true)}
-                className="text-sm"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Usar Descrição Padrão
-              </Button>
-            </div>
+          <div>
+            <Label htmlFor="due_date">Data de Vencimento *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.due_date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.due_date ? format(new Date(formData.due_date), "dd/MM/yyyy") : "Selecione uma data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.due_date ? new Date(formData.due_date) : undefined}
+                  onSelect={(date) => updateFormData({ due_date: date?.toISOString().split('T')[0] || '' })}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Descrição *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => updateFormData({ description: e.target.value })}
-              placeholder="Descrição da cobrança..."
-              className="w-full"
-              rows={3}
+              placeholder="Descrição do pagamento"
+              required
             />
           </div>
-        </div>
 
-        <div className="flex justify-end pt-4 border-t">
-          <Button
-            onClick={onNext}
-            disabled={!isValid()}
-            className="px-8"
-          >
-            Continuar
-          </Button>
+          <div>
+            <Label>Métodos de Pagamento</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="boleto"
+                  checked={formData.paymentMethods.boleto}
+                  onCheckedChange={(checked) =>
+                    updateFormData({
+                      paymentMethods: {
+                        ...formData.paymentMethods,
+                        boleto: !!checked
+                      }
+                    })
+                  }
+                />
+                <Label htmlFor="boleto">Boleto</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="creditCard"
+                  checked={formData.paymentMethods.creditCard}
+                  onCheckedChange={(checked) =>
+                    updateFormData({
+                      paymentMethods: {
+                        ...formData.paymentMethods,
+                        creditCard: !!checked
+                      }
+                    })
+                  }
+                />
+                <Label htmlFor="creditCard">Cartão de Crédito</Label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <DefaultDescriptionModal
-        isOpen={showDescriptionModal}
-        onClose={() => setShowDescriptionModal(false)}
-        onSelectDescription={handleSelectDescription}
-        onManageDescriptions={handleManageDescriptions}
-      />
-
-      <InvoiceDescriptionsManager
-        isOpen={showDescriptionManager}
-        onClose={() => setShowDescriptionManager(false)}
-      />
-    </>
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleNext}
+          disabled={!formData.amount || !formData.due_date || !formData.description}
+        >
+          Próximo
+        </Button>
+      </div>
+    </div>
   );
 }
