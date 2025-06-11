@@ -151,45 +151,43 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
             </div>
           )}
 
-          {/* Only show email notification options for link charges */}
-          {formData.chargeType === 'link' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Notificações</CardTitle>
-                <CardDescription>
-                  Configure o envio de lembretes por email
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sendEmailNotification"
-                    checked={formData.sendEmailNotification}
-                    onCheckedChange={(checked) => updateFormData({ sendEmailNotification: !!checked })}
-                  />
-                  <Label htmlFor="sendEmailNotification">Enviar lembrete por email</Label>
-                </div>
+          {/* Notificações section - now always shown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notificações</CardTitle>
+              <CardDescription>
+                Configure o envio de lembretes por email
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sendEmailNotification"
+                  checked={formData.sendEmailNotification}
+                  onCheckedChange={(checked) => updateFormData({ sendEmailNotification: !!checked })}
+                />
+                <Label htmlFor="sendEmailNotification">Enviar lembrete por email</Label>
+              </div>
 
-                {formData.sendEmailNotification && (
-                  <div>
-                    <Label htmlFor="email">Email para notificação</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => updateFormData({ email: e.target.value })}
-                      placeholder="email@exemplo.com"
-                    />
-                    {selectedPatient?.email && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Email do paciente: {selectedPatient.email}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+              {formData.sendEmailNotification && (
+                <div>
+                  <Label htmlFor="email">Email para notificação</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData({ email: e.target.value })}
+                    placeholder="email@exemplo.com"
+                  />
+                  {selectedPatient?.email && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Email do paciente: {selectedPatient.email}
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
