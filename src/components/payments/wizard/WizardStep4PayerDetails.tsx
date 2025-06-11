@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,25 +26,44 @@ export function WizardStep4PayerDetails({
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
   const isCompanyPatient = selectedPatient?.patient_type === 'company';
 
+  // Auto-populate CPF/CNPJ when patient is selected
+  useEffect(() => {
+    if (formData.patient_id && selectedPatient) {
+      if (selectedPatient.patient_type === 'company') {
+        // For companies, use CNPJ
+        if (selectedPatient.cnpj) {
+          updateFormData({ payer_cpf: selectedPatient.cnpj });
+        }
+      } else {
+        // For individuals, check who is paying
+        if (formData.paymentTitular === 'patient' && selectedPatient.cpf) {
+          updateFormData({ payer_cpf: selectedPatient.cpf });
+        } else if (formData.paymentTitular === 'other' && selectedPatient.guardian_cpf) {
+          updateFormData({ payer_cpf: selectedPatient.guardian_cpf });
+        }
+      }
+    }
+  }, [formData.patient_id, formData.paymentTitular, selectedPatient, updateFormData]);
+
   const handlePatientChange = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
     
     updateFormData({
       patient_id: patientId,
-      // Para empresas, usar CNPJ; para pessoas físicas, limpar o campo
-      payer_cpf: patient?.patient_type === 'company' ? (patient.cnpj || '') : '',
-      // Para empresas, sempre é a própria empresa que paga
+      // Reset payer_cpf - it will be auto-populated by useEffect
+      payer_cpf: '',
+      // For companies, always is the company that pays
       paymentTitular: patient?.patient_type === 'company' ? 'patient' : 'patient'
     });
   };
 
   const handleDocumentChange = (value: string) => {
     if (isCompanyPatient) {
-      // Para empresa, aplicar máscara de CNPJ
+      // For company, apply CNPJ mask
       const formattedValue = formatCnpj(value);
       updateFormData({ payer_cpf: formattedValue });
     } else {
-      // Para pessoa física, aplicar máscara de CPF
+      // For individual, apply CPF mask
       const formattedValue = formatCpf(value);
       updateFormData({ payer_cpf: formattedValue });
     }
@@ -88,11 +107,6 @@ export function WizardStep4PayerDetails({
                 value={formData.paymentTitular}
                 onValueChange={(value: 'patient' | 'other') => {
                   updateFormData({ paymentTitular: value });
-                  if (value === 'patient') {
-                    updateFormData({ payer_cpf: selectedPatient?.cpf || '' });
-                  } else {
-                    updateFormData({ payer_cpf: selectedPatient?.guardian_cpf || '' });
-                  }
                 }}
                 className="mt-2"
               >
