@@ -14,6 +14,7 @@ interface PaymentsContentProps {
 
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
   const { searchTerm, setSearchTerm, filters, setFilters, getFilteredPayments, hasFilters } = usePaymentFilters();
@@ -21,16 +22,18 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   const filteredPayments = getFilteredPayments(payments);
 
   const handleAddPayment = () => {
+    setEditingPayment(null);
     setShowCreateWizard(true);
   };
 
   const handleEditPayment = (payment: Payment) => {
-    // TODO: Implement edit functionality
-    console.log('Edit payment:', payment);
+    setEditingPayment(payment);
+    setShowCreateWizard(true);
   };
 
   const handleCloseWizard = () => {
     setShowCreateWizard(false);
+    setEditingPayment(null);
   };
 
   const handleDeletePayment = (paymentId: string) => {
@@ -69,6 +72,7 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
         onClose={handleCloseWizard}
         onSuccess={handleCloseWizard}
         patients={patients}
+        paymentToEdit={editingPayment}
       />
     </div>
   );

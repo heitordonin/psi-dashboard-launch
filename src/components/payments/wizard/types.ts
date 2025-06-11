@@ -1,5 +1,6 @@
 
 import type { Patient } from '@/types/patient';
+import type { Payment } from '@/types/payment';
 
 export interface WizardFormData {
   // Step 0: Charge type
@@ -38,4 +39,5 @@ export interface CreatePaymentWizardProps {
   onClose: () => void;
   onSuccess?: () => void;
   patients: Patient[];
+  paymentToEdit?: Payment | null;
 }

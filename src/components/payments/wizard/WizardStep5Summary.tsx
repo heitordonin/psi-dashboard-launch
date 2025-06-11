@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
+import type { Payment } from '@/types/payment';
 
 interface WizardStep5Props {
   formData: WizardFormData;
@@ -19,6 +20,7 @@ interface WizardStep5Props {
   onClose: () => void;
   onPrevious: () => void;
   updateFormData: (updates: Partial<WizardFormData>) => void;
+  paymentToEdit?: Payment | null;
 }
 
 export function WizardStep5Summary({
@@ -27,10 +29,12 @@ export function WizardStep5Summary({
   onSuccess,
   onClose,
   onPrevious,
-  updateFormData
+  updateFormData,
+  paymentToEdit
 }: WizardStep5Props) {
   const queryClient = useQueryClient();
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
+  const isEditMode = !!paymentToEdit;
 
   const createPaymentMutation = useMutation({
     mutationFn: async () => {
@@ -98,6 +102,50 @@ export function WizardStep5Summary({
     }
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: async () => {
+      if (!paymentToEdit) throw new Error('No payment to update');
+
+      const paymentData = {
+        patient_id: formData.patient_id,
+        amount: formData.amount,
+        due_date: formData.due_date,
+        description: formData.description,
+        status: (formData.isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
+        paid_date: formData.isReceived ? formData.receivedDate : null,
+        payer_cpf: formData.payer_cpf,
+      };
+
+      const { data, error } = await supabase
+        .from('payments')
+        .update(paymentData)
+        .eq('id', paymentToEdit.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Cobrança atualizada com sucesso!');
+      onSuccess?.();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error updating payment:', error);
+      toast.error('Erro ao atualizar cobrança');
+    }
+  });
+
+  const handleSubmit = () => {
+    if (isEditMode) {
+      updatePaymentMutation.mutate();
+    } else {
+      createPaymentMutation.mutate();
+    }
+  };
+
   const paymentMethods = formData.chargeType === 'link' 
     ? Object.entries(formData.paymentMethods)
         .filter(([_, enabled]) => enabled)
@@ -123,6 +171,8 @@ export function WizardStep5Summary({
     }
     return 'CPF do Pagador:';
   };
+
+  const isLoading = createPaymentMutation.isPending || updatePaymentMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -217,16 +267,16 @@ export function WizardStep5Summary({
             <Button
               variant="outline"
               onClick={onPrevious}
-              disabled={createPaymentMutation.isPending}
+              disabled={isLoading}
             >
               Voltar
             </Button>
             <Button
-              onClick={() => createPaymentMutation.mutate()}
-              disabled={createPaymentMutation.isPending}
+              onClick={handleSubmit}
+              disabled={isLoading}
               className="flex-1"
             >
-              {createPaymentMutation.isPending ? 'Criando...' : 'Concluir'}
+              {isLoading ? (isEditMode ? 'Salvando...' : 'Criando...') : (isEditMode ? 'Salvar Alterações' : 'Concluir')}
             </Button>
           </div>
         </div>
