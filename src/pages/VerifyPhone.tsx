@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,21 @@ import { Smartphone, RefreshCw } from 'lucide-react';
 
 const VerifyPhone = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+
+  // Obter o telefone do state da navegação
+  const phone = location.state?.phone;
+  const displayPhone = location.state?.displayPhone;
+
+  // Se não tiver o telefone no state, redirecionar
+  if (!phone) {
+    navigate('/dashboard');
+    return null;
+  }
 
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
@@ -25,14 +36,17 @@ const VerifyPhone = () => {
     setIsVerifying(true);
 
     try {
-      // Chamar a edge function para verificar o OTP
+      // Chamar a edge function para verificar o OTP incluindo o telefone
       const { data, error } = await supabase.functions.invoke('verify-phone-otp', {
-        body: { token: otp }
+        body: { 
+          token: otp,
+          phone: phone
+        }
       });
 
       if (error) {
         console.error('Erro na verificação:', error);
-        toast.error(error.message || 'Erro ao verificar código');
+        toast.error('O código de verificação é inválido ou já expirou. Por favor, tente novamente.');
         setIsVerifying(false);
         return;
       }
@@ -41,52 +55,35 @@ const VerifyPhone = () => {
         toast.success('Telefone verificado com sucesso!');
         navigate('/dashboard');
       } else {
-        toast.error('Código inválido ou expirado');
+        toast.error('O código de verificação é inválido ou já expirou. Por favor, tente novamente.');
       }
     } catch (error: any) {
       console.error('Erro na verificação:', error);
-      toast.error('Erro interno. Tente novamente.');
+      toast.error('O código de verificação é inválido ou já expirou. Por favor, tente novamente.');
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleResendCode = async () => {
-    if (!user?.id) {
-      toast.error('Usuário não encontrado');
-      return;
-    }
-
     setIsResending(true);
 
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('phone')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !profile?.phone) {
-        toast.error('Telefone não encontrado');
-        setIsResending(false);
-        return;
-      }
-
-      // Chamar a edge function para reenviar o OTP
+      // Chamar a edge function para reenviar o OTP usando o telefone do state
       const { data: otpData, error: otpError } = await supabase.functions.invoke('trigger-phone-otp', {
-        body: { phone: profile.phone }
+        body: { phone: phone }
       });
 
       if (otpError) {
         console.error('Erro ao reenviar código:', otpError);
-        toast.error('Erro ao reenviar código. Tente novamente.');
+        toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
       } else {
         toast.success('Novo código enviado para seu WhatsApp!');
         setOtp('');
       }
     } catch (error: any) {
       console.error('Erro ao reenviar código:', error);
-      toast.error('Erro ao reenviar código. Tente novamente.');
+      toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
     } finally {
       setIsResending(false);
     }
@@ -101,7 +98,7 @@ const VerifyPhone = () => {
           </div>
           <CardTitle className="text-2xl font-bold">Verifique seu WhatsApp</CardTitle>
           <CardDescription>
-            Digite o código de 6 dígitos que enviamos para seu WhatsApp
+            Digite o código de 6 dígitos que enviamos para {displayPhone || phone}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

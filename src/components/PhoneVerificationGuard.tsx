@@ -63,7 +63,13 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
         toast.error('Erro ao enviar código de verificação');
       } else {
         toast.success('Código enviado para seu WhatsApp!');
-        navigate('/verify-phone');
+        // Passar o número completo via navigation state
+        navigate('/verify-phone', { 
+          state: { 
+            phone: fullPhoneNumber,
+            displayPhone: `${countryCode} ${profile.phone}`
+          } 
+        });
       }
     } catch (error) {
       console.error('Erro:', error);

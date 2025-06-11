@@ -13,11 +13,21 @@ serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json()
+    const { token, phone } = await req.json()
 
     if (!token) {
       return new Response(
         JSON.stringify({ error: 'Token é obrigatório' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    if (!phone) {
+      return new Response(
+        JSON.stringify({ error: 'Telefone é obrigatório' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -47,10 +57,13 @@ serve(async (req) => {
       )
     }
 
+    console.log('Verificando OTP para telefone:', phone, 'token:', token)
+
     // Verificar o token OTP usando o sistema nativo do Supabase
     const { data: verifyData, error: verifyError } = await supabaseClient.auth.verifyOtp({
       token,
-      type: 'phone'
+      type: 'phone',
+      phone: phone
     })
 
     if (verifyError) {
