@@ -1,15 +1,15 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
+import { PaymentDescriptionField } from '@/components/payments/PaymentDescriptionField';
 import type { WizardFormData } from './types';
 
 interface WizardStep2Props {
@@ -35,18 +35,10 @@ export function WizardStep2PaymentDetails({
         <h3 className="text-lg font-medium mb-4">Detalhes do Pagamento</h3>
         
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="amount">Valor *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              value={formData.amount || ''}
-              onChange={(e) => updateFormData({ amount: parseFloat(e.target.value) || 0 })}
-              placeholder="0,00"
-              required
-            />
-          </div>
+          <PaymentAmountField
+            value={formData.amount}
+            onChange={(value) => updateFormData({ amount: value })}
+          />
 
           <div>
             <Label htmlFor="due_date">Data de Vencimento *</Label>
@@ -74,16 +66,10 @@ export function WizardStep2PaymentDetails({
             </Popover>
           </div>
 
-          <div>
-            <Label htmlFor="description">Descrição *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => updateFormData({ description: e.target.value })}
-              placeholder="Descrição do pagamento"
-              required
-            />
-          </div>
+          <PaymentDescriptionField
+            value={formData.description}
+            onChange={(value) => updateFormData({ description: value })}
+          />
 
           <div>
             <Label>Métodos de Pagamento</Label>
