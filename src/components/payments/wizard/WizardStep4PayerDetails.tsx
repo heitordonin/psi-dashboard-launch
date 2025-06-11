@@ -1,11 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { formatCpf, formatCnpj } from '@/utils/inputFormatters';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
 
@@ -13,59 +12,18 @@ interface WizardStep4Props {
   formData: WizardFormData;
   updateFormData: (updates: Partial<WizardFormData>) => void;
   patients: Patient[];
-  onNext: () => void;
 }
 
-export function WizardStep4PayerDetails({
-  formData,
-  updateFormData,
-  patients,
-  onNext
-}: WizardStep4Props) {
+export function WizardStep4PayerDetails({ formData, updateFormData, patients }: WizardStep4Props) {
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
-  const isCompanyPatient = selectedPatient?.patient_type === 'company';
-
-  // Auto-populate CPF/CNPJ when patient is selected
-  useEffect(() => {
-    if (formData.patient_id && selectedPatient) {
-      if (selectedPatient.patient_type === 'company') {
-        // For companies, use CNPJ
-        if (selectedPatient.cnpj) {
-          updateFormData({ payer_cpf: selectedPatient.cnpj });
-        }
-      } else {
-        // For individuals, check who is paying
-        if (formData.paymentTitular === 'patient' && selectedPatient.cpf) {
-          updateFormData({ payer_cpf: selectedPatient.cpf });
-        } else if (formData.paymentTitular === 'other' && selectedPatient.guardian_cpf) {
-          updateFormData({ payer_cpf: selectedPatient.guardian_cpf });
-        }
-      }
-    }
-  }, [formData.patient_id, formData.paymentTitular, selectedPatient, updateFormData]);
 
   const handlePatientChange = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
-    
-    updateFormData({
+    updateFormData({ 
       patient_id: patientId,
-      // Reset payer_cpf - it will be auto-populated by useEffect
-      payer_cpf: '',
-      // For companies, always is the company that pays
-      paymentTitular: patient?.patient_type === 'company' ? 'patient' : 'patient'
+      payer_cpf: patient?.cpf || '',
+      email: patient?.email || ''
     });
-  };
-
-  const handleDocumentChange = (value: string) => {
-    if (isCompanyPatient) {
-      // For company, apply CNPJ mask
-      const formattedValue = formatCnpj(value);
-      updateFormData({ payer_cpf: formattedValue });
-    } else {
-      // For individual, apply CPF mask
-      const formattedValue = formatCpf(value);
-      updateFormData({ payer_cpf: formattedValue });
-    }
   };
 
   return (
@@ -75,88 +33,73 @@ export function WizardStep4PayerDetails({
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="patient_id">Paciente *</Label>
-            <Select
-              value={formData.patient_id}
-              onValueChange={handlePatientChange}
-            >
+            <Label htmlFor="patient">Paciente</Label>
+            <Select value={formData.patient_id} onValueChange={handlePatientChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um paciente" />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((patient) => (
                   <SelectItem key={patient.id} value={patient.id}>
-                    {patient.full_name} {patient.patient_type === 'company' && '(Empresa)'}
+                    {patient.full_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {!isCompanyPatient && (
-            <div>
-              <Label>Quem irá pagar?</Label>
-              <RadioGroup
-                value={formData.paymentTitular}
-                onValueChange={(value: 'patient' | 'other') => {
-                  updateFormData({ paymentTitular: value });
-                }}
-                className="mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="patient" id="patient" />
-                  <Label htmlFor="patient">O próprio paciente</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other">Outra pessoa (responsável)</Label>
-                </div>
-              </RadioGroup>
-            </div>
-          )}
-
           <div>
-            <Label htmlFor="payer_document">
-              {isCompanyPatient ? 'CNPJ da Empresa *' : 'CPF do Pagador *'}
-            </Label>
+            <Label htmlFor="payer_cpf">CPF/CNPJ do Pagador</Label>
             <Input
-              id="payer_document"
+              id="payer_cpf"
               value={formData.payer_cpf}
-              onChange={(e) => handleDocumentChange(e.target.value)}
-              placeholder={isCompanyPatient ? '00.000.000/0000-00' : '000.000.000-00'}
-              maxLength={isCompanyPatient ? 18 : 14}
-              required
+              onChange={(e) => updateFormData({ payer_cpf: e.target.value })}
+              placeholder="000.000.000-00"
             />
-            {isCompanyPatient && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Para empresas, sempre utilizamos o CNPJ da empresa como pagador
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mt-1">
+              Pode ser diferente do CPF do paciente (ex: responsável financeiro)
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="sendEmailNotification"
-                checked={formData.sendEmailNotification}
-                onCheckedChange={(checked) => updateFormData({ sendEmailNotification: !!checked })}
-              />
-              <Label htmlFor="sendEmailNotification">Enviar notificação por email</Label>
-            </div>
+          {/* Only show email notification options for link charges */}
+          {formData.chargeType === 'link' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Notificações</CardTitle>
+                <CardDescription>
+                  Configure o envio de lembretes por email
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sendEmailNotification"
+                    checked={formData.sendEmailNotification}
+                    onCheckedChange={(checked) => updateFormData({ sendEmailNotification: !!checked })}
+                  />
+                  <Label htmlFor="sendEmailNotification">Enviar lembrete por email</Label>
+                </div>
 
-            {formData.sendEmailNotification && (
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => updateFormData({ email: e.target.value })}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-            )}
-          </div>
+                {formData.sendEmailNotification && (
+                  <div>
+                    <Label htmlFor="email">Email para notificação</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => updateFormData({ email: e.target.value })}
+                      placeholder="email@exemplo.com"
+                    />
+                    {selectedPatient?.email && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Email do paciente: {selectedPatient.email}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

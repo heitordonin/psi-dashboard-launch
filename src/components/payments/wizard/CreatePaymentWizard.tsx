@@ -8,13 +8,12 @@ import type { CreatePaymentWizardProps } from './types';
 
 const STEP_TITLES = [
   'Tipo de Cobrança',
+  'Tipo de Pagamento',
   'Detalhes do Pagamento', 
   'Juros e Multa',
   'Dados do Pagador',
   'Resumo e Confirmação'
 ];
-
-const TOTAL_STEPS = 5;
 
 export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: CreatePaymentWizardProps) {
   const {
@@ -23,17 +22,42 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
     updateFormData,
     nextStep,
     prevStep,
-    resetWizard
+    resetWizard,
+    getTotalSteps
   } = useWizardState();
+
+  const totalSteps = getTotalSteps();
 
   const handleClose = () => {
     resetWizard();
     onClose();
   };
 
+  // Get current step title based on actual step and charge type
+  const getCurrentStepTitle = () => {
+    if (formData.chargeType === 'manual') {
+      // For manual charges, map the actual step numbers to appropriate titles
+      const manualStepTitles = [
+        'Tipo de Cobrança',      // Step 0
+        'Tipo de Pagamento',     // Step 1
+        'Dados do Pagador',      // Step 4 (mapped)
+        'Resumo e Confirmação'   // Step 5 (mapped)
+      ];
+      
+      if (currentStep === 0) return manualStepTitles[0];
+      if (currentStep === 1) return manualStepTitles[1];
+      if (currentStep === 4) return manualStepTitles[2];
+      if (currentStep === 5) return manualStepTitles[3];
+    }
+    
+    return STEP_TITLES[currentStep] || 'Etapa';
+  };
+
   // Determine if next button should be disabled based on current step validation
   const isNextDisabled = () => {
     switch (currentStep) {
+      case 0:
+        return !formData.chargeType;
       case 1:
         return !formData.paymentType;
       case 2:
@@ -53,9 +77,9 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <WizardHeader
-          currentStep={currentStep}
-          totalSteps={TOTAL_STEPS}
-          stepTitles={STEP_TITLES}
+          currentStep={currentStep + 1}
+          totalSteps={totalSteps}
+          stepTitle={getCurrentStepTitle()}
           onClose={handleClose}
         />
 
@@ -74,7 +98,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
 
         <WizardNavigation
           currentStep={currentStep}
-          totalSteps={TOTAL_STEPS}
+          totalSteps={totalSteps}
           onPrevious={prevStep}
           onNext={nextStep}
           isNextDisabled={isNextDisabled()}

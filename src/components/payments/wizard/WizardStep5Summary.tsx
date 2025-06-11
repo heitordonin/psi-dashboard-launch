@@ -45,6 +45,7 @@ export function WizardStep5Summary({
         paid_date: formData.isReceived ? formData.receivedDate : null,
         payer_cpf: formData.payer_cpf,
         receita_saude_receipt_issued: false,
+        has_payment_link: formData.chargeType === 'link',
         owner_id: user.id
       };
 
@@ -61,8 +62,8 @@ export function WizardStep5Summary({
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança criada com sucesso!');
       
-      // Send email if notification is enabled
-      if (formData.sendEmailNotification && formData.email && selectedPatient) {
+      // Send email if notification is enabled and it's a link charge
+      if (formData.chargeType === 'link' && formData.sendEmailNotification && formData.email && selectedPatient) {
         try {
           const { error: emailError } = await supabase.functions.invoke('send-email-reminder', {
             body: {
@@ -96,9 +97,11 @@ export function WizardStep5Summary({
     }
   });
 
-  const paymentMethods = Object.entries(formData.paymentMethods)
-    .filter(([_, enabled]) => enabled)
-    .map(([method]) => method === 'boleto' ? 'Boleto' : 'Cartão de Crédito');
+  const paymentMethods = formData.chargeType === 'link' 
+    ? Object.entries(formData.paymentMethods)
+        .filter(([_, enabled]) => enabled)
+        .map(([method]) => method === 'boleto' ? 'Boleto' : 'Cartão de Crédito')
+    : [];
 
   return (
     <div className="space-y-6">
@@ -111,6 +114,12 @@ export function WizardStep5Summary({
               <CardTitle className="text-base">Detalhes da Cobrança</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Tipo de Cobrança:</span>
+                <Badge variant={formData.chargeType === 'link' ? 'default' : 'secondary'}>
+                  {formData.chargeType === 'link' ? 'Com link de pagamento' : 'Manual'}
+                </Badge>
+              </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Tipo:</span>
                 <Badge variant="outline">
@@ -129,10 +138,12 @@ export function WizardStep5Summary({
                 <span className="text-sm text-muted-foreground">Descrição:</span>
                 <span className="text-right">{formData.description}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Métodos:</span>
-                <span className="text-right">{paymentMethods.join(', ')}</span>
-              </div>
+              {formData.chargeType === 'link' && paymentMethods.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Métodos:</span>
+                  <span className="text-right">{paymentMethods.join(', ')}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -149,15 +160,19 @@ export function WizardStep5Summary({
                 <span className="text-sm text-muted-foreground">CPF/CNPJ do Pagador:</span>
                 <span>{formData.payer_cpf}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Notificação por Email:</span>
-                <span>{formData.sendEmailNotification ? 'Sim' : 'Não'}</span>
-              </div>
-              {formData.sendEmailNotification && (
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Email:</span>
-                  <span>{formData.email}</span>
-                </div>
+              {formData.chargeType === 'link' && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Notificação por Email:</span>
+                    <span>{formData.sendEmailNotification ? 'Sim' : 'Não'}</span>
+                  </div>
+                  {formData.sendEmailNotification && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Email:</span>
+                      <span>{formData.email}</span>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

@@ -3,8 +3,9 @@ import { useState } from 'react';
 import type { WizardFormData } from './types';
 
 export function useWizardState() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<WizardFormData>({
+    chargeType: 'link',
     paymentType: 'single',
     amount: 0,
     due_date: '',
@@ -41,21 +42,47 @@ export function useWizardState() {
     });
   };
 
+  const getTotalSteps = () => {
+    // Dynamic step calculation based on charge type
+    if (formData.chargeType === 'manual') {
+      return 5; // Skip payment methods and fees steps
+    }
+    return 6; // All steps for link charges
+  };
+
   const nextStep = () => {
-    if (currentStep < 5) {
-      setCurrentStep(prev => prev + 1);
+    const totalSteps = getTotalSteps();
+    if (currentStep < totalSteps - 1) {
+      let nextStepNumber = currentStep + 1;
+      
+      // Skip steps for manual charges
+      if (formData.chargeType === 'manual') {
+        if (nextStepNumber === 2) nextStepNumber = 4; // Skip payment methods (step 2)
+        if (nextStepNumber === 3) nextStepNumber = 4; // Skip fees (step 3)
+      }
+      
+      setCurrentStep(nextStepNumber);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
+    if (currentStep > 0) {
+      let prevStepNumber = currentStep - 1;
+      
+      // Skip steps for manual charges when going back
+      if (formData.chargeType === 'manual') {
+        if (prevStepNumber === 3) prevStepNumber = 1; // Skip fees (step 3)
+        if (prevStepNumber === 2) prevStepNumber = 1; // Skip payment methods (step 2)
+      }
+      
+      setCurrentStep(prevStepNumber);
     }
   };
 
   const resetWizard = () => {
-    setCurrentStep(1);
+    setCurrentStep(0);
     setFormData({
+      chargeType: 'link',
       paymentType: 'single',
       amount: 0,
       due_date: '',
@@ -79,6 +106,7 @@ export function useWizardState() {
     updateFormData,
     nextStep,
     prevStep,
-    resetWizard
+    resetWizard,
+    getTotalSteps
   };
 }

@@ -1,32 +1,23 @@
 
 import React from 'react';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, CreditCard, QrCode, Receipt } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
-import { PaymentDescriptionField } from '@/components/payments/PaymentDescriptionField';
-import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { WizardFormData } from './types';
 
 interface WizardStep2Props {
   formData: WizardFormData;
   updateFormData: (updates: Partial<WizardFormData>) => void;
-  onNext: () => void;
 }
 
-export function WizardStep2PaymentDetails({
-  formData,
-  updateFormData,
-  onNext
-}: WizardStep2Props) {
-  const togglePaymentMethod = (method: 'boleto' | 'creditCard') => {
+export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardStep2Props) {
+  const handlePaymentMethodChange = (method: 'boleto' | 'creditCard', checked: boolean) => {
     updateFormData({
       paymentMethods: {
         ...formData.paymentMethods,
-        [method]: !formData.paymentMethods[method]
+        [method]: checked
       }
     });
   };
@@ -37,105 +28,69 @@ export function WizardStep2PaymentDetails({
         <h3 className="text-lg font-medium mb-4">Detalhes do Pagamento</h3>
         
         <div className="space-y-4">
-          <PaymentAmountField
-            value={formData.amount}
-            onChange={(value) => updateFormData({ amount: value })}
-          />
-
           <div>
-            <Label htmlFor="due_date">Data de Vencimento *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.due_date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.due_date ? format(new Date(formData.due_date), "dd/MM/yyyy") : "Selecione uma data"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.due_date ? new Date(formData.due_date) : undefined}
-                  onSelect={(date) => updateFormData({ due_date: date?.toISOString().split('T')[0] || '' })}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="amount">Valor (R$)</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              value={formData.amount || ''}
+              onChange={(e) => updateFormData({ amount: parseFloat(e.target.value) || 0 })}
+              placeholder="0,00"
+            />
           </div>
 
-          <PaymentDescriptionField
-            value={formData.description}
-            onChange={(value) => updateFormData({ description: value })}
-          />
+          <div>
+            <Label htmlFor="due_date">Data de Vencimento</Label>
+            <Input
+              id="due_date"
+              type="date"
+              value={formData.due_date}
+              onChange={(e) => updateFormData({ due_date: e.target.value })}
+            />
+          </div>
 
           <div>
-            <Label className="text-base font-medium">Métodos de Pagamento</Label>
-            <p className="text-sm text-muted-foreground mb-3">Selecione os métodos que o cliente poderá usar</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div
-                onClick={() => togglePaymentMethod('boleto')}
-                className={cn(
-                  "border rounded-lg p-4 cursor-pointer transition-all hover:border-primary/50",
-                  formData.paymentMethods.boleto
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                    : "border-border"
-                )}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={cn(
-                    "rounded-full p-2",
-                    formData.paymentMethods.boleto ? "bg-primary text-primary-foreground" : "bg-muted"
-                  )}>
-                    <Receipt className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">Boleto</div>
-                    <div className="text-xs text-muted-foreground">Pagamento bancário</div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => togglePaymentMethod('creditCard')}
-                className={cn(
-                  "border rounded-lg p-4 cursor-pointer transition-all hover:border-primary/50",
-                  formData.paymentMethods.creditCard
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                    : "border-border"
-                )}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={cn(
-                    "rounded-full p-2",
-                    formData.paymentMethods.creditCard ? "bg-primary text-primary-foreground" : "bg-muted"
-                  )}>
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">Cartão de Crédito</div>
-                    <div className="text-xs text-muted-foreground">Pagamento online</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border rounded-lg p-4 bg-muted/50 opacity-60">
-                <div className="flex items-center space-x-3">
-                  <div className="rounded-full p-2 bg-muted">
-                    <QrCode className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">PIX</div>
-                    <div className="text-xs text-muted-foreground">Em breve</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => updateFormData({ description: e.target.value })}
+              placeholder="Descrição da cobrança..."
+              rows={3}
+            />
           </div>
+
+          {/* Only show payment methods for link charges */}
+          {formData.chargeType === 'link' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Formas de Pagamento</CardTitle>
+                <CardDescription>
+                  Selecione as formas de pagamento que serão aceitas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="boleto"
+                    checked={formData.paymentMethods.boleto}
+                    onCheckedChange={(checked) => handlePaymentMethodChange('boleto', !!checked)}
+                  />
+                  <Label htmlFor="boleto">Boleto Bancário</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="creditCard"
+                    checked={formData.paymentMethods.creditCard}
+                    onCheckedChange={(checked) => handlePaymentMethodChange('creditCard', !!checked)}
+                  />
+                  <Label htmlFor="creditCard">Cartão de Crédito</Label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

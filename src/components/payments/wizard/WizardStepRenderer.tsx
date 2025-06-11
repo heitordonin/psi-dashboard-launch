@@ -1,4 +1,5 @@
 
+import { WizardStep0ChargeType } from './WizardStep0ChargeType';
 import { WizardStep1PaymentType } from './WizardStep1PaymentType';
 import { WizardStep2PaymentDetails } from './WizardStep2PaymentDetails';
 import { WizardStep3FeesInterest } from './WizardStep3FeesInterest';
@@ -29,12 +30,18 @@ export function WizardStepRenderer({
   onClose
 }: WizardStepRendererProps) {
   switch (currentStep) {
+    case 0:
+      return (
+        <WizardStep0ChargeType
+          selectedType={formData.chargeType}
+          onSelect={(type) => updateFormData({ chargeType: type })}
+        />
+      );
     case 1:
       return (
         <WizardStep1PaymentType
           selectedType={formData.paymentType}
           onSelect={(type) => updateFormData({ paymentType: type })}
-          onNext={onNext}
         />
       );
     case 2:
@@ -42,7 +49,6 @@ export function WizardStepRenderer({
         <WizardStep2PaymentDetails
           formData={formData}
           updateFormData={updateFormData}
-          onNext={onNext}
         />
       );
     case 3:
@@ -51,7 +57,6 @@ export function WizardStepRenderer({
           monthlyInterest={formData.monthlyInterest}
           lateFee={formData.lateFee}
           updateFormData={updateFormData}
-          onNext={onNext}
         />
       );
     case 4:
@@ -60,7 +65,6 @@ export function WizardStepRenderer({
           formData={formData}
           updateFormData={updateFormData}
           patients={patients}
-          onNext={onNext}
         />
       );
     case 5:

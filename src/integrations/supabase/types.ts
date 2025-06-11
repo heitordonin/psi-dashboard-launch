@@ -245,6 +245,7 @@ export type Database = {
           description: string | null
           due_date: string
           email_reminder_sent_at: string | null
+          has_payment_link: boolean
           id: string
           owner_id: string
           pagarme_transaction_id: string | null
@@ -262,6 +263,7 @@ export type Database = {
           description?: string | null
           due_date: string
           email_reminder_sent_at?: string | null
+          has_payment_link?: boolean
           id?: string
           owner_id: string
           pagarme_transaction_id?: string | null
@@ -279,6 +281,7 @@ export type Database = {
           description?: string | null
           due_date?: string
           email_reminder_sent_at?: string | null
+          has_payment_link?: boolean
           id?: string
           owner_id?: string
           pagarme_transaction_id?: string | null

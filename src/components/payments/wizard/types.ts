@@ -1,6 +1,10 @@
+
 import type { Patient } from '@/types/patient';
 
 export interface WizardFormData {
+  // Step 0: Charge type
+  chargeType: 'link' | 'manual';
+  
   // Step 1: Payment type
   paymentType: 'single' | 'subscription';
   
