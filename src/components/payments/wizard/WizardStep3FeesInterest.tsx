@@ -40,7 +40,7 @@ export function WizardStep3FeesInterest({
                 step="0.01"
                 value={monthlyInterest}
                 onChange={(e) => updateFormData({ monthlyInterest: parseFloat(e.target.value) || 0 })}
-                placeholder="0,00"
+                placeholder="1,00"
                 disabled
               />
               <p className="text-sm text-muted-foreground mt-1">
@@ -56,11 +56,17 @@ export function WizardStep3FeesInterest({
                 step="0.01"
                 value={lateFee}
                 onChange={(e) => updateFormData({ lateFee: parseFloat(e.target.value) || 0 })}
-                placeholder="0,00"
+                placeholder="2,00"
                 disabled
               />
               <p className="text-sm text-muted-foreground mt-1">
                 Esta funcionalidade estará disponível em breve
+              </p>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Nota:</strong> A multa por atraso é limitada a 2% e os juros de mora a 1% ao mês, conforme o Código de Defesa do Consumidor.
               </p>
             </div>
           </CardContent>

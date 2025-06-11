@@ -61,7 +61,7 @@ export function WizardStep1PaymentType({ selectedType, onSelect, onNext }: Wizar
             </div>
             <div>
               <h3 className="font-semibold text-lg text-gray-400">
-                Assinatura
+                Recorrência
               </h3>
               <p className="text-sm text-gray-400 mt-2">
                 Configure cobranças recorrentes automáticas

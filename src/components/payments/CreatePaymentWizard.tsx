@@ -48,6 +48,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients }: Cr
             updateFormData={updateFormData}
             patients={patients}
             onNext={nextStep}
+            onPrevious={prevStep}
             onSuccess={onSuccess}
             onClose={handleClose}
           />

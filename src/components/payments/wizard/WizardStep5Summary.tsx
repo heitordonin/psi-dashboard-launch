@@ -17,13 +17,17 @@ interface WizardStep5Props {
   patients: Patient[];
   onSuccess?: () => void;
   onClose: () => void;
+  onPrevious: () => void;
+  updateFormData: (updates: Partial<WizardFormData>) => void;
 }
 
 export function WizardStep5Summary({
   formData,
   patients,
   onSuccess,
-  onClose
+  onClose,
+  onPrevious,
+  updateFormData
 }: WizardStep5Props) {
   const queryClient = useQueryClient();
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
@@ -54,9 +58,36 @@ export function WizardStep5Summary({
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Cobrança criada com sucesso!');
+      
+      // Send email if notification is enabled
+      if (formData.sendEmailNotification && formData.email && selectedPatient) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-email-reminder', {
+            body: {
+              paymentId: data.id,
+              recipientEmail: formData.email,
+              amount: formData.amount,
+              patientName: selectedPatient.full_name,
+              dueDate: formData.due_date,
+              description: formData.description
+            }
+          });
+
+          if (emailError) {
+            console.error('Error sending email:', emailError);
+            toast.error('Cobrança criada, mas houve erro ao enviar o email');
+          } else {
+            toast.success('Email de lembrete enviado com sucesso!');
+          }
+        } catch (error) {
+          console.error('Error sending email:', error);
+          toast.error('Cobrança criada, mas houve erro ao enviar o email');
+        }
+      }
+      
       onSuccess?.();
       onClose();
     },
@@ -136,11 +167,7 @@ export function WizardStep5Summary({
             <Checkbox
               id="isReceived"
               checked={formData.isReceived}
-              onCheckedChange={(checked) => {
-                // This functionality would need to be passed from parent component
-                // For now, this is just display-only
-                console.log('Checkbox changed:', checked);
-              }}
+              onCheckedChange={(checked) => updateFormData({ isReceived: !!checked })}
             />
             <Label htmlFor="isReceived">Marcar como já recebido</Label>
           </div>
@@ -148,9 +175,14 @@ export function WizardStep5Summary({
       </div>
 
       <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onPrevious}>
+            Voltar
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+        </div>
         <Button 
           onClick={() => createPaymentMutation.mutate()}
           disabled={createPaymentMutation.isPending}

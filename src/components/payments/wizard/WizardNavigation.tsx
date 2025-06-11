@@ -15,7 +15,7 @@ export function WizardNavigation({
   onPrevious, 
   onNext 
 }: WizardNavigationProps) {
-  if (currentStep === 1 || currentStep === totalSteps) {
+  if (currentStep === 1) {
     return null;
   }
 
@@ -30,13 +30,15 @@ export function WizardNavigation({
         Voltar
       </Button>
       
-      <Button
-        onClick={onNext}
-        className="flex items-center gap-2"
-      >
-        Próximo
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+      {currentStep < totalSteps && (
+        <Button
+          onClick={onNext}
+          className="flex items-center gap-2"
+        >
+          Próximo
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }

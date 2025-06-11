@@ -13,6 +13,7 @@ interface WizardStepRendererProps {
   updateFormData: (updates: Partial<WizardFormData>) => void;
   patients: Patient[];
   onNext: () => void;
+  onPrevious: () => void;
   onSuccess?: () => void;
   onClose: () => void;
 }
@@ -23,6 +24,7 @@ export function WizardStepRenderer({
   updateFormData,
   patients,
   onNext,
+  onPrevious,
   onSuccess,
   onClose
 }: WizardStepRendererProps) {
@@ -68,6 +70,8 @@ export function WizardStepRenderer({
           patients={patients}
           onSuccess={onSuccess}
           onClose={onClose}
+          onPrevious={onPrevious}
+          updateFormData={updateFormData}
         />
       );
     default:

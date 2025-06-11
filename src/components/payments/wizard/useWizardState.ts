@@ -25,7 +25,20 @@ export function useWizardState() {
   });
 
   const updateFormData = (updates: Partial<WizardFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // Handle isReceived logic
+      if ('isReceived' in updates) {
+        if (updates.isReceived) {
+          newData.receivedDate = new Date().toISOString().split('T')[0];
+        } else {
+          newData.receivedDate = '';
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const nextStep = () => {
