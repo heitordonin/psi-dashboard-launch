@@ -42,6 +42,7 @@ export function WizardStepRenderer({
         <WizardStep1PaymentType
           selectedType={formData.paymentType}
           onSelect={(type) => updateFormData({ paymentType: type })}
+          onNext={onNext}
         />
       );
     case 2:
@@ -57,6 +58,7 @@ export function WizardStepRenderer({
           monthlyInterest={formData.monthlyInterest}
           lateFee={formData.lateFee}
           updateFormData={updateFormData}
+          onNext={onNext}
         />
       );
     case 4:
