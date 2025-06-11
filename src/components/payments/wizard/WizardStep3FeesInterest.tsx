@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,12 +70,6 @@ export function WizardStep3FeesInterest({
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={onNext}>
-          Próximo
-        </Button>
       </div>
     </div>
   );

@@ -7,36 +7,44 @@ interface WizardNavigationProps {
   totalSteps: number;
   onPrevious: () => void;
   onNext: () => void;
+  isNextDisabled?: boolean;
+  isLoading?: boolean;
+  nextButtonText?: string;
 }
 
 export function WizardNavigation({ 
   currentStep, 
   totalSteps, 
   onPrevious, 
-  onNext 
+  onNext,
+  isNextDisabled = false,
+  isLoading = false,
+  nextButtonText = "Próximo"
 }: WizardNavigationProps) {
-  if (currentStep === 1) {
-    return null;
-  }
-
   return (
     <div className="flex justify-between pt-4 border-t">
-      <Button
-        variant="outline"
-        onClick={onPrevious}
-        className="flex items-center gap-2"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Voltar
-      </Button>
+      {currentStep > 1 ? (
+        <Button
+          variant="outline"
+          onClick={onPrevious}
+          className="flex items-center gap-2"
+          disabled={isLoading}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+      ) : (
+        <div />
+      )}
       
       {currentStep < totalSteps && (
         <Button
           onClick={onNext}
           className="flex items-center gap-2"
+          disabled={isNextDisabled || isLoading}
         >
-          Próximo
-          <ChevronRight className="h-4 w-4" />
+          {isLoading ? 'Processando...' : nextButtonText}
+          {!isLoading && <ChevronRight className="h-4 w-4" />}
         </Button>
       )}
     </div>

@@ -1,6 +1,5 @@
 
 import React, { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -66,12 +65,6 @@ export function WizardStep4PayerDetails({
       // For individual, apply CPF mask
       const formattedValue = formatCpf(value);
       updateFormData({ payer_cpf: formattedValue });
-    }
-  };
-
-  const handleNext = () => {
-    if (formData.patient_id && formData.payer_cpf) {
-      onNext();
     }
   };
 
@@ -165,15 +158,6 @@ export function WizardStep4PayerDetails({
             )}
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleNext}
-          disabled={!formData.patient_id || !formData.payer_cpf}
-        >
-          Próximo
-        </Button>
       </div>
     </div>
   );

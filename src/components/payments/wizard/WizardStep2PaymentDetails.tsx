@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -9,6 +8,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
 import { PaymentDescriptionField } from '@/components/payments/PaymentDescriptionField';
+import { Button } from '@/components/ui/button';
 import type { WizardFormData } from './types';
 
 interface WizardStep2Props {
@@ -22,12 +22,6 @@ export function WizardStep2PaymentDetails({
   updateFormData,
   onNext
 }: WizardStep2Props) {
-  const handleNext = () => {
-    if (formData.amount > 0 && formData.due_date && formData.description) {
-      onNext();
-    }
-  };
-
   const togglePaymentMethod = (method: 'boleto' | 'creditCard') => {
     updateFormData({
       paymentMethods: {
@@ -143,15 +137,6 @@ export function WizardStep2PaymentDetails({
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleNext}
-          disabled={!formData.amount || !formData.due_date || !formData.description}
-        >
-          Próximo
-        </Button>
       </div>
     </div>
   );

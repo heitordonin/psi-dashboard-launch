@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -147,7 +146,7 @@ export function WizardStep5Summary({
                 <span>{selectedPatient?.full_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">CPF do Pagador:</span>
+                <span className="text-sm text-muted-foreground">CPF/CNPJ do Pagador:</span>
                 <span>{formData.payer_cpf}</span>
               </div>
               <div className="flex justify-between">
@@ -172,23 +171,6 @@ export function WizardStep5Summary({
             <Label htmlFor="isReceived">Marcar como já recebido</Label>
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-between pt-4 border-t">
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onPrevious}>
-            Voltar
-          </Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-        </div>
-        <Button 
-          onClick={() => createPaymentMutation.mutate()}
-          disabled={createPaymentMutation.isPending}
-        >
-          {createPaymentMutation.isPending ? 'Criando...' : 'Criar Cobrança'}
-        </Button>
       </div>
     </div>
   );
