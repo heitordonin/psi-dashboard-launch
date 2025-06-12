@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +24,7 @@ const Patients = () => {
   const { user, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletePatient, setDeletePatient] = useState<Patient | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -127,7 +126,7 @@ const Patients = () => {
 
   const handleEditPatient = (patient: Patient) => {
     setEditingPatient(patient);
-    setShowForm(true);
+    setShowWizard(true);
   };
 
   const handleDeletePatient = (patient: Patient) => {
@@ -140,8 +139,8 @@ const Patients = () => {
     }
   };
 
-  const handleFormClose = () => {
-    setShowForm(false);
+  const handleWizardClose = () => {
+    setShowWizard(false);
     setEditingPatient(null);
   };
 
@@ -151,7 +150,7 @@ const Patients = () => {
       toast.error(`Você atingiu o limite de ${patientLimit} pacientes do seu plano atual. Faça upgrade para adicionar mais pacientes.`);
       return;
     }
-    setShowForm(true);
+    setShowWizard(true);
   };
 
   if (isLoading) {
@@ -285,17 +284,20 @@ const Patients = () => {
               </Card>
             </div>
 
-            {/* Form Modal */}
-            {showForm && (
+            {/* Wizard Modal */}
+            {showWizard && (
+              <CreatePatientWizard onClose={handleWizardClose} />
+            )}
+
+            {/* Edit Patient Form Modal - Keep for editing existing patients */}
+            {editingPatient && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                 <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
                   <div className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">
-                      {editingPatient ? 'Editar Paciente' : 'Novo Paciente'}
-                    </h2>
+                    <h2 className="text-xl font-semibold mb-4">Editar Paciente</h2>
                     <PatientForm
                       patient={editingPatient}
-                      onClose={handleFormClose}
+                      onClose={handleWizardClose}
                     />
                   </div>
                 </div>

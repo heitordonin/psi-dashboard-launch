@@ -7,9 +7,18 @@ import { UserPlus, Link2, Clock } from 'lucide-react';
 
 interface Step1_ChoiceProps {
   onNext: () => void;
+  onChoiceSelect: (type: 'manual' | 'invite') => void;
 }
 
-export const Step1_Choice = ({ onNext }: Step1_ChoiceProps) => {
+export const Step1_Choice = ({ onNext, onChoiceSelect }: Step1_ChoiceProps) => {
+  const handleManualChoice = () => {
+    onChoiceSelect('manual');
+  };
+
+  const handleInviteChoice = () => {
+    onChoiceSelect('invite');
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -21,7 +30,7 @@ export const Step1_Choice = ({ onNext }: Step1_ChoiceProps) => {
         {/* Manual Entry Option */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-blue-300"
-          onClick={onNext}
+          onClick={handleManualChoice}
         >
           <CardHeader className="text-center">
             <UserPlus className="h-12 w-12 mx-auto text-blue-600 mb-2" />
@@ -31,7 +40,7 @@ export const Step1_Choice = ({ onNext }: Step1_ChoiceProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={onNext}>
+            <Button className="w-full" onClick={handleManualChoice}>
               Continuar
             </Button>
           </CardContent>
@@ -53,7 +62,7 @@ export const Step1_Choice = ({ onNext }: Step1_ChoiceProps) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" disabled>
+                  <Button className="w-full" disabled onClick={handleInviteChoice}>
                     Em breve
                   </Button>
                 </CardContent>

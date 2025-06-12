@@ -40,6 +40,7 @@ interface CreatePatientWizardProps {
 
 export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [wizardType, setWizardType] = useState<'manual' | 'invite' | null>(null);
   const [formData, setFormData] = useState<PatientWizardData>({
     full_name: '',
     patient_type: 'individual',
@@ -59,7 +60,14 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
     is_payment_from_abroad: false,
   });
 
-  const totalSteps = 5;
+  // Calculate total steps based on wizard type
+  const getTotalSteps = () => {
+    if (wizardType === 'manual') return 5; // Choice -> Personal -> Address -> Options -> Summary
+    if (wizardType === 'invite') return 2; // Choice -> Invite Success
+    return 2; // Default for choice step
+  };
+
+  const totalSteps = getTotalSteps();
   const progress = (currentStep / totalSteps) * 100;
 
   const handleNext = () => {
@@ -78,10 +86,34 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
+  const handleChoiceSelection = (type: 'manual' | 'invite') => {
+    setWizardType(type);
+    if (type === 'manual') {
+      handleNext(); // Go to personal data step
+    } else {
+      // Handle invite flow - for now just show a placeholder
+      handleNext();
+    }
+  };
+
   const renderStep = () => {
+    if (currentStep === 1) {
+      return <Step1_Choice onNext={handleNext} onChoiceSelect={handleChoiceSelection} />;
+    }
+
+    if (wizardType === 'invite') {
+      // Placeholder for invite flow
+      return (
+        <div className="text-center py-8">
+          <h3 className="text-lg font-semibold mb-2">Envio de Link</h3>
+          <p className="text-gray-600 mb-4">Esta funcionalidade estará disponível em breve.</p>
+          <Button onClick={onClose}>Fechar</Button>
+        </div>
+      );
+    }
+
+    // Manual entry flow
     switch (currentStep) {
-      case 1:
-        return <Step1_Choice onNext={handleNext} />;
       case 2:
         return (
           <Step2_PersonalData

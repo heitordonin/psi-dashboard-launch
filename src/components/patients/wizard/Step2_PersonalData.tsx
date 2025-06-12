@@ -134,6 +134,17 @@ export const Step2_PersonalData = ({
           </div>
         </div>
 
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_payment_from_abroad"
+            checked={formData.is_payment_from_abroad}
+            onCheckedChange={(checked) => updateFormData({ 
+              is_payment_from_abroad: !!checked 
+            })}
+          />
+          <Label htmlFor="is_payment_from_abroad">Pagamento vem do exterior</Label>
+        </div>
+
         {formData.patient_type === 'individual' && (
           <div>
             <Label htmlFor="cpf">
@@ -149,6 +160,9 @@ export const Step2_PersonalData = ({
               disabled={formData.is_payment_from_abroad}
             />
             {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+            {formData.is_payment_from_abroad && (
+              <p className="text-sm text-gray-500 mt-1">CPF não é obrigatório para pagamentos do exterior</p>
+            )}
           </div>
         )}
 
@@ -167,6 +181,9 @@ export const Step2_PersonalData = ({
               disabled={formData.is_payment_from_abroad}
             />
             {errors.cnpj && <p className="text-red-500 text-sm mt-1">{errors.cnpj}</p>}
+            {formData.is_payment_from_abroad && (
+              <p className="text-sm text-gray-500 mt-1">CNPJ não é obrigatório para pagamentos do exterior</p>
+            )}
           </div>
         )}
 
