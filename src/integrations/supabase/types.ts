@@ -190,6 +190,33 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          owner_id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          owner_id: string
+          status?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          owner_id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           cnpj: string | null
