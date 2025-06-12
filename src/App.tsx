@@ -31,6 +31,7 @@ import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
 import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
 import PsicloBankExtrato from '@/pages/PsicloBankExtrato';
+import CadastroPaciente from '@/pages/CadastroPaciente';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/cadastro-paciente" element={<CadastroPaciente />} />
               <Route path="/update-phone" element={
                 <ProtectedRoute>
                   <UpdatePhone />
