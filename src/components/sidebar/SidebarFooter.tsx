@@ -1,5 +1,5 @@
 
-import { User, LogOut, Share2 } from "lucide-react";
+import { User, LogOut, Share2, HeadphonesIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { 
   SidebarFooter as BaseSidebarFooter,
@@ -17,6 +17,11 @@ const bottomItems = [
     title: "Indique um amigo",
     url: "/referral",
     icon: Share2,
+  },
+  {
+    title: "Central de Suporte",
+    url: "/suporte",
+    icon: HeadphonesIcon,
   },
 ];
 
