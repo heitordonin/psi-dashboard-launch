@@ -5,18 +5,12 @@ import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Crown, User, Mail, MapPin } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { formatPhone } from "@/utils/inputFormatters";
-import { AddressForm } from "@/components/profile/AddressForm";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
+import { AddressCard } from "@/components/profile/AddressCard";
+import { EmailSettingsCard } from "@/components/profile/EmailSettingsCard";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -52,11 +46,6 @@ const Profile = () => {
 
     fetchProfile();
   }, [user]);
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setProfile({ ...profile, phone: formatted });
-  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,205 +111,27 @@ const Profile = () => {
         <AppSidebar />
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
-            <div style={{ backgroundColor: '#002472' }} className="border-b px-4 py-4">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-white hover:text-gray-200" />
-                <div>
-                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Perfil</h1>
-                  <p className="text-sm" style={{ color: '#03f6f9' }}>Gerencie suas informações pessoais</p>
-                </div>
-              </div>
-            </div>
+            <ProfileHeader />
 
             <div className="container mx-auto px-4 py-8">
               <div className="max-w-2xl mx-auto space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <User className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <CardTitle>Informações do Perfil</CardTitle>
-                          <CardDescription>Atualize seus dados pessoais e profissionais</CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Crown className="w-4 h-4 text-amber-500" />
-                        <Badge variant="secondary">{currentPlan?.name || 'Freemium'}</Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
+                <PersonalInfoCard
+                  profile={profile}
+                  setProfile={setProfile}
+                  currentPlan={currentPlan}
+                  saving={saving}
+                  onSave={handleSave}
+                />
 
-                  <CardContent>
-                    <form onSubmit={handleSave} className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="full_name">Nome Completo</Label>
-                          <Input
-                            id="full_name"
-                            value={profile.full_name || ''}
-                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                            placeholder="Seu nome completo"
-                          />
-                        </div>
+                <AddressCard
+                  profile={profile}
+                  setProfile={setProfile}
+                />
 
-                        <div>
-                          <Label htmlFor="display_name">Nome de Exibição</Label>
-                          <Input
-                            id="display_name"
-                            value={profile.display_name || ''}
-                            onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-                            placeholder="Como você quer ser chamado"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="cpf">CPF</Label>
-                          <Input
-                            id="cpf"
-                            value={profile.cpf || ''}
-                            onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
-                            placeholder="000.000.000-00"
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="phone">Telefone</Label>
-                          <div className="flex">
-                            <div className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-sm text-gray-600">
-                              {profile.phone_country_code || '+55'}
-                            </div>
-                            <Input
-                              id="phone"
-                              type="tel"
-                              value={profile.phone ? formatPhone(profile.phone) : ''}
-                              onChange={handlePhoneChange}
-                              placeholder="(11) 99999-9999"
-                              maxLength={15}
-                              className="rounded-l-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="birth_date">Data de Nascimento</Label>
-                          <Input
-                            id="birth_date"
-                            type="date"
-                            value={profile.birth_date || ''}
-                            onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="crp_number">Número do CRP</Label>
-                          <Input
-                            id="crp_number"
-                            value={profile.crp_number || ''}
-                            onChange={(e) => setProfile({ ...profile, crp_number: e.target.value })}
-                            placeholder="CRP 00/000000"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="nit_nis_pis">NIT/NIS/PIS</Label>
-                        <Input
-                          id="nit_nis_pis"
-                          value={profile.nit_nis_pis || ''}
-                          onChange={(e) => setProfile({ ...profile, nit_nis_pis: e.target.value })}
-                          placeholder="000.00000.00-0"
-                        />
-                      </div>
-
-                      <div className="flex justify-end pt-4">
-                        <Button type="submit" disabled={saving}>
-                          {saving ? 'Salvando...' : 'Salvar Alterações'}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <MapPin className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div>
-                        <CardTitle>Informações de Endereço</CardTitle>
-                        <CardDescription>Configure seu endereço completo</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent>
-                    <AddressForm 
-                      formData={{
-                        zip_code: profile.zip_code,
-                        street: profile.street,
-                        street_number: profile.street_number,
-                        complement: profile.complement,
-                        neighborhood: profile.neighborhood,
-                        city: profile.city,
-                        state: profile.state,
-                      }}
-                      setFormData={(updater) => {
-                        if (typeof updater === 'function') {
-                          const newAddressData = updater({
-                            zip_code: profile.zip_code,
-                            street: profile.street,
-                            street_number: profile.street_number,
-                            complement: profile.complement,
-                            neighborhood: profile.neighborhood,
-                            city: profile.city,
-                            state: profile.state,
-                          });
-                          setProfile({ ...profile, ...newAddressData });
-                        }
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <Mail className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div>
-                        <CardTitle>Configurações de Email</CardTitle>
-                        <CardDescription>Gerencie suas preferências de notificações por email</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="email-reminders">Lembretes por Email</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receba lembretes automáticos de pagamentos pendentes
-                        </p>
-                      </div>
-                      <Switch
-                        id="email-reminders"
-                        checked={profile.email_reminders_enabled || false}
-                        onCheckedChange={(checked) => 
-                          setProfile({ ...profile, email_reminders_enabled: checked })
-                        }
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <EmailSettingsCard
+                  profile={profile}
+                  setProfile={setProfile}
+                />
               </div>
             </div>
           </div>
