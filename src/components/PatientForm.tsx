@@ -43,12 +43,12 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handlePatientTypeChange = (isCompany: boolean) => {
+  const handlePatientTypeChange = (type: 'individual' | 'company') => {
     setFormData(prev => ({ 
       ...prev, 
-      patient_type: isCompany ? 'company' : 'individual',
-      cpf: isCompany ? '' : prev.cpf,
-      cnpj: isCompany ? prev.cnpj : ''
+      patient_type: type,
+      cpf: type === 'company' ? '' : prev.cpf,
+      cnpj: type === 'company' ? prev.cnpj : ''
     }));
     
     // Clear related errors when switching types

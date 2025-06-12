@@ -36,11 +36,11 @@ export const Step2_PersonalData = ({
 }: Step2_PersonalDataProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handlePatientTypeChange = (isCompany: boolean) => {
+  const handlePatientTypeChange = (type: 'individual' | 'company') => {
     updateFormData({ 
-      patient_type: isCompany ? 'company' : 'individual',
-      cpf: isCompany ? '' : formData.cpf,
-      cnpj: isCompany ? formData.cnpj : ''
+      patient_type: type,
+      cpf: type === 'company' ? '' : formData.cpf,
+      cnpj: type === 'company' ? formData.cnpj : ''
     });
     
     // Clear related errors when switching types
@@ -105,7 +105,7 @@ export const Step2_PersonalData = ({
         <PatientTypeSection
           patientType={formData.patient_type}
           isPaymentFromAbroad={formData.is_payment_from_abroad}
-          onPatientTypeChange={handlePatientTypeChange}
+          onPatientTypeChange={(isCompany) => handlePatientTypeChange(isCompany ? 'company' : 'individual')}
           onPaymentFromAbroadChange={(checked) => updateFormData({ is_payment_from_abroad: checked })}
         />
 

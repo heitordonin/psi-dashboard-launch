@@ -64,6 +64,40 @@ export const patientSchema = z.object({
 
 export type PatientFormData = z.infer<typeof patientSchema>;
 
+// Legacy validation function for existing forms
+export const validatePatientForm = (formData: any): Record<string, string> => {
+  const result = patientSchema.safeParse(formData);
+  
+  if (result.success) {
+    return {}; // No errors
+  }
+  
+  const errors: Record<string, string> = {};
+  
+  // Convert Zod errors to our format
+  result.error.issues.forEach((issue) => {
+    const fieldName = issue.path[0] as string;
+    if (fieldName && !errors[fieldName]) {
+      errors[fieldName] = issue.message;
+    }
+  });
+  
+  // Handle custom validation rules
+  if (formData.patient_type === 'individual' && !formData.cpf && !formData.is_payment_from_abroad) {
+    errors.cpf = 'CPF é obrigatório para pessoa física';
+  }
+  
+  if (formData.patient_type === 'company' && !formData.cnpj && !formData.is_payment_from_abroad) {
+    errors.cnpj = 'CNPJ é obrigatório para pessoa jurídica';
+  }
+  
+  if (formData.has_financial_guardian && !formData.guardian_cpf) {
+    errors.guardian_cpf = 'CPF do responsável é obrigatório';
+  }
+  
+  return errors;
+};
+
 // Additional validation for admin operations
 export const validateAdminPatientOperation = (userId: string, isAdmin: boolean) => {
   if (!userId) {
