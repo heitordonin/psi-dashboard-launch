@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
@@ -32,6 +31,7 @@ import PsicloBankGestao from '@/pages/PsicloBankGestao';
 import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
 import PsicloBankExtrato from '@/pages/PsicloBankExtrato';
 import CadastroPaciente from '@/pages/CadastroPaciente';
+import SupportTicket from './pages/SupportTicket';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +152,14 @@ function App() {
                   </PhoneVerificationGuard>
                 </ProtectedRoute>
               } />
+              <Route 
+                path="/suporte" 
+                element={
+                  <ProtectedRoute>
+                    <SupportTicket />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/admin" element={
                 <AdminRoute>
                   <Admin />
