@@ -1,5 +1,5 @@
 
-import { User, LogOut, Share2 } from "lucide-react";
+import { User, LogOut, Share2, LifeBuoy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { 
   SidebarFooter as BaseSidebarFooter,
@@ -13,6 +13,11 @@ import {
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 const bottomItems = [
+  {
+    title: "Suporte",
+    url: "/suporte",
+    icon: LifeBuoy,
+  },
   {
     title: "Indique um amigo",
     url: "/referral",
