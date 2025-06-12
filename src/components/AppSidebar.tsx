@@ -21,7 +21,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   console.log('AppSidebar - isAdmin:', isAdmin, 'user:', user?.email);
 
   // Show Psiclo Bank section only for paid plans (not free)
-  const showPsicloBankSection = currentPlan?.slug !== 'freemium';
+  const showPsicloBankSection = currentPlan?.slug !== 'free';
 
   return (
     <Sidebar collapsible="icon" {...props}>
