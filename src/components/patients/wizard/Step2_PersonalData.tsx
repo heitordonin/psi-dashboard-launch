@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { validatePatientForm } from '@/utils/patientFormValidation';
-import { formatCpf, formatCnpj, formatPhone } from '@/utils/inputFormatters';
+import { PatientTypeSection } from './sections/PatientTypeSection';
+import { DocumentSection } from './sections/DocumentSection';
+import { ContactSection } from './sections/ContactSection';
 
 interface PatientWizardData {
   full_name: string;
@@ -35,21 +35,6 @@ export const Step2_PersonalData = ({
   onPrevious 
 }: Step2_PersonalDataProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedCpf = formatCpf(e.target.value);
-    updateFormData({ cpf: formattedCpf });
-  };
-
-  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedCnpj = formatCnpj(e.target.value);
-    updateFormData({ cnpj: formattedCnpj });
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedPhone = formatPhone(e.target.value);
-    updateFormData({ phone: formattedPhone });
-  };
 
   const handlePatientTypeChange = (isCompany: boolean) => {
     updateFormData({ 
@@ -117,100 +102,30 @@ export const Step2_PersonalData = ({
           {errors.full_name && <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>}
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>Tipo de Cadastro</Label>
-            <div className="flex items-center space-x-3">
-              <span className={`text-sm ${formData.patient_type === 'individual' ? 'font-medium' : 'text-gray-500'}`}>
-                Pessoa Física
-              </span>
-              <Switch
-                checked={formData.patient_type === 'company'}
-                onCheckedChange={handlePatientTypeChange}
-              />
-              <span className={`text-sm ${formData.patient_type === 'company' ? 'font-medium' : 'text-gray-500'}`}>
-                Empresa
-              </span>
-            </div>
-          </div>
-        </div>
+        <PatientTypeSection
+          patientType={formData.patient_type}
+          isPaymentFromAbroad={formData.is_payment_from_abroad}
+          onPatientTypeChange={handlePatientTypeChange}
+          onPaymentFromAbroadChange={(checked) => updateFormData({ is_payment_from_abroad: checked })}
+        />
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="is_payment_from_abroad"
-            checked={formData.is_payment_from_abroad}
-            onCheckedChange={(checked) => updateFormData({ 
-              is_payment_from_abroad: !!checked 
-            })}
-          />
-          <Label htmlFor="is_payment_from_abroad">Pagamento vem do exterior</Label>
-        </div>
+        <DocumentSection
+          patientType={formData.patient_type}
+          cpf={formData.cpf}
+          cnpj={formData.cnpj}
+          isPaymentFromAbroad={formData.is_payment_from_abroad}
+          errors={errors}
+          onCpfChange={(cpf) => updateFormData({ cpf })}
+          onCnpjChange={(cnpj) => updateFormData({ cnpj })}
+        />
 
-        {formData.patient_type === 'individual' && (
-          <div>
-            <Label htmlFor="cpf">
-              CPF {!formData.is_payment_from_abroad && '*'}
-            </Label>
-            <Input
-              id="cpf"
-              value={formData.cpf}
-              onChange={handleCpfChange}
-              placeholder="000.000.000-00"
-              maxLength={14}
-              className={errors.cpf ? 'border-red-500' : ''}
-              disabled={formData.is_payment_from_abroad}
-            />
-            {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
-            {formData.is_payment_from_abroad && (
-              <p className="text-sm text-gray-500 mt-1">CPF não é obrigatório para pagamentos do exterior</p>
-            )}
-          </div>
-        )}
-
-        {formData.patient_type === 'company' && (
-          <div>
-            <Label htmlFor="cnpj">
-              CNPJ {!formData.is_payment_from_abroad && '*'}
-            </Label>
-            <Input
-              id="cnpj"
-              value={formData.cnpj}
-              onChange={handleCnpjChange}
-              placeholder="00.000.000/0000-00"
-              maxLength={18}
-              className={errors.cnpj ? 'border-red-500' : ''}
-              disabled={formData.is_payment_from_abroad}
-            />
-            {errors.cnpj && <p className="text-red-500 text-sm mt-1">{errors.cnpj}</p>}
-            {formData.is_payment_from_abroad && (
-              <p className="text-sm text-gray-500 mt-1">CNPJ não é obrigatório para pagamentos do exterior</p>
-            )}
-          </div>
-        )}
-
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => updateFormData({ email: e.target.value })}
-            placeholder="email@exemplo.com"
-            className={errors.email ? 'border-red-500' : ''}
-          />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-        </div>
-
-        <div>
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={handlePhoneChange}
-            placeholder="(11) 99999-9999"
-            maxLength={15}
-          />
-        </div>
+        <ContactSection
+          email={formData.email}
+          phone={formData.phone}
+          errors={errors}
+          onEmailChange={(email) => updateFormData({ email })}
+          onPhoneChange={(phone) => updateFormData({ phone })}
+        />
       </div>
 
       <div className="flex justify-between pt-4">
