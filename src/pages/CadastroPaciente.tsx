@@ -9,6 +9,7 @@ import { Step2_PersonalData } from '@/components/patients/wizard/Step2_PersonalD
 import { Step3_Address } from '@/components/patients/wizard/Step3_Address';
 import { Step4_Options } from '@/components/patients/wizard/Step4_Options';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PatientWizardData {
   // Personal data
@@ -36,8 +37,9 @@ interface PatientWizardData {
 
 const CadastroPaciente = () => {
   const [searchParams] = useSearchParams();
-  const [validationState, setValidationState] = useState<'loading' | 'valid' | 'invalid'>('loading');
+  const [validationState, setValidationState] = useState<'loading' | 'valid' | 'invalid' | 'success'>('loading');
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<PatientWizardData>({
     full_name: '',
     patient_type: 'individual',
@@ -109,10 +111,40 @@ const CadastroPaciente = () => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const handleFinalSubmit = () => {
-    console.log('Patient registration data:', formData);
-    console.log('Token:', token);
-    // TODO: Implement final submission logic
+  const handleFinalSubmit = async () => {
+    if (!token) {
+      toast.error('Token não encontrado');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-patient-form', {
+        body: { 
+          formData,
+          token 
+        }
+      });
+
+      if (error) {
+        console.error('Error submitting patient form:', error);
+        toast.error('Erro ao enviar formulário. Tente novamente.');
+        return;
+      }
+
+      if (data?.success) {
+        toast.success('Cadastro realizado com sucesso!');
+        setValidationState('success');
+      } else {
+        toast.error(data?.error || 'Erro ao processar cadastro');
+      }
+    } catch (error) {
+      console.error('Unexpected error submitting form:', error);
+      toast.error('Erro inesperado. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStep = () => {
@@ -178,6 +210,22 @@ const CadastroPaciente = () => {
     );
   }
 
+  if (validationState === 'success') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Cadastro Realizado!</h2>
+            <p className="text-gray-600 mb-4">
+              Seu cadastro foi realizado com sucesso. Em breve você receberá mais informações do seu psicólogo.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
@@ -200,11 +248,23 @@ const CadastroPaciente = () => {
           {renderStep()}
           {currentStep === totalSteps && (
             <div className="flex justify-between pt-4">
-              <Button type="button" variant="outline" onClick={handlePrevious}>
+              <Button type="button" variant="outline" onClick={handlePrevious} disabled={isSubmitting}>
                 Voltar
               </Button>
-              <Button type="button" onClick={handleFinalSubmit} className="bg-green-600 hover:bg-green-700">
-                Finalizar Cadastro
+              <Button 
+                type="button" 
+                onClick={handleFinalSubmit} 
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Finalizando...
+                  </>
+                ) : (
+                  'Finalizar Cadastro'
+                )}
               </Button>
             </div>
           )}
