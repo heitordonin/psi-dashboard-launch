@@ -27,6 +27,9 @@ import Referral from '@/pages/Referral';
 import NotFound from '@/pages/NotFound';
 import UpdatePhone from '@/pages/UpdatePhone';
 import VerifyPhone from '@/pages/VerifyPhone';
+import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
+import PsicloBankGestao from '@/pages/PsicloBankGestao';
+import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +118,27 @@ function App() {
                 <ProtectedRoute>
                   <PhoneVerificationGuard>
                     <Referral />
+                  </PhoneVerificationGuard>
+                </ProtectedRoute>
+              } />
+              <Route path="/psiclo-bank/configuracao" element={
+                <ProtectedRoute>
+                  <PhoneVerificationGuard>
+                    <PsicloBankConfiguracao />
+                  </PhoneVerificationGuard>
+                </ProtectedRoute>
+              } />
+              <Route path="/psiclo-bank/gestao" element={
+                <ProtectedRoute>
+                  <PhoneVerificationGuard>
+                    <PsicloBankGestao />
+                  </PhoneVerificationGuard>
+                </ProtectedRoute>
+              } />
+              <Route path="/psiclo-bank/cadastro-conta" element={
+                <ProtectedRoute>
+                  <PhoneVerificationGuard>
+                    <PsicloBankCadastroConta />
                   </PhoneVerificationGuard>
                 </ProtectedRoute>
               } />

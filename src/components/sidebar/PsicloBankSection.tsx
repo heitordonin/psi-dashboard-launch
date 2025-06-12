@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Banknote, Users } from "lucide-react";
+import { Settings, AreaChart, Landmark } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -10,33 +10,33 @@ import {
   SidebarMenuButton
 } from "@/components/ui/sidebar";
 
-const adminItems = [
+const psicloBankItems = [
   {
-    title: "Painel Administrativo",
-    url: "/admin",
-    icon: Users,
+    title: "Configuração",
+    url: "/psiclo-bank/configuracao",
+    icon: Settings,
   },
   {
-    title: "Dashboard Estratégico",
-    url: "/admin/dashboard",
-    icon: LayoutDashboard,
+    title: "Gestão de Cobranças",
+    url: "/psiclo-bank/gestao",
+    icon: AreaChart,
   },
   {
-    title: "Central Financeira",
-    url: "/admin/financials",
-    icon: Banknote,
+    title: "Cadastro de Conta",
+    url: "/psiclo-bank/cadastro-conta",
+    icon: Landmark,
   },
 ];
 
-export const AdminSection = () => {
+export const PsicloBankSection = () => {
   const location = useLocation();
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Admin</SidebarGroupLabel>
+      <SidebarGroupLabel>Psiclo Bank</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {adminItems.map((item) => {
+          {psicloBankItems.map((item) => {
             const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>
