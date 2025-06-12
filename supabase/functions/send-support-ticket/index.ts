@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
@@ -132,7 +131,7 @@ ${message}
     
     // Send email using Resend
     const emailResponse = await resend.emails.send({
-      from: "Suporte Psiclo <suporte@psiclo.app>",
+      from: "Heitor - Suporte Psiclo <heitor@grupodeclara.com.br>",
       to: ["heitor@grupodeclara.com.br"],
       subject: emailSubject,
       html: emailContent,
