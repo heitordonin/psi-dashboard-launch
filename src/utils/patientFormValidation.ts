@@ -1,53 +1,75 @@
 
-import { validateCpf, validateCnpj } from '@/utils/validators';
+import { z } from 'zod';
+import { validateCPF, validateCNPJ, validateEmail, validatePhoneNumber } from './securityValidation';
 
-interface PatientFormData {
-  full_name: string;
-  patient_type: "individual" | "company";
-  cpf: string;
-  cnpj: string;
-  email: string;
-  phone: string;
-  has_financial_guardian: boolean;
-  guardian_cpf: string;
-  is_payment_from_abroad: boolean;
-}
-
-export const validatePatientForm = (formData: PatientFormData) => {
-  const newErrors: Record<string, string> = {};
-
-  if (!formData.full_name.trim()) {
-    newErrors.full_name = 'Nome completo é obrigatório';
+export const patientSchema = z.object({
+  full_name: z.string()
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres')
+    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'Nome deve conter apenas letras e espaços'),
+  
+  cpf: z.string()
+    .optional()
+    .refine((val) => !val || validateCPF(val), {
+      message: 'CPF inválido'
+    }),
+  
+  cnpj: z.string()
+    .optional()
+    .refine((val) => !val || validateCNPJ(val), {
+      message: 'CNPJ inválido'
+    }),
+  
+  email: z.string()
+    .optional()
+    .refine((val) => !val || validateEmail(val), {
+      message: 'Email inválido'
+    }),
+  
+  phone: z.string()
+    .optional()
+    .refine((val) => !val || validatePhoneNumber(val), {
+      message: 'Telefone inválido'
+    }),
+  
+  patient_type: z.enum(['individual', 'company']),
+  
+  has_financial_guardian: z.boolean().default(false),
+  
+  guardian_cpf: z.string()
+    .optional()
+    .refine((val) => !val || validateCPF(val), {
+      message: 'CPF do responsável inválido'
+    }),
+  
+  is_payment_from_abroad: z.boolean().default(false)
+}).refine((data) => {
+  // If patient is individual, CPF is required
+  if (data.patient_type === 'individual' && !data.cpf) {
+    return false;
   }
-
-  // Document validation based on type and payment origin
-  if (!formData.is_payment_from_abroad) {
-    if (formData.patient_type === 'individual') {
-      if (!formData.cpf) {
-        newErrors.cpf = 'CPF é obrigatório para pessoa física';
-      } else if (!validateCpf(formData.cpf)) {
-        newErrors.cpf = 'CPF deve ter um formato válido';
-      }
-    } else {
-      if (!formData.cnpj) {
-        newErrors.cnpj = 'CNPJ é obrigatório para empresa';
-      } else if (!validateCnpj(formData.cnpj)) {
-        newErrors.cnpj = 'CNPJ deve ter um formato válido';
-      }
-    }
+  // If patient is company, CNPJ is required
+  if (data.patient_type === 'company' && !data.cnpj) {
+    return false;
   }
-
-  if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-    newErrors.email = 'Email deve ter um formato válido';
+  // If has financial guardian, guardian CPF is required
+  if (data.has_financial_guardian && !data.guardian_cpf) {
+    return false;
   }
+  return true;
+}, {
+  message: 'Campos obrigatórios não preenchidos corretamente',
+  path: ['full_name'] // Show error on main field
+});
 
-  if (formData.has_financial_guardian) {
-    if (!formData.guardian_cpf) {
-      newErrors.guardian_cpf = 'CPF do responsável é obrigatório';
-    } else if (!validateCpf(formData.guardian_cpf)) {
-      newErrors.guardian_cpf = 'CPF do responsável deve ter um formato válido';
-    }
+export type PatientFormData = z.infer<typeof patientSchema>;
+
+// Additional validation for admin operations
+export const validateAdminPatientOperation = (userId: string, isAdmin: boolean) => {
+  if (!userId) {
+    throw new Error('Usuário não autenticado');
   }
-
-  return newErrors;
+  
+  // Add any additional admin-specific validations here
+  return true;
 };

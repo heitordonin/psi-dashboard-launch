@@ -8,6 +8,8 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PatientInviteLinkModal } from './PatientInviteLinkModal';
+import { patientInviteRateLimiter } from '@/utils/securityValidation';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface Step1_ChoiceProps {
   onNext: () => void;
@@ -17,10 +19,26 @@ interface Step1_ChoiceProps {
 export const Step1_Choice = ({ onNext, onChoiceSelect }: Step1_ChoiceProps) => {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
+  const { user } = useAuth();
 
   const createInviteMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('create-patient-invite');
+      // Rate limiting check
+      if (!user?.id || !patientInviteRateLimiter(user.id)) {
+        throw new Error('Muitas tentativas. Tente novamente em 1 hora.');
+      }
+
+      // Get JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-patient-invite', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) {
         console.error('Error creating patient invite:', error);
@@ -40,7 +58,8 @@ export const Step1_Choice = ({ onNext, onChoiceSelect }: Step1_ChoiceProps) => {
     },
     onError: (error: any) => {
       console.error('Error creating invite:', error);
-      toast.error('Erro ao criar convite. Tente novamente.');
+      const message = error.message || 'Erro ao criar convite. Tente novamente.';
+      toast.error(message);
     }
   });
 

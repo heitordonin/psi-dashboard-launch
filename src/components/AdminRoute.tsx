@@ -1,31 +1,31 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 
 interface AdminRouteProps {
   children: React.ReactNode;
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isAdmin, isLoading, isCheckingAdmin } = useAuth();
+  const { user, isAuthenticated, isLoading, canPerformAdminAction } = useSecureAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isCheckingAdmin) {
-      if (!user) {
+    if (!isLoading) {
+      if (!isAuthenticated) {
         console.log('User not authenticated, redirecting to login');
         navigate('/login');
-      } else if (!isAdmin) {
-        console.log('User not admin (is_admin:', isAdmin, '), redirecting to dashboard');
+      } else if (!canPerformAdminAction()) {
+        console.log('User not admin, redirecting to dashboard');
         navigate('/dashboard');
       } else {
         console.log('User is admin, granting access');
       }
     }
-  }, [user, isAdmin, isLoading, isCheckingAdmin, navigate]);
+  }, [user, isAuthenticated, isLoading, canPerformAdminAction, navigate]);
 
-  if (isLoading || isCheckingAdmin) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -36,7 +36,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!isAuthenticated || !canPerformAdminAction()) {
     return null;
   }
 
