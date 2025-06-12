@@ -56,8 +56,8 @@ export const HeroSection = () => {
           <div className="relative">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
               <img 
-                src="/lovable-uploads/1b0cf8d8-c799-45c9-8c6f-fc0f61130eff.png" 
-                alt="Dashboard Psiclo" 
+                src="/lovable-uploads/efb794fe-cbf8-4517-8bf5-2de04a20f160.png" 
+                alt="Psicóloga utilizando o Psiclo" 
                 className="w-full h-auto rounded-xl shadow-lg"
               />
             </div>
