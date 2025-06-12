@@ -21,6 +21,7 @@ export const usePsicloBankData = (userId: string | undefined) => {
           )
         `)
         .eq('owner_id', userId)
+        .eq('has_payment_link', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
