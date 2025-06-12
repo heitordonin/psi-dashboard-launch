@@ -313,6 +313,8 @@ export type Database = {
       profiles: {
         Row: {
           birth_date: string | null
+          city: string | null
+          complement: string | null
           cpf: string | null
           created_at: string
           crp_number: string | null
@@ -321,15 +323,22 @@ export type Database = {
           full_name: string | null
           id: string
           is_admin: boolean | null
+          neighborhood: string | null
           nit_nis_pis: string | null
           pagarme_recipient_id: string | null
           phone: string | null
           phone_country_code: string
           phone_verified: boolean
+          state: string | null
+          street: string | null
+          street_number: string | null
           updated_at: string
+          zip_code: string | null
         }
         Insert: {
           birth_date?: string | null
+          city?: string | null
+          complement?: string | null
           cpf?: string | null
           created_at?: string
           crp_number?: string | null
@@ -338,15 +347,22 @@ export type Database = {
           full_name?: string | null
           id: string
           is_admin?: boolean | null
+          neighborhood?: string | null
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
           phone_country_code?: string
           phone_verified?: boolean
+          state?: string | null
+          street?: string | null
+          street_number?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Update: {
           birth_date?: string | null
+          city?: string | null
+          complement?: string | null
           cpf?: string | null
           created_at?: string
           crp_number?: string | null
@@ -355,12 +371,17 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_admin?: boolean | null
+          neighborhood?: string | null
           nit_nis_pis?: string | null
           pagarme_recipient_id?: string | null
           phone?: string | null
           phone_country_code?: string
           phone_verified?: boolean
+          state?: string | null
+          street?: string | null
+          street_number?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
