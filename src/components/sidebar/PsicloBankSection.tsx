@@ -1,5 +1,5 @@
 
-import { Settings, AreaChart, Landmark } from "lucide-react";
+import { Settings, AreaChart, Landmark, Wallet } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -25,6 +25,11 @@ const psicloBankItems = [
     title: "Cadastro de Conta",
     url: "/psiclo-bank/cadastro-conta",
     icon: Landmark,
+  },
+  {
+    title: "Extrato",
+    url: "/psiclo-bank/extrato",
+    icon: Wallet,
   },
 ];
 

@@ -30,6 +30,7 @@ import VerifyPhone from '@/pages/VerifyPhone';
 import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
 import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
+import PsicloBankExtrato from '@/pages/PsicloBankExtrato';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -139,6 +140,13 @@ function App() {
                 <ProtectedRoute>
                   <PhoneVerificationGuard>
                     <PsicloBankCadastroConta />
+                  </PhoneVerificationGuard>
+                </ProtectedRoute>
+              } />
+              <Route path="/psiclo-bank/extrato" element={
+                <ProtectedRoute>
+                  <PhoneVerificationGuard>
+                    <PsicloBankExtrato />
                   </PhoneVerificationGuard>
                 </ProtectedRoute>
               } />
