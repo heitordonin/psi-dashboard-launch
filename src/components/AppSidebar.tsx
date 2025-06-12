@@ -18,10 +18,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, canPerformAdminAction } = useSecureAuth();
   const { currentPlan } = useSubscription();
 
-  console.log('AppSidebar - canPerformAdminAction:', canPerformAdminAction(), 'user:', user?.email);
-
   // Show Psiclo Bank section only for paid plans (not free)
   const showPsicloBankSection = currentPlan?.slug !== 'free';
+  const showAdminSection = canPerformAdminAction();
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -33,7 +32,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
         {showPsicloBankSection && <PsicloBankSection />}
-        {canPerformAdminAction() && <AdminSection />}
+        {showAdminSection && <AdminSection />}
         <SidebarFooter />
       </SidebarContent>
     </Sidebar>
