@@ -1,22 +1,27 @@
 
-import { AlertTriangle, Clock, FileText } from "lucide-react";
+import { CreditCard, BarChart3, FileText, Receipt } from "lucide-react";
 
 export const ProblemsSection = () => {
   const problems = [
     {
+      icon: CreditCard,
+      title: "Dificuldade em cobrar seus pacientes?",
+      description: "Sabemos como é \"chato\" enviar cobranças. Deixe que fazemos isso em nosso nome por você."
+    },
+    {
+      icon: BarChart3,
+      title: "Não sabe o quanto você ganha e gasta?",
+      description: "Gráficos limpos e intuitivos para mostrar sua saúde financeira."
+    },
+    {
       icon: FileText,
       title: "Cansado de planilhas desorganizadas?",
-      description: "Pare de perder tempo organizando dados espalhados em múltiplas planilhas"
+      description: "Pare de perder tempo organizando dados espalhados e sem visualização nenhuma."
     },
     {
-      icon: Clock,
-      title: "Perdendo tempo com cobranças manuais?",
-      description: "Automatize todo seu processo de cobrança e receba pagamentos mais rápido"
-    },
-    {
-      icon: AlertTriangle,
-      title: "Complicações com Receita Saúde e impostos?",
-      description: "Tenha controle total sobre DARF, Carnê-Leão e emissão de recibos"
+      icon: Receipt,
+      title: "Complicações com o Receita Saúde?",
+      description: "Escolha planos que vão desde módulo para copiar as informações com facilidade até deixar a emissão com a gente."
     }
   ];
 
@@ -33,7 +38,7 @@ export const ProblemsSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {problems.map((problem, index) => (
             <div key={index} className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-6 mx-auto">

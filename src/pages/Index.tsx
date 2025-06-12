@@ -6,7 +6,6 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemsSection } from "@/components/landing/ProblemsSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
-import { CredibilitySection } from "@/components/landing/CredibilitySection";
 import { PlansPreviewSection } from "@/components/landing/PlansPreviewSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -42,7 +41,6 @@ const Index = () => {
       <HeroSection />
       <ProblemsSection />
       <FeaturesSection />
-      <CredibilitySection />
       <PlansPreviewSection />
       <FAQSection />
       <LandingFooter />

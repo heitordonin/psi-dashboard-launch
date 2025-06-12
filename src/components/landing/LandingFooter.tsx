@@ -41,8 +41,6 @@ export const LandingFooter = () => {
               <ul className="space-y-2 text-sm text-white/80">
                 <li><a href="#funcionalidades" className="hover:text-white transition-colors">Funcionalidades</a></li>
                 <li><Link to="/plans" className="hover:text-white transition-colors">Planos</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrações</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
               </ul>
             </div>
 
@@ -51,8 +49,6 @@ export const LandingFooter = () => {
               <ul className="space-y-2 text-sm text-white/80">
                 <li><a href="#" className="hover:text-white transition-colors">Central de Ajuda</a></li>
                 <li><a href="#contato" className="hover:text-white transition-colors">Contato</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">WhatsApp</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
               </ul>
             </div>
 
@@ -67,7 +63,7 @@ export const LandingFooter = () => {
           </div>
 
           <div className="border-t border-white/20 mt-8 pt-8 text-center text-sm text-white/60">
-            <p>&copy; 2024 Psiclo. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Psiclo. Todos os direitos reservados.</p>
           </div>
         </div>
       </div>

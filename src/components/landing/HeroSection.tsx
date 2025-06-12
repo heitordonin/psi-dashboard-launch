@@ -40,7 +40,7 @@ export const HeroSection = () => {
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-psiclo-accent" />
-                <span>Teste grátis por 14 dias</span>
+                <span>Versão grátis para iniciar</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-psiclo-accent" />
@@ -55,17 +55,11 @@ export const HeroSection = () => {
 
           <div className="relative">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
-              <div className="bg-white rounded-xl p-6 shadow-lg">
-                <div className="space-y-4">
-                  <div className="h-4 bg-psiclo-primary rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="h-20 bg-psiclo-accent/20 rounded-lg"></div>
-                    <div className="h-20 bg-psiclo-secondary/20 rounded-lg"></div>
-                  </div>
-                  <div className="h-6 bg-gradient-to-r from-psiclo-primary to-psiclo-accent rounded w-full"></div>
-                </div>
-              </div>
+              <img 
+                src="/lovable-uploads/1b0cf8d8-c799-45c9-8c6f-fc0f61130eff.png" 
+                alt="Dashboard Psiclo" 
+                className="w-full h-auto rounded-xl shadow-lg"
+              />
             </div>
           </div>
         </div>
