@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription, useSubscriptionPlans } from "@/hooks/useSubscription";
@@ -25,7 +24,7 @@ const Plans = () => {
 
   const getPlanIcon = (slug: string) => {
     switch (slug) {
-      case 'freemium':
+      case 'gratis':
         return <Star className="w-6 h-6" />;
       case 'basic':
         return <Zap className="w-6 h-6" />;
@@ -83,13 +82,13 @@ const Plans = () => {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Plano Freemium */}
+            {/* Plano Grátis */}
             <Card className="relative">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
                   <Star className="w-8 h-8 text-gray-600" />
                 </div>
-                <CardTitle className="text-2xl">Freemium</CardTitle>
+                <CardTitle className="text-2xl">Grátis</CardTitle>
                 <CardDescription>Ideal para começar</CardDescription>
                 <div className="mt-4">
                   <div className="text-4xl font-bold text-gray-900">Grátis</div>

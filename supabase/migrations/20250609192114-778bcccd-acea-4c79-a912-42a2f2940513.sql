@@ -19,7 +19,7 @@ BEGIN
   
   -- Definir limite baseado no ID do plano usando os slugs corretos
   CASE plan_id
-    WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'free' LIMIT 1) THEN
+    WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'gratis' LIMIT 1) THEN
       patient_limit := 3;
     WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'basic' LIMIT 1) THEN
       patient_limit := 50;

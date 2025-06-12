@@ -23,7 +23,7 @@ BEGIN
   -- Definir limite baseado no ID do plano
   -- Nota: Os UUIDs abaixo devem ser substituídos pelos IDs reais dos planos
   CASE plan_id
-    WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'freemium' LIMIT 1) THEN
+    WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'gratis' LIMIT 1) THEN
       patient_limit := 3;
     WHEN (SELECT id FROM public.subscription_plans WHERE slug = 'basico' LIMIT 1) THEN
       patient_limit := 50;

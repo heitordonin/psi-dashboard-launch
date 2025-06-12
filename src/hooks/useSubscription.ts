@@ -35,7 +35,7 @@ export const useSubscription = () => {
   const { data: patientLimit } = useQuery({
     queryKey: ['patient-limit', user?.id],
     queryFn: async () => {
-      if (!user?.id) return 3; // Default freemium limit
+      if (!user?.id) return 3; // Default grátis limit
       
       const { data, error } = await supabase
         .rpc('get_user_patient_limit', { user_id: user.id });

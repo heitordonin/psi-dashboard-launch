@@ -31,7 +31,7 @@ export const SidebarHeader = () => {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Psiclo</span>
                   <span className="truncate text-xs">
-                    {currentPlan?.name || 'Freemium'}
+                    {currentPlan?.name || 'Grátis'}
                   </span>
                 </div>
               </a>

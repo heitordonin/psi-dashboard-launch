@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 export const PlansPreviewSection = () => {
   const plans = [
     {
-      name: "Freemium",
+      name: "Grátis",
       price: "Grátis",
       period: "para sempre",
       features: [
