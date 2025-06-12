@@ -1,7 +1,5 @@
 
 import React, { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -11,50 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { HeadphonesIcon, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { HeadphonesIcon } from 'lucide-react';
 
 const SupportTicket = () => {
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
-
-  const supportTicketMutation = useMutation({
-    mutationFn: async ({ subject, category, message }: { subject: string, category: string, message: string }) => {
-      const { data, error } = await supabase.functions.invoke('send-support-ticket', {
-        body: { subject, category, message }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      return data;
-    },
-    onSuccess: () => {
-      toast.success('Chamado enviado com sucesso!');
-      // Reset form fields
-      setSubject('');
-      setCategory('');
-      setMessage('');
-    },
-    onError: (error) => {
-      console.error('Error sending support ticket:', error);
-      toast.error('Erro ao enviar o chamado. Tente novamente.');
-    }
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!subject.trim() || !category || !message.trim()) {
-      toast.error('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    supportTicketMutation.mutate({ subject, category, message });
-  };
 
   return (
     <SidebarProvider>
@@ -85,7 +45,7 @@ const SupportTicket = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="subject">Assunto *</Label>
                       <Input
@@ -94,17 +54,12 @@ const SupportTicket = () => {
                         placeholder="Descreva brevemente o problema ou solicitação"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        disabled={supportTicketMutation.isPending}
                       />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="category">Categoria *</Label>
-                      <Select 
-                        value={category} 
-                        onValueChange={setCategory}
-                        disabled={supportTicketMutation.isPending}
-                      >
+                      <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione uma categoria" />
                         </SelectTrigger>
@@ -125,24 +80,12 @@ const SupportTicket = () => {
                         rows={6}
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        disabled={supportTicketMutation.isPending}
                       />
                     </div>
 
                     <div className="flex justify-end">
-                      <Button 
-                        type="submit" 
-                        size="lg"
-                        disabled={supportTicketMutation.isPending}
-                      >
-                        {supportTicketMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : (
-                          'Enviar Chamado'
-                        )}
+                      <Button type="button" size="lg">
+                        Enviar Chamado
                       </Button>
                     </div>
                   </form>
