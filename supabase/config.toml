@@ -21,6 +21,3 @@ verify_jwt = true
 
 [functions.validate-patient-invite]
 verify_jwt = false
-
-[functions.submit-patient-form]
-verify_jwt = false
