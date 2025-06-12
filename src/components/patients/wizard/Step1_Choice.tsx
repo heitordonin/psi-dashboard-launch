@@ -1,9 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserPlus, Link2, Clock } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { PatientInviteLinkModal } from './PatientInviteLinkModal';
 
 interface Step1_ChoiceProps {
   onNext: () => void;
@@ -11,12 +15,46 @@ interface Step1_ChoiceProps {
 }
 
 export const Step1_Choice = ({ onNext, onChoiceSelect }: Step1_ChoiceProps) => {
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
+
+  const createInviteMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('create-patient-invite');
+      
+      if (error) {
+        console.error('Error creating patient invite:', error);
+        throw error;
+      }
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.inviteUrl) {
+        setGeneratedLink(data.inviteUrl);
+        setIsLinkModalOpen(true);
+        toast.success('Link de convite criado com sucesso!');
+      } else {
+        toast.error('Erro ao gerar link de convite');
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error creating invite:', error);
+      toast.error('Erro ao criar convite. Tente novamente.');
+    }
+  });
+
   const handleManualChoice = () => {
     onChoiceSelect('manual');
   };
 
   const handleInviteChoice = () => {
-    onChoiceSelect('invite');
+    createInviteMutation.mutate();
+  };
+
+  const handleCloseModal = () => {
+    setIsLinkModalOpen(false);
+    setGeneratedLink('');
   };
 
   return (
@@ -46,34 +84,36 @@ export const Step1_Choice = ({ onNext, onChoiceSelect }: Step1_ChoiceProps) => {
           </CardContent>
         </Card>
 
-        {/* Self-Registration Option (Disabled) */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card className="cursor-not-allowed opacity-50 border-2">
-                <CardHeader className="text-center">
-                  <div className="relative">
-                    <Link2 className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                    <Clock className="h-6 w-6 absolute -top-1 -right-1 text-orange-500" />
-                  </div>
-                  <CardTitle>Enviar link de cadastro</CardTitle>
-                  <CardDescription>
-                    O paciente preenche seus próprios dados
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full" disabled onClick={handleInviteChoice}>
-                    Em breve
-                  </Button>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Esta funcionalidade estará disponível em breve</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/* Self-Registration Option */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-green-300"
+          onClick={handleInviteChoice}
+        >
+          <CardHeader className="text-center">
+            <Link2 className="h-12 w-12 mx-auto text-green-600 mb-2" />
+            <CardTitle>Enviar link de cadastro</CardTitle>
+            <CardDescription>
+              O paciente preenche seus próprios dados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={handleInviteChoice}
+              disabled={createInviteMutation.isPending}
+            >
+              {createInviteMutation.isPending ? 'Gerando...' : 'Gerar Link'}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      <PatientInviteLinkModal
+        isOpen={isLinkModalOpen}
+        onClose={handleCloseModal}
+        inviteLink={generatedLink}
+      />
     </div>
   );
 };
