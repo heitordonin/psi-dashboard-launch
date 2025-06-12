@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useSubscription, useSubscriptionPlans } from "@/hooks/useSubscription";
@@ -26,7 +27,7 @@ const Plans = () => {
     switch (slug) {
       case 'gratis':
         return <Star className="w-6 h-6" />;
-      case 'basic':
+      case 'gestao':
         return <Zap className="w-6 h-6" />;
       case 'psi_regular':
         return <Crown className="w-6 h-6" />;
@@ -120,6 +121,44 @@ const Plans = () => {
               </CardContent>
             </Card>
 
+            {/* Plano Gestão */}
+            <Card className="relative">
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <Zap className="w-8 h-8 text-psiclo-secondary" />
+                </div>
+                <CardTitle className="text-2xl">Gestão</CardTitle>
+                <CardDescription>Para profissionais organizados</CardDescription>
+                <div className="mt-4">
+                  <div className="text-4xl font-bold text-psiclo-secondary">R$ 89,00</div>
+                  <div className="text-sm text-gray-500">por mês</div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-sm">Até 50 pacientes</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-sm">Dashboard avançado</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-sm">Relatórios mensais</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-sm">Suporte prioritário</span>
+                  </div>
+                </div>
+                <Link to="/signup">
+                  <Button className="w-full" variant="outline">Escolher Plano</Button>
+                </Link>
+              </CardContent>
+            </Card>
+
             {/* Plano Psi Regular */}
             <Card className="relative ring-2 ring-psiclo-accent scale-105">
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-psiclo-accent text-psiclo-primary">
@@ -132,7 +171,7 @@ const Plans = () => {
                 <CardTitle className="text-2xl">Psi Regular</CardTitle>
                 <CardDescription>Para profissionais sérios</CardDescription>
                 <div className="mt-4">
-                  <div className="text-4xl font-bold text-psiclo-primary">R$ 49,90</div>
+                  <div className="text-4xl font-bold text-psiclo-primary">R$ 389,00</div>
                   <div className="text-sm text-gray-500">por mês</div>
                 </div>
               </CardHeader>
@@ -167,48 +206,6 @@ const Plans = () => {
                   <Button className="w-full bg-psiclo-accent hover:bg-psiclo-accent/90 text-psiclo-primary">
                     Escolher Plano
                   </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Plano Psi Pro */}
-            <Card className="relative">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <Zap className="w-8 h-8 text-psiclo-secondary" />
-                </div>
-                <CardTitle className="text-2xl">Psi Pro</CardTitle>
-                <CardDescription>Máximo desempenho</CardDescription>
-                <div className="mt-4">
-                  <div className="text-4xl font-bold text-psiclo-secondary">R$ 89,90</div>
-                  <div className="text-sm text-gray-500">por mês</div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Tudo do Regular</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Radar PJ - Simulação</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Relatórios avançados</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">API personalizada</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Suporte dedicado</span>
-                  </div>
-                </div>
-                <Link to="/signup">
-                  <Button className="w-full" variant="outline">Escolher Plano</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -296,12 +293,12 @@ const Plans = () => {
                       
                       <div className="mt-4">
                         <div className="text-3xl font-bold">
-                          R$ {plan.price_monthly.toFixed(2)}
+                          R$ {(plan.price_monthly / 100).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-500">por mês</div>
                         {plan.price_yearly > 0 && (
                           <div className="text-sm text-green-600 mt-1">
-                            ou R$ {plan.price_yearly.toFixed(2)}/ano
+                            ou R$ {(plan.price_yearly / 100).toFixed(2)}/ano
                           </div>
                         )}
                       </div>

@@ -20,8 +20,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   console.log('AppSidebar - canPerformAdminAction:', canPerformAdminAction(), 'user:', user?.email);
 
-  // Show Psiclo Bank section only for paid plans (not free)
-  const showPsicloBankSection = currentPlan?.slug !== 'free';
+  // Show Psiclo Bank section only for paid plans (not gratis)
+  const showPsicloBankSection = currentPlan?.slug !== 'gratis';
 
   return (
     <Sidebar collapsible="icon" {...props}>

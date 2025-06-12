@@ -18,8 +18,20 @@ export const PlansPreviewSection = () => {
       popular: false
     },
     {
+      name: "Gestão",
+      price: "R$ 89,00",
+      period: "/mês",
+      features: [
+        "Até 50 pacientes",
+        "Dashboard avançado",
+        "Relatórios mensais",
+        "Suporte prioritário"
+      ],
+      popular: false
+    },
+    {
       name: "Psi Regular",
-      price: "R$ 49,90",
+      price: "R$ 389,00",
       period: "/mês",
       features: [
         "Pacientes ilimitados",
@@ -30,19 +42,6 @@ export const PlansPreviewSection = () => {
         "Suporte prioritário"
       ],
       popular: true
-    },
-    {
-      name: "Psi Pro",
-      price: "R$ 89,90",
-      period: "/mês",
-      features: [
-        "Tudo do Regular",
-        "Radar PJ - Simulação",
-        "Relatórios avançados",
-        "API personalizada",
-        "Suporte dedicado"
-      ],
-      popular: false
     }
   ];
 
