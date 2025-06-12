@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,18 +119,28 @@ const CadastroPaciente = () => {
     setIsSubmitting(true);
 
     try {
-      // For now, just log the data as requested
-      console.log('Form data to submit:', formData);
-      console.log('Token:', token);
-      
-      // Simulate submission
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.success('Cadastro realizado com sucesso!');
-      setValidationState('success');
+      const { data, error } = await supabase.functions.invoke('submit-patient-form', {
+        body: { 
+          formData,
+          token 
+        }
+      });
+
+      if (error) {
+        console.error('Error submitting patient form:', error);
+        toast.error('Erro ao enviar formulário. Tente novamente.');
+        return;
+      }
+
+      if (data?.success) {
+        toast.success('Cadastro realizado com sucesso!');
+        setValidationState('success');
+      } else {
+        toast.error(data?.error || 'Erro ao processar cadastro');
+      }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error('Erro ao enviar formulário. Tente novamente.');
+      console.error('Unexpected error submitting form:', error);
+      toast.error('Erro inesperado. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
