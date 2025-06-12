@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.send-email-reminder]
 verify_jwt = false
+
+[functions.get-pagarme-balance]
+verify_jwt = false
