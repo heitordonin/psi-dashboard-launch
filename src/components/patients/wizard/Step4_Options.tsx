@@ -1,0 +1,112 @@
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { validatePatientForm } from '@/utils/patientFormValidation';
+import { formatCpf } from '@/utils/inputFormatters';
+
+interface PatientWizardData {
+  has_financial_guardian: boolean;
+  guardian_cpf: string;
+  is_payment_from_abroad: boolean;
+  [key: string]: any;
+}
+
+interface Step4_OptionsProps {
+  formData: PatientWizardData;
+  updateFormData: (updates: Partial<PatientWizardData>) => void;
+  onNext: () => void;
+  onPrevious: () => void;
+}
+
+export const Step4_Options = ({ 
+  formData, 
+  updateFormData, 
+  onNext, 
+  onPrevious 
+}: Step4_OptionsProps) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleGuardianCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCpf = formatCpf(e.target.value);
+    updateFormData({ guardian_cpf: formattedCpf });
+  };
+
+  const handleNext = () => {
+    const validationErrors = validatePatientForm(formData);
+    
+    // Filter errors relevant to this step
+    const stepErrors: Record<string, string> = {};
+    if (validationErrors.guardian_cpf) {
+      stepErrors.guardian_cpf = validationErrors.guardian_cpf;
+    }
+
+    setErrors(stepErrors);
+    
+    if (Object.keys(stepErrors).length === 0) {
+      onNext();
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold mb-2">Opções Adicionais</h3>
+        <p className="text-gray-600">Configure opções especiais para este paciente</p>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_payment_from_abroad"
+            checked={formData.is_payment_from_abroad}
+            onCheckedChange={(checked) => updateFormData({ 
+              is_payment_from_abroad: !!checked 
+            })}
+          />
+          <Label htmlFor="is_payment_from_abroad">Pagamento vem do exterior</Label>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="has_financial_guardian"
+              checked={formData.has_financial_guardian}
+              onCheckedChange={(checked) => updateFormData({ 
+                has_financial_guardian: !!checked,
+                guardian_cpf: checked ? formData.guardian_cpf : ''
+              })}
+            />
+            <Label htmlFor="has_financial_guardian">Tem responsável financeiro</Label>
+          </div>
+
+          {formData.has_financial_guardian && (
+            <div>
+              <Label htmlFor="guardian_cpf">CPF do Responsável *</Label>
+              <Input
+                id="guardian_cpf"
+                value={formData.guardian_cpf}
+                onChange={handleGuardianCpfChange}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={errors.guardian_cpf ? 'border-red-500' : ''}
+              />
+              {errors.guardian_cpf && <p className="text-red-500 text-sm mt-1">{errors.guardian_cpf}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-between pt-4">
+        <Button type="button" variant="outline" onClick={onPrevious}>
+          Voltar
+        </Button>
+        <Button type="button" onClick={handleNext}>
+          Próximo
+        </Button>
+      </div>
+    </div>
+  );
+};

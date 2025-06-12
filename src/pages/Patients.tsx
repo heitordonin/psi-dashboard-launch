@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { PatientForm } from "@/components/PatientForm";
+import { CreatePatientWizard } from "@/components/patients/CreatePatientWizard";
 import { PatientAdvancedFilter, PatientFilters } from "@/components/patients/PatientAdvancedFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
