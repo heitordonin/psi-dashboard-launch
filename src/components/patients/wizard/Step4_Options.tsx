@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { validatePatientForm } from '@/utils/patientFormValidation';
 import { formatCpf } from '@/utils/inputFormatters';
+import { validateCpf } from '@/utils/validators';
 
 interface PatientWizardData {
   has_financial_guardian: boolean;
@@ -35,12 +35,15 @@ export const Step4_Options = ({
   };
 
   const handleNext = () => {
-    const validationErrors = validatePatientForm(formData);
-    
-    // Filter errors relevant to this step
+    // Custom validation for this step only
     const stepErrors: Record<string, string> = {};
-    if (validationErrors.guardian_cpf) {
-      stepErrors.guardian_cpf = validationErrors.guardian_cpf;
+    
+    if (formData.has_financial_guardian && formData.guardian_cpf) {
+      if (!validateCpf(formData.guardian_cpf)) {
+        stepErrors.guardian_cpf = 'CPF inválido';
+      }
+    } else if (formData.has_financial_guardian && !formData.guardian_cpf) {
+      stepErrors.guardian_cpf = 'CPF do responsável é obrigatório';
     }
 
     setErrors(stepErrors);
