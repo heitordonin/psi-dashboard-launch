@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -10,11 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Crown, User, Mail } from "lucide-react";
+import { Crown, User, Mail, MapPin } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { formatPhone } from "@/utils/inputFormatters";
+import { AddressForm } from "@/components/profile/AddressForm";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -75,7 +77,15 @@ const Profile = () => {
           nit_nis_pis: profile.nit_nis_pis,
           phone: cleanedPhone,
           phone_country_code: profile.phone_country_code || '+55',
-          email_reminders_enabled: profile.email_reminders_enabled
+          email_reminders_enabled: profile.email_reminders_enabled,
+          // Address fields
+          zip_code: profile.zip_code,
+          street: profile.street,
+          street_number: profile.street_number,
+          complement: profile.complement,
+          neighborhood: profile.neighborhood,
+          city: profile.city,
+          state: profile.state,
         })
         .eq('id', user?.id);
 
@@ -235,6 +245,48 @@ const Profile = () => {
                         </Button>
                       </div>
                     </form>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <MapPin className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <CardTitle>Informações de Endereço</CardTitle>
+                        <CardDescription>Configure seu endereço completo</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent>
+                    <AddressForm 
+                      formData={{
+                        zip_code: profile.zip_code,
+                        street: profile.street,
+                        street_number: profile.street_number,
+                        complement: profile.complement,
+                        neighborhood: profile.neighborhood,
+                        city: profile.city,
+                        state: profile.state,
+                      }}
+                      setFormData={(updater) => {
+                        if (typeof updater === 'function') {
+                          const newAddressData = updater({
+                            zip_code: profile.zip_code,
+                            street: profile.street,
+                            street_number: profile.street_number,
+                            complement: profile.complement,
+                            neighborhood: profile.neighborhood,
+                            city: profile.city,
+                            state: profile.state,
+                          });
+                          setProfile({ ...profile, ...newAddressData });
+                        }
+                      }}
+                    />
                   </CardContent>
                 </Card>
 
