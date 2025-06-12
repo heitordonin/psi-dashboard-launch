@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.get-pagarme-balance]
 verify_jwt = false
+
+[functions.create-patient-invite]
+verify_jwt = true
