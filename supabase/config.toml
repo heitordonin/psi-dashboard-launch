@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.submit-patient-form]
 verify_jwt = false
+
+[functions.send-support-ticket]
+verify_jwt = true
