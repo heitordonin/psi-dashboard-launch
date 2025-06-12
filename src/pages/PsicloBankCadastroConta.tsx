@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { RecipientSetup } from "@/components/payments/RecipientSetup";
 import { useEffect } from "react";
 
 const PsicloBankCadastroConta = () => {
@@ -40,16 +41,15 @@ const PsicloBankCadastroConta = () => {
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="text-white hover:text-gray-200" />
                 <div>
-                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Cadastro de Conta</h1>
-                  <p className="text-sm" style={{ color: '#03f6f9' }}>Cadastre suas contas bancárias</p>
+                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Cadastro de Conta Bancária</h1>
+                  <p className="text-sm" style={{ color: '#03f6f9' }}>Configure a conta onde você receberá seus pagamentos</p>
                 </div>
               </div>
             </div>
 
             <div className="container mx-auto px-4 py-8">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">Cadastro de Conta</h1>
-                <p className="text-gray-600">Esta página está em desenvolvimento.</p>
+              <div className="max-w-2xl mx-auto">
+                <RecipientSetup />
               </div>
             </div>
           </div>
