@@ -2,21 +2,18 @@
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LandingHeader } from "@/components/landing/LandingHeader";
-import { HeroSection } from "@/components/landing/HeroSection";
-import { ProblemsSection } from "@/components/landing/ProblemsSection";
-import { FeaturesSection } from "@/components/landing/FeaturesSection";
-import { PlansPreviewSection } from "@/components/landing/PlansPreviewSection";
-import { FAQSection } from "@/components/landing/FAQSection";
-import { LandingFooter } from "@/components/landing/LandingFooter";
 
 const Index = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && user) {
-      navigate("/dashboard");
+    if (!isLoading) {
+      if (user) {
+        navigate("/dashboard");
+      } else {
+        navigate("/login");
+      }
     }
   }, [user, isLoading, navigate]);
 
@@ -31,21 +28,7 @@ const Index = () => {
     );
   }
 
-  if (user) {
-    return null; // Will redirect to dashboard
-  }
-
-  return (
-    <div className="min-h-screen">
-      <LandingHeader />
-      <HeroSection />
-      <ProblemsSection />
-      <FeaturesSection />
-      <PlansPreviewSection />
-      <FAQSection />
-      <LandingFooter />
-    </div>
-  );
+  return null; // Will redirect based on auth state
 };
 
 export default Index;
