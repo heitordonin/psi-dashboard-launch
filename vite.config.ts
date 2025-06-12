@@ -1,5 +1,4 @@
 
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -28,8 +27,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -37,19 +35,23 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    // Ensure proper environment variables
     'process.env.NODE_ENV': JSON.stringify(mode),
   },
   build: {
     sourcemap: mode === 'development',
+    target: 'esnext',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          supabase: ['@supabase/supabase-js'],
+          query: ['@tanstack/react-query']
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@supabase/supabase-js', '@tanstack/react-query']
   }
 }));
-
