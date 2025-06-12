@@ -132,7 +132,7 @@ ${message}
     
     // Send email using Resend
     const emailResponse = await resend.emails.send({
-      from: "Suporte Psiclo <nao-responda@psiclo.app>",
+      from: "Suporte Psiclo <suporte@psiclo.app>",
       to: ["heitor@grupodeclara.com.br"],
       subject: emailSubject,
       html: emailContent,
