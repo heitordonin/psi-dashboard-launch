@@ -1,12 +1,16 @@
 
 import { useState, useEffect } from 'react';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import type { CreatePaymentWizardProps, WizardFormData } from './types';
 
 export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick<CreatePaymentWizardProps, 'paymentToEdit' | 'patients' | 'isOpen'>) {
+  const { canPerformAdminAction } = useSecureAuth();
   const isEditMode = !!paymentToEdit;
+  const isAdmin = canPerformAdminAction();
+  
   const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0);
   const [formData, setFormData] = useState<WizardFormData>({
-    chargeType: 'link',
+    chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
     paymentType: 'single',
     amount: 0,
     due_date: '',
@@ -55,6 +59,11 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
     setFormData(prev => {
       const newData = { ...prev, ...updates };
       
+      // Prevent non-admins from selecting 'link' chargeType
+      if ('chargeType' in updates && updates.chargeType === 'link' && !isAdmin) {
+        newData.chargeType = 'manual';
+      }
+      
       // Handle isReceived logic
       if ('isReceived' in updates) {
         if (updates.isReceived) {
@@ -71,7 +80,7 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
   const resetWizard = () => {
     setCurrentStep(isEditMode ? 1 : 0);
     setFormData({
-      chargeType: 'link',
+      chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
       paymentType: 'single',
       amount: 0,
       due_date: '',
