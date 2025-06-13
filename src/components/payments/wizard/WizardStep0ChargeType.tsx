@@ -38,7 +38,7 @@ export function WizardStep0ChargeType({ selectedType, onSelect }: WizardStep0Pro
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Gera link de pagamento automático</li>
                 <li>• Permite pagamento por cartão ou boleto</li>
-                <li>• Envio de lembretes automáticos</li>
+                <li>• Envio de lembretes</li>
                 <li>• Confirmação de pagamento em tempo real</li>
               </ul>
               <Button 
@@ -71,10 +71,10 @@ export function WizardStep0ChargeType({ selectedType, onSelect }: WizardStep0Pro
             </CardHeader>
             <CardContent>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Apenas para controle e histórico</li>
+                <li>• Ideal quando cobrar via PIX fixo</li>
                 <li>• Não gera link de pagamento</li>
-                <li>• Ideal para pagamentos presenciais</li>
-                <li>• Registro manual de recebimento</li>
+                <li>• Ideal para pagamentos já recebidos</li>
+                <li>• Baixa manual de recebimento</li>
               </ul>
               <Button 
                 variant={selectedType === 'manual' ? 'default' : 'outline'} 
