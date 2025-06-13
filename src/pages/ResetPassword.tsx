@@ -143,7 +143,7 @@ const ResetPassword = () => {
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Redefinindo...' : 'Redefinir Senha'}
+              {isLoading ? 'Atualizando...' : 'Atualizar'}
             </Button>
           </form>
         </CardContent>
