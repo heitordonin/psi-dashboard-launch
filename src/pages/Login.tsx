@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { toast } from 'sonner';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -76,7 +78,14 @@ const Login = () => {
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => setIsForgotPasswordOpen(true)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Esqueci minha senha
+            </button>
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
               <Link to="/signup" className="text-blue-600 hover:underline">
@@ -86,6 +95,11 @@ const Login = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ForgotPasswordModal 
+        open={isForgotPasswordOpen}
+        onOpenChange={setIsForgotPasswordOpen}
+      />
     </div>
   );
 };
