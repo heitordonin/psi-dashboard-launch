@@ -4,6 +4,7 @@ import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import CadastroPaciente from '@/pages/CadastroPaciente';
+import ResetPassword from '@/pages/ResetPassword';
 import NotFound from '@/pages/NotFound';
 import { protectedRoutes } from './ProtectedRoutes';
 import { adminRoutes } from './AdminRoutes';
@@ -16,6 +17,7 @@ export function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/cadastro-paciente" element={<CadastroPaciente />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       
       {/* Protected Routes */}
       {protectedRoutes}
