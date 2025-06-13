@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
@@ -125,32 +126,40 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/psiclo-bank/configuracao" element={
-                <ProtectedRoute>
-                  <PhoneVerificationGuard>
-                    <PsicloBankConfiguracao />
-                  </PhoneVerificationGuard>
-                </ProtectedRoute>
+                <AdminRoute>
+                  <ProtectedRoute>
+                    <PhoneVerificationGuard>
+                      <PsicloBankConfiguracao />
+                    </PhoneVerificationGuard>
+                  </ProtectedRoute>
+                </AdminRoute>
               } />
               <Route path="/psiclo-bank/gestao" element={
-                <ProtectedRoute>
-                  <PhoneVerificationGuard>
-                    <PsicloBankGestao />
-                  </PhoneVerificationGuard>
-                </ProtectedRoute>
+                <AdminRoute>
+                  <ProtectedRoute>
+                    <PhoneVerificationGuard>
+                      <PsicloBankGestao />
+                    </PhoneVerificationGuard>
+                  </ProtectedRoute>
+                </AdminRoute>
               } />
               <Route path="/psiclo-bank/cadastro-conta" element={
-                <ProtectedRoute>
-                  <PhoneVerificationGuard>
-                    <PsicloBankCadastroConta />
-                  </PhoneVerificationGuard>
-                </ProtectedRoute>
+                <AdminRoute>
+                  <ProtectedRoute>
+                    <PhoneVerificationGuard>
+                      <PsicloBankCadastroConta />
+                    </PhoneVerificationGuard>
+                  </ProtectedRoute>
+                </AdminRoute>
               } />
               <Route path="/psiclo-bank/extrato" element={
-                <ProtectedRoute>
-                  <PhoneVerificationGuard>
-                    <PsicloBankExtrato />
-                  </PhoneVerificationGuard>
-                </ProtectedRoute>
+                <AdminRoute>
+                  <ProtectedRoute>
+                    <PhoneVerificationGuard>
+                      <PsicloBankExtrato />
+                    </PhoneVerificationGuard>
+                  </ProtectedRoute>
+                </AdminRoute>
               } />
               <Route 
                 path="/suporte" 
