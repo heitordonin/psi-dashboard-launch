@@ -23,9 +23,9 @@ export const SidebarHeader = () => {
               <a href="/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-sidebar-primary-foreground">
                   <img 
-                    src="/lovable-uploads/dd8b5b26-acf5-48d0-8293-7f42227c7b84.png" 
+                    src="/lovable-uploads/efb794fe-cbf8-4517-8bf5-2de04a20f160.png" 
                     alt="Psiclo" 
-                    className="size-6"
+                    className="h-6 w-auto"
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
