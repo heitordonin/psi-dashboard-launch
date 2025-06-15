@@ -3,25 +3,22 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Smartphone } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface PhoneVerificationGuardProps {
   children: React.ReactNode;
 }
 
 const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [sendingOtp, setSendingOtp] = useState(false);
 
+  // Step 1: Fetch the user's profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (user) {
+        setLoadingProfile(true);
         const { data, error } = await supabase
           .from('profiles')
           .select('phone, phone_verified, phone_country_code')
@@ -29,7 +26,7 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
           .single();
 
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.error('PhoneVerificationGuard: Error fetching profile:', error);
         } else {
           setProfile(data);
         }
@@ -37,114 +34,69 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
       }
     };
 
-    if (!isLoading && user) {
+    if (!isAuthLoading) {
       fetchProfile();
     }
-  }, [user, isLoading]);
+  }, [user, isAuthLoading]);
 
-  const handleSendOtp = async () => {
-    if (!profile?.phone) {
-      navigate('/update-phone');
+  // Step 2: Implement the redirection logic based on profile status
+  useEffect(() => {
+    if (loadingProfile || isAuthLoading) {
+      return; // Wait until all data is loaded
+    }
+
+    if (!user) {
+      navigate('/login');
       return;
     }
 
-    setSendingOtp(true);
-    try {
-      // Concatenar código do país com o número local para formar E.164
-      const countryCode = profile.phone_country_code || '+55';
-      const fullPhoneNumber = `${countryCode}${profile.phone}`;
-
-      const { error } = await supabase.functions.invoke('trigger-phone-otp', {
-        body: { phone: fullPhoneNumber }
-      });
-
-      if (error) {
-        console.error('Erro ao enviar OTP:', error);
-        toast.error('Erro ao enviar código de verificação');
-      } else {
-        toast.success('Código enviado para seu WhatsApp!');
-        // Passar o número completo via navigation state
-        navigate('/verify-phone', { 
-          state: { 
+    if (profile) {
+      if (profile.phone_verified) {
+        // All good, do nothing and let the component render children.
+        return;
+      }
+      
+      if (profile.phone) {
+        // Phone exists but is not verified, redirect to the verification page.
+        const countryCode = profile.phone_country_code || '+55';
+        const fullPhoneNumber = `${countryCode}${profile.phone}`;
+        navigate('/verify-phone', {
+          state: {
             phone: fullPhoneNumber,
             displayPhone: `${countryCode} ${profile.phone}`
-          } 
+          }
         });
+      } else {
+        // No phone number exists, redirect to the update page.
+        navigate('/update-phone');
       }
-    } catch (error) {
-      console.error('Erro:', error);
-      toast.error('Erro ao enviar código de verificação');
-    } finally {
-      setSendingOtp(false);
+    } else {
+       // Profile could not be loaded, maybe a new user without a profile yet.
+       // Redirecting to update phone is a safe fallback.
+       navigate('/update-phone');
     }
-  };
 
-  if (isLoading || loadingProfile) {
+  }, [profile, loadingProfile, isAuthLoading, user, navigate]);
+
+  // Step 3: Render loading state or children
+  if (isAuthLoading || loadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4">Carregando...</p>
+          <p className="mt-4">Verificando...</p>
         </div>
       </div>
     );
   }
 
-  // Se não tem telefone cadastrado, redireciona para cadastro
-  if (!profile?.phone) {
-    navigate('/update-phone');
-    return null;
-  }
-
-  // Se o telefone já está verificado, renderiza o children
+  // Render children only if the phone is verified. Otherwise, the useEffect will handle redirection.
   if (profile?.phone_verified) {
     return <>{children}</>;
   }
 
-  // Se o telefone não está verificado, mostra tela de verificação
-  const countryCode = profile.phone_country_code || '+55';
-  const formattedPhone = `${countryCode} ${profile.phone}`;
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <Smartphone className="h-6 w-6 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Verificação de WhatsApp</CardTitle>
-          <CardDescription>
-            Precisamos verificar seu número de WhatsApp para continuar
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            <p className="text-sm text-gray-600 mb-4">
-              Número cadastrado: <span className="font-medium">{formattedPhone}</span>
-            </p>
-          </div>
-
-          <Button 
-            onClick={handleSendOtp} 
-            className="w-full" 
-            disabled={sendingOtp}
-          >
-            {sendingOtp ? 'Enviando código...' : 'Enviar código de verificação'}
-          </Button>
-
-          <div className="text-center">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/update-phone')}
-              className="text-sm"
-            >
-              Alterar número de telefone
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Render null while redirecting to avoid flashing content.
+  return null;
 };
 
 export default PhoneVerificationGuard;
