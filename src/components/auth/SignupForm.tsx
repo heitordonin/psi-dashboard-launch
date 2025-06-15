@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { SignupFormFields } from './SignupFormFields';
@@ -22,6 +23,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { signUp } = useAuth();
+  const navigate = useNavigate();
 
   const handleFieldChange = (field: keyof SignupFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -58,6 +60,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
       });
 
       onSuccess?.();
+      navigate('/login');
 
     } catch (error: any) {
       console.error('Error:', error);
