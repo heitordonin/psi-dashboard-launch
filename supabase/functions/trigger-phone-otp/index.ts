@@ -1,4 +1,5 @@
 
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -58,15 +59,32 @@ serve(async (req) => {
       )
     }
 
-    console.log('Enviando OTP para:', phone)
+    console.log('Associando e enviando OTP para:', phone)
 
-    // Gerar OTP usando o sistema nativo do Supabase
+    // PASSO 1: Associar o telefone ao utilizador autenticado
+    const { data: updateData, error: updateError } = await supabaseClient.auth.updateUser({
+      phone: phone,
+    });
+
+    if (updateError) {
+      console.error('Erro ao associar telefone ao utilizador:', updateError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao associar telefone ao seu utilizador.' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      );
+    }
+    
+    // PASSO 2: Agora que o telefone está associado, disparar o OTP para verificação
     const { data, error } = await supabaseClient.auth.signInWithOtp({
       phone: phone,
       options: {
+        shouldCreateUser: false, // IMPORTANTE: Garantir que não cria um novo utilizador
         channel: 'whatsapp'
       }
-    })
+    });
 
     if (error) {
       console.error('Erro ao enviar OTP:', error)
@@ -100,3 +118,4 @@ serve(async (req) => {
     )
   }
 })
+
