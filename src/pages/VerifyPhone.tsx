@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -75,9 +74,8 @@ const VerifyPhone = () => {
           to: phone, // The phone number passed via state
           templateSid: 'TWILIO_TEMPLATE_SID_OTP', // The key to trigger the OTP template
           templateVariables: {
-            // The Twilio template requires a value for the {{1}} parameter.
-            // We will pass the user's full name, with a generic fallback.
-            "1": user?.user_metadata?.full_name || "usuário(a)"
+            // Sending a hardcoded test OTP to match the template's expectation.
+            "1": "987654"
           },
           messageType: 'phone_verification'
         }
