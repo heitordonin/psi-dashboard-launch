@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,11 +85,10 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let processedUserData = userData;
     if (userData?.phone) {
       const cleanedPhone = userData.phone.replace(/\D/g, '');
-      const fullPhoneNumber = `+55${cleanedPhone}`;
       processedUserData = {
         ...userData,
-        phone: cleanedPhone, // Armazenar apenas a parte local no metadata
-        full_phone: fullPhoneNumber // Número completo para o Supabase Auth
+        phone_number: cleanedPhone, // Use phone_number instead of phone to avoid conflicts
+        phone: undefined // Explicitly remove the old key
       };
     }
     
