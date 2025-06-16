@@ -42,7 +42,7 @@ interface CreatePatientWizardProps {
 
 export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWizardProps) => {
   const isEditMode = !!patientToEdit;
-  const [currentStep, setCurrentStep] = useState(isEditMode ? 2 : 1); // Skip choice step when editing
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 1); // Always start at step 1, but we'll adjust logic below
   const [wizardType, setWizardType] = useState<'manual' | 'invite' | null>(isEditMode ? 'manual' : null);
   const [formData, setFormData] = useState<PatientWizardData>({
     full_name: '',
@@ -87,9 +87,10 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
     }
   }, [patientToEdit]);
 
-  // Calculate total steps based on wizard type
+  // Calculate total steps based on wizard type and mode
   const getTotalSteps = () => {
-    if (wizardType === 'manual') return isEditMode ? 4 : 5; // Skip choice step when editing
+    if (isEditMode) return 4; // Personal Data -> Address -> Options -> Summary
+    if (wizardType === 'manual') return 5; // Choice -> Personal Data -> Address -> Options -> Summary
     if (wizardType === 'invite') return 2; // Choice -> Invite Success
     return 2; // Default for choice step
   };
@@ -104,7 +105,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
   };
 
   const handlePrevious = () => {
-    if (currentStep > (isEditMode ? 2 : 1)) {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -124,6 +125,52 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
   };
 
   const renderStep = () => {
+    // For edit mode, skip the choice step and start directly with personal data
+    if (isEditMode) {
+      switch (currentStep) {
+        case 1:
+          return (
+            <Step2_PersonalData
+              formData={formData}
+              updateFormData={updateFormData}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+              isEditMode={isEditMode}
+            />
+          );
+        case 2:
+          return (
+            <Step3_Address
+              formData={formData}
+              updateFormData={updateFormData}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+            />
+          );
+        case 3:
+          return (
+            <Step4_Options
+              formData={formData}
+              updateFormData={updateFormData}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+            />
+          );
+        case 4:
+          return (
+            <Step5_Summary
+              formData={formData}
+              onPrevious={handlePrevious}
+              onClose={onClose}
+              patientToEdit={patientToEdit}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+
+    // For creation mode, include the choice step
     if (currentStep === 1 && !isEditMode) {
       return <Step1_Choice onNext={handleNext} onChoiceSelect={handleChoiceSelection} />;
     }
@@ -139,11 +186,9 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
       );
     }
 
-    // Manual entry flow - adjust step numbers for edit mode
-    const adjustedStep = isEditMode ? currentStep : currentStep - 1;
-    
-    switch (adjustedStep) {
-      case 1:
+    // Manual entry flow for creation
+    switch (currentStep) {
+      case 2:
         return (
           <Step2_PersonalData
             formData={formData}
@@ -153,7 +198,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
             isEditMode={isEditMode}
           />
         );
-      case 2:
+      case 3:
         return (
           <Step3_Address
             formData={formData}
@@ -162,7 +207,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
             onPrevious={handlePrevious}
           />
         );
-      case 3:
+      case 4:
         return (
           <Step4_Options
             formData={formData}
@@ -171,7 +216,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
             onPrevious={handlePrevious}
           />
         );
-      case 4:
+      case 5:
         return (
           <Step5_Summary
             formData={formData}
