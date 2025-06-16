@@ -672,6 +672,10 @@ export type Database = {
           count: number
         }[]
       }
+      get_encryption_key: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_top_earning_users: {
         Args: { limit_count: number }
         Returns: {
