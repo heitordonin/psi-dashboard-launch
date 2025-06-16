@@ -29,6 +29,17 @@ export function usePaymentCreation({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Validate due date only for payment links
+      if (formData.chargeType === 'link' && formData.due_date) {
+        const dueDate = new Date(formData.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (dueDate < today) {
+          throw new Error('Data de vencimento deve ser hoje ou no futuro para links de pagamento');
+        }
+      }
+
       const paymentData = {
         patient_id: formData.patient_id,
         amount: formData.amount,
@@ -125,6 +136,17 @@ export function usePaymentCreation({
   const updatePaymentMutation = useMutation({
     mutationFn: async () => {
       if (!paymentToEdit) throw new Error('No payment to update');
+
+      // Only validate due date for payment links
+      if (paymentToEdit.has_payment_link && formData.due_date) {
+        const dueDate = new Date(formData.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (dueDate < today) {
+          throw new Error('Data de vencimento deve ser hoje ou no futuro para links de pagamento');
+        }
+      }
 
       const paymentData = {
         patient_id: formData.patient_id,
