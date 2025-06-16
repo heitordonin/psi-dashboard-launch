@@ -9,6 +9,7 @@ import { AdminDashboardLoading } from "@/components/admin/AdminDashboardLoading"
 import { AdminKPICards } from "@/components/admin/AdminKPICards";
 import { AdminUserGrowthChart } from "@/components/admin/AdminUserGrowthChart";
 import { AdminTopEarnersTable } from "@/components/admin/AdminTopEarnersTable";
+import { AdminProtectionTest } from "@/components/admin/AdminProtectionTest";
 
 const AdminDashboard = () => {
   const [startDate, setStartDate] = useState<string>("");
@@ -27,6 +28,14 @@ const AdminDashboard = () => {
         <SidebarInset>
           <AdminDashboardHeader />
           <div className="container mx-auto p-6 space-y-6">
+            {/* Componente de teste - remover em produção */}
+            {import.meta.env.MODE === 'development' && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2">Status de Proteção Admin:</h3>
+                <AdminProtectionTest />
+              </div>
+            )}
+            
             <AdminKPICards userKpis={userKpis} />
             <AdminUserGrowthChart 
               userGrowth={userGrowth}

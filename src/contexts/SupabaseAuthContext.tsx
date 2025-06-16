@@ -31,54 +31,84 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(false);
+
+  // Função para verificar status de admin de forma síncrona
+  const checkAdminStatus = async (userId: string) => {
+    if (import.meta.env.MODE === 'development') {
+      console.log('SupabaseAuthContext: Starting admin check for user:', userId);
+    }
+    
+    setIsCheckingAdmin(true);
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('SupabaseAuthContext: Error checking admin status:', error);
+        setIsAdmin(false);
+      } else {
+        const adminStatus = profile?.is_admin || false;
+        if (import.meta.env.MODE === 'development') {
+          console.log('SupabaseAuthContext: Admin check result:', adminStatus);
+        }
+        setIsAdmin(adminStatus);
+      }
+    } catch (error) {
+      console.error('SupabaseAuthContext: Exception during admin check:', error);
+      setIsAdmin(false);
+    } finally {
+      setIsCheckingAdmin(false);
+    }
+  };
 
   useEffect(() => {
     // Set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (import.meta.env.MODE === 'development') {
-          console.log('Auth state changed:', event, session?.user?.email);
+          console.log('SupabaseAuthContext: Auth state changed:', event, session?.user?.email);
         }
+        
         setSession(session);
         setUser(session?.user ?? null);
-        setIsLoading(false);
 
-        // Check admin status when user logs in or session changes
+        // Check admin status immediately when user logs in or session changes
         if (session?.user) {
-          setTimeout(async () => {
-            setIsCheckingAdmin(true);
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('is_admin')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (import.meta.env.MODE === 'development') {
-                console.log('Admin check result:', profile?.is_admin);
-              }
-              setIsAdmin(profile?.is_admin || false);
-            } catch (error) {
-              console.error('Error checking admin status:', error);
-              setIsAdmin(false);
-            } finally {
-              setIsCheckingAdmin(false);
-            }
-          }, 0);
+          await checkAdminStatus(session.user.id);
         } else {
+          // User logged out - reset admin state immediately
           setIsAdmin(false);
           setIsCheckingAdmin(false);
         }
+        
+        // Only set loading to false after all checks are complete
+        setIsLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    // Get initial session and handle it properly
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await checkAdminStatus(session.user.id);
+        }
+      } catch (error) {
+        console.error('SupabaseAuthContext: Error during initialization:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);

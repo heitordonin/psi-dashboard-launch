@@ -15,15 +15,25 @@ import { AdminSection } from "@/components/sidebar/AdminSection";
 import { SidebarFooter } from "@/components/sidebar/SidebarFooter";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, canPerformAdminAction } = useSecureAuth();
+  const { user, canPerformAdminAction, isLoading, isAdminLoading } = useSecureAuth();
   const { currentPlan } = useSubscription();
 
   if (import.meta.env.MODE === 'development') {
-    console.log('AppSidebar - canPerformAdminAction:', canPerformAdminAction(), 'user:', user?.email);
+    console.log('AppSidebar state:', {
+      hasUser: !!user,
+      isLoading,
+      isAdminLoading,
+      canPerformAdminAction: canPerformAdminAction(),
+      currentPlan: currentPlan?.slug
+    });
   }
 
-  // Show Psiclo Bank section only for paid plans (not gratis) AND admin users
-  const showPsicloBankSection = currentPlan?.slug !== 'gratis' && canPerformAdminAction();
+  // Don't show admin sections while loading or admin verification is in progress
+  const isVerificationComplete = !isLoading && !isAdminLoading;
+  const isAdminUser = isVerificationComplete && canPerformAdminAction();
+
+  // Show Psiclo Bank section only for paid plans (not gratis) AND admin users AND verification complete
+  const showPsicloBankSection = isVerificationComplete && currentPlan?.slug !== 'gratis' && isAdminUser;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -35,7 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
         {showPsicloBankSection && <PsicloBankSection />}
-        {canPerformAdminAction() && <AdminSection />}
+        {isAdminUser && <AdminSection />}
         <SidebarFooter />
       </SidebarContent>
     </Sidebar>

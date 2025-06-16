@@ -8,30 +8,36 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isAuthenticated, isLoading, canPerformAdminAction } = useSecureAuth();
+  const { user, isAuthenticated, isLoading, canPerformAdminAction, isAdminLoading } = useSecureAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading) {
+    // Wait for ALL loading states to complete before making decisions
+    if (!isLoading && !isAdminLoading) {
       if (!isAuthenticated) {
         if (import.meta.env.MODE === 'development') {
-          console.log('User not authenticated, redirecting to login');
+          console.log('AdminRoute: User not authenticated, redirecting to login');
         }
         navigate('/login');
       } else if (!canPerformAdminAction()) {
         if (import.meta.env.MODE === 'development') {
-          console.log('User not admin, redirecting to dashboard');
+          console.log('AdminRoute: User not admin, redirecting to dashboard');
         }
         navigate('/dashboard');
       } else {
         if (import.meta.env.MODE === 'development') {
-          console.log('User is admin, granting access');
+          console.log('AdminRoute: User is admin, granting access');
         }
       }
     }
-  }, [user, isAuthenticated, isLoading, canPerformAdminAction, navigate]);
+  }, [user, isAuthenticated, isLoading, isAdminLoading, canPerformAdminAction, navigate]);
 
-  if (isLoading) {
+  // Show loading screen while ANY verification is in progress
+  if (isLoading || isAdminLoading) {
+    if (import.meta.env.MODE === 'development') {
+      console.log('AdminRoute: Loading state - isLoading:', isLoading, 'isAdminLoading:', isAdminLoading);
+    }
+    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -42,7 +48,11 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
+  // Additional safety check - only render if user is authenticated AND admin
   if (!isAuthenticated || !canPerformAdminAction()) {
+    if (import.meta.env.MODE === 'development') {
+      console.log('AdminRoute: Access denied - authenticated:', isAuthenticated, 'canPerformAdminAction:', canPerformAdminAction());
+    }
     return null;
   }
 
