@@ -4,6 +4,7 @@ import { ReceivedCheckbox } from './ReceivedCheckbox';
 import { PaymentDescriptionField } from './PaymentDescriptionField';
 import { PaymentAmountField } from './PaymentAmountField';
 import { PaymentDueDateField } from './PaymentDueDateField';
+import { validateCPF, validateCNPJ } from '@/utils/securityValidation';
 import type { Patient } from '@/types/patient';
 
 interface FormData {
@@ -25,7 +26,6 @@ interface PaymentFormFieldsProps {
   receivedDate: string;
   setReceivedDate: (value: string) => void;
   isEditing: boolean;
-  validateCpf: (cpf: string) => boolean;
 }
 
 export function PaymentFormFields({
@@ -38,9 +38,23 @@ export function PaymentFormFields({
   setIsReceived,
   receivedDate,
   setReceivedDate,
-  isEditing,
-  validateCpf
+  isEditing
 }: PaymentFormFieldsProps) {
+  const selectedPatient = patients.find(p => p.id === formData.patient_id);
+  
+  // Função de validação baseada no tipo de paciente
+  const validateDocument = (document: string): boolean => {
+    if (!selectedPatient || selectedPatient.is_payment_from_abroad) {
+      return true; // Não validar documentos para pacientes do exterior
+    }
+    
+    if (selectedPatient.patient_type === 'company') {
+      return validateCNPJ(document);
+    } else {
+      return validateCPF(document);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PatientAndPayer
@@ -52,7 +66,7 @@ export function PaymentFormFields({
         payerCpf={formData.payer_cpf}
         setPayerCpf={(cpf) => setFormData(prev => ({ ...prev, payer_cpf: cpf }))}
         errors={{}}
-        validateCpf={validateCpf}
+        validateCpf={validateDocument}
       />
 
       <ReceivedCheckbox

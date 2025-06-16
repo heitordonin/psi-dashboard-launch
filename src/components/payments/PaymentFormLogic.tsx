@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PaymentFormFields } from './PaymentFormFields';
 import { usePaymentMutations } from './PaymentFormMutations';
-import { validatePaymentForm, validateCpf } from './PaymentFormValidation';
+import { validatePaymentForm, sanitizePaymentFormData } from './PaymentFormValidation';
 import type { Payment } from '@/types/payment';
 import type { Patient } from '@/types/patient';
 
@@ -56,12 +55,15 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const selectedPatient = patients.find(p => p.id === formData.patient_id);
   
     const validationError = validatePaymentForm(
       formData,
       isReceived,
       receivedDate,
-      paymentTitular
+      paymentTitular,
+      selectedPatient
     );
 
     if (validationError) {
@@ -69,16 +71,17 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
       return;
     }
 
-    const submitData: FormData = {
+    // Sanitizar dados antes de enviar
+    const sanitizedFormData = sanitizePaymentFormData({
       patient_id: formData.patient_id,
       amount: formData.amount,
       due_date: isReceived ? (formData.due_date || receivedDate) : formData.due_date,
       description: formData.description,
       payer_cpf: formData.payer_cpf,
-    };
+    });
 
     const mutationData = {
-      formData: submitData,
+      formData: sanitizedFormData,
       isReceived,
       receivedDate,
       paymentTitular
@@ -107,7 +110,6 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
         receivedDate={receivedDate}
         setReceivedDate={setReceivedDate}
         isEditing={!!payment}
-        validateCpf={validateCpf}
       />
 
       <div className="flex gap-3 pt-4">

@@ -2,6 +2,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { validateAmount, sanitizeTextInput } from '@/utils/securityValidation';
+import { sanitizePaymentFormData } from '@/components/payments/PaymentFormValidation';
 import type { WizardFormData } from '@/components/payments/wizard/types';
 import type { Patient } from '@/types/patient';
 import type { Payment } from '@/types/payment';
@@ -29,7 +31,20 @@ export function usePaymentCreation({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Validate due date ONLY for payment links, not for manual charges
+      // Validação robusta do valor
+      if (!validateAmount(formData.amount)) {
+        throw new Error('Valor deve estar entre R$ 0,01 e R$ 999.999.999,99');
+      }
+
+      // Validação de descrição
+      if (!formData.description || formData.description.length < 3) {
+        throw new Error('Descrição deve ter pelo menos 3 caracteres');
+      }
+      if (formData.description.length > 500) {
+        throw new Error('Descrição deve ter no máximo 500 caracteres');
+      }
+
+      // Validar due date APENAS para payment links, não para manual charges
       if (formData.chargeType === 'link' && formData.due_date) {
         const dueDate = new Date(formData.due_date);
         const today = new Date();
@@ -40,14 +55,19 @@ export function usePaymentCreation({
         }
       }
 
-      const paymentData = {
+      // Sanitizar dados antes de salvar
+      const sanitizedData = sanitizePaymentFormData({
         patient_id: formData.patient_id,
         amount: formData.amount,
         due_date: formData.due_date,
         description: formData.description,
+        payer_cpf: formData.payer_cpf
+      });
+
+      const paymentData = {
+        ...sanitizedData,
         status: (formData.isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: formData.isReceived ? formData.receivedDate : null,
-        payer_cpf: formData.payer_cpf,
         receita_saude_receipt_issued: false,
         has_payment_link: formData.chargeType === 'link',
         owner_id: user.id
@@ -61,15 +81,13 @@ export function usePaymentCreation({
 
       if (insertError) throw insertError;
 
-      // If it's a link payment, call Pagar.me to create the transaction
+      // Se for um link payment, chamar Pagar.me para criar a transação
       if (newPayment.has_payment_link) {
         // Determine payment methods to create
         const paymentMethods = [];
         if (formData.paymentMethods.boleto) paymentMethods.push('pix');
         if (formData.paymentMethods.creditCard) paymentMethods.push('credit_card');
 
-        // For now, we'll create a PIX transaction by default
-        // In a future enhancement, we could create multiple transactions for different methods
         const primaryMethod = paymentMethods.includes('pix') ? 'pix' : 'credit_card';
 
         const { error: pagarmeError } = await supabase.functions.invoke('create-pagarme-transaction', {
@@ -81,8 +99,6 @@ export function usePaymentCreation({
 
         if (pagarmeError) {
           console.error('Pagar.me transaction creation failed:', pagarmeError);
-          // Don't throw here - the payment was created successfully
-          // We'll show a different message to the user
           throw new Error('Cobrança criada, mas houve erro ao gerar o link de pagamento. Tente novamente.');
         }
       }
@@ -142,7 +158,20 @@ export function usePaymentCreation({
         throw new Error('Não é possível editar uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.');
       }
 
-      // Validate due date ONLY for payment links, not for manual charges
+      // Validação robusta do valor
+      if (!validateAmount(formData.amount)) {
+        throw new Error('Valor deve estar entre R$ 0,01 e R$ 999.999.999,99');
+      }
+
+      // Validação de descrição
+      if (!formData.description || formData.description.length < 3) {
+        throw new Error('Descrição deve ter pelo menos 3 caracteres');
+      }
+      if (formData.description.length > 500) {
+        throw new Error('Descrição deve ter no máximo 500 caracteres');
+      }
+
+      // Validar due date APENAS para payment links, não para manual charges
       if (paymentToEdit.has_payment_link && formData.due_date) {
         const dueDate = new Date(formData.due_date);
         const today = new Date();
@@ -153,14 +182,19 @@ export function usePaymentCreation({
         }
       }
 
-      const paymentData = {
+      // Sanitizar dados antes de salvar
+      const sanitizedData = sanitizePaymentFormData({
         patient_id: formData.patient_id,
         amount: formData.amount,
         due_date: formData.due_date,
         description: formData.description,
+        payer_cpf: formData.payer_cpf
+      });
+
+      const paymentData = {
+        ...sanitizedData,
         status: (formData.isReceived ? 'paid' : 'pending') as 'draft' | 'pending' | 'paid' | 'failed',
         paid_date: formData.isReceived ? formData.receivedDate : null,
-        payer_cpf: formData.payer_cpf,
       };
 
       const { data, error } = await supabase

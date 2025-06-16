@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { SignupFormFields } from './SignupFormFields';
-import { SignupFormData, validateSignupForm } from './SignupFormValidation';
+import { SignupFormData, validateSignupForm, sanitizeSignupFormData } from './SignupFormValidation';
 import { toast } from 'sonner';
 
 interface SignupFormProps {
@@ -42,10 +42,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(formData.email, formData.password, {
-        full_name: formData.fullName,
-        cpf: formData.cpf,
-        phone: formData.phone
+      // Sanitizar dados antes de enviar
+      const sanitizedData = sanitizeSignupFormData(formData);
+
+      const { error } = await signUp(sanitizedData.email, sanitizedData.password, {
+        full_name: sanitizedData.fullName,
+        cpf: sanitizedData.cpf,
+        phone: sanitizedData.phone
       });
 
       if (error) throw error;

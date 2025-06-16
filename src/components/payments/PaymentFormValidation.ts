@@ -1,8 +1,5 @@
 
-export const validateCpf = (cpf: string): boolean => {
-  const cleanCpf = cpf.replace(/\D/g, '');
-  return cleanCpf.length === 11;
-};
+import { validateCPF, validateCNPJ, sanitizeTextInput, validateAmount } from '@/utils/securityValidation';
 
 export const validatePaymentForm = (
   formData: {
@@ -10,17 +7,20 @@ export const validatePaymentForm = (
     amount: number;
     due_date: string;
     payer_cpf: string;
+    description?: string;
   },
   isReceived: boolean,
   receivedDate: string,
-  paymentTitular: 'patient' | 'other'
+  paymentTitular: 'patient' | 'other',
+  selectedPatient?: any
 ) => {
   if (!formData.patient_id || !formData.amount) {
     return 'Preencha todos os campos obrigatórios';
   }
 
-  if (isNaN(formData.amount) || formData.amount <= 0) {
-    return 'Valor deve ser um número válido maior que zero';
+  // Validação robusta de valor monetário
+  if (!validateAmount(formData.amount)) {
+    return 'Valor deve ser um número válido entre R$ 0,01 e R$ 999.999.999,99';
   }
 
   if (isReceived && !receivedDate) {
@@ -31,9 +31,37 @@ export const validatePaymentForm = (
     return 'Data de vencimento é obrigatória';
   }
 
-  if (paymentTitular === 'other' && !validateCpf(formData.payer_cpf)) {
-    return 'CPF do titular é obrigatório e deve ser válido';
+  // Validação de documento baseada no tipo de paciente
+  if (selectedPatient && !selectedPatient.is_payment_from_abroad) {
+    if (selectedPatient.patient_type === 'company') {
+      // Para empresas, validar CNPJ
+      if (!formData.payer_cpf || !validateCNPJ(formData.payer_cpf)) {
+        return 'CNPJ é obrigatório e deve ser válido para pessoa jurídica';
+      }
+    } else {
+      // Para pessoas físicas, validar CPF
+      if (paymentTitular === 'other' && (!formData.payer_cpf || !validateCPF(formData.payer_cpf))) {
+        return 'CPF do titular é obrigatório e deve ser válido';
+      }
+      if (paymentTitular === 'patient' && selectedPatient.cpf && !validateCPF(selectedPatient.cpf)) {
+        return 'CPF do paciente deve ser válido';
+      }
+    }
+  }
+
+  // Sanitizar descrição se fornecida
+  if (formData.description && formData.description.length > 500) {
+    return 'Descrição deve ter no máximo 500 caracteres';
   }
 
   return null;
+};
+
+// Função para sanitizar dados do formulário antes de salvar
+export const sanitizePaymentFormData = (formData: any) => {
+  return {
+    ...formData,
+    description: formData.description ? sanitizeTextInput(formData.description, 500) : null,
+    payer_cpf: formData.payer_cpf ? formData.payer_cpf.replace(/\D/g, '') : null
+  };
 };
