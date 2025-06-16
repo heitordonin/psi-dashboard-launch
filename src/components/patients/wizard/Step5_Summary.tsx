@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { usePatientMutations } from '@/hooks/usePatientMutations';
 import { Badge } from '@/components/ui/badge';
+import { Patient } from '@/types/patient';
 
 interface PatientWizardData {
   full_name: string;
@@ -29,18 +30,25 @@ interface Step5_SummaryProps {
   formData: PatientWizardData;
   onPrevious: () => void;
   onClose: () => void;
+  patientToEdit?: Patient | null;
 }
 
 export const Step5_Summary = ({ 
   formData, 
   onPrevious, 
-  onClose 
+  onClose,
+  patientToEdit
 }: Step5_SummaryProps) => {
   const { user } = useAuth();
-  const { createPatientMutation, isLoading } = usePatientMutations(user?.id, onClose);
+  const { createPatientMutation, updatePatientMutation, isLoading } = usePatientMutations(user?.id, onClose);
+  const isEditMode = !!patientToEdit;
 
   const handleSave = () => {
-    createPatientMutation.mutate(formData);
+    if (isEditMode) {
+      updatePatientMutation.mutate({ data: formData, patientId: patientToEdit.id });
+    } else {
+      createPatientMutation.mutate(formData);
+    }
   };
 
   const formatAddress = () => {
@@ -160,7 +168,7 @@ export const Step5_Summary = ({
           Voltar
         </Button>
         <Button type="button" onClick={handleSave} disabled={isLoading}>
-          {isLoading ? 'Salvando...' : 'Salvar Paciente'}
+          {isLoading ? 'Salvando...' : (isEditMode ? 'Atualizar Paciente' : 'Salvar Paciente')}
         </Button>
       </div>
     </div>

@@ -26,13 +26,15 @@ interface Step2_PersonalDataProps {
   updateFormData: (updates: Partial<PatientWizardData>) => void;
   onNext: () => void;
   onPrevious: () => void;
+  isEditMode?: boolean;
 }
 
 export const Step2_PersonalData = ({ 
   formData, 
   updateFormData, 
   onNext, 
-  onPrevious 
+  onPrevious,
+  isEditMode = false
 }: Step2_PersonalDataProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -129,9 +131,12 @@ export const Step2_PersonalData = ({
       </div>
 
       <div className="flex justify-between pt-4">
-        <Button type="button" variant="outline" onClick={onPrevious}>
-          Voltar
-        </Button>
+        {!isEditMode && (
+          <Button type="button" variant="outline" onClick={onPrevious}>
+            Voltar
+          </Button>
+        )}
+        {isEditMode && <div></div>}
         <Button type="button" onClick={handleNext}>
           Próximo
         </Button>

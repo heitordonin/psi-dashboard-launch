@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,7 @@ import { Step2_PersonalData } from './wizard/Step2_PersonalData';
 import { Step3_Address } from './wizard/Step3_Address';
 import { Step4_Options } from './wizard/Step4_Options';
 import { Step5_Summary } from './wizard/Step5_Summary';
+import { Patient } from '@/types/patient';
 
 interface PatientWizardData {
   // Personal data
@@ -36,11 +37,13 @@ interface PatientWizardData {
 
 interface CreatePatientWizardProps {
   onClose: () => void;
+  patientToEdit?: Patient | null;
 }
 
-export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [wizardType, setWizardType] = useState<'manual' | 'invite' | null>(null);
+export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWizardProps) => {
+  const isEditMode = !!patientToEdit;
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 2 : 1); // Skip choice step when editing
+  const [wizardType, setWizardType] = useState<'manual' | 'invite' | null>(isEditMode ? 'manual' : null);
   const [formData, setFormData] = useState<PatientWizardData>({
     full_name: '',
     patient_type: 'individual',
@@ -60,9 +63,33 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
     is_payment_from_abroad: false,
   });
 
+  // Pre-fill form data when editing
+  useEffect(() => {
+    if (patientToEdit) {
+      setFormData({
+        full_name: patientToEdit.full_name || '',
+        patient_type: patientToEdit.patient_type || 'individual',
+        cpf: patientToEdit.cpf || '',
+        cnpj: patientToEdit.cnpj || '',
+        email: patientToEdit.email || '',
+        phone: patientToEdit.phone || '',
+        zip_code: '',
+        street: '',
+        street_number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+        has_financial_guardian: patientToEdit.has_financial_guardian || false,
+        guardian_cpf: patientToEdit.guardian_cpf || '',
+        is_payment_from_abroad: patientToEdit.is_payment_from_abroad || false,
+      });
+    }
+  }, [patientToEdit]);
+
   // Calculate total steps based on wizard type
   const getTotalSteps = () => {
-    if (wizardType === 'manual') return 5; // Choice -> Personal -> Address -> Options -> Summary
+    if (wizardType === 'manual') return isEditMode ? 4 : 5; // Skip choice step when editing
     if (wizardType === 'invite') return 2; // Choice -> Invite Success
     return 2; // Default for choice step
   };
@@ -77,7 +104,7 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
   };
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
+    if (currentStep > (isEditMode ? 2 : 1)) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -97,7 +124,7 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
   };
 
   const renderStep = () => {
-    if (currentStep === 1) {
+    if (currentStep === 1 && !isEditMode) {
       return <Step1_Choice onNext={handleNext} onChoiceSelect={handleChoiceSelection} />;
     }
 
@@ -112,18 +139,21 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
       );
     }
 
-    // Manual entry flow
-    switch (currentStep) {
-      case 2:
+    // Manual entry flow - adjust step numbers for edit mode
+    const adjustedStep = isEditMode ? currentStep : currentStep - 1;
+    
+    switch (adjustedStep) {
+      case 1:
         return (
           <Step2_PersonalData
             formData={formData}
             updateFormData={updateFormData}
             onNext={handleNext}
             onPrevious={handlePrevious}
+            isEditMode={isEditMode}
           />
         );
-      case 3:
+      case 2:
         return (
           <Step3_Address
             formData={formData}
@@ -132,7 +162,7 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
             onPrevious={handlePrevious}
           />
         );
-      case 4:
+      case 3:
         return (
           <Step4_Options
             formData={formData}
@@ -141,12 +171,13 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
             onPrevious={handlePrevious}
           />
         );
-      case 5:
+      case 4:
         return (
           <Step5_Summary
             formData={formData}
             onPrevious={handlePrevious}
             onClose={onClose}
+            patientToEdit={patientToEdit}
           />
         );
       default:
@@ -159,7 +190,9 @@ export const CreatePatientWizard = ({ onClose }: CreatePatientWizardProps) => {
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex-1">
-            <CardTitle className="text-xl">Novo Paciente</CardTitle>
+            <CardTitle className="text-xl">
+              {isEditMode ? 'Editar Paciente' : 'Novo Paciente'}
+            </CardTitle>
             <div className="mt-2">
               <Progress value={progress} className="w-full" />
               <p className="text-sm text-gray-500 mt-1">

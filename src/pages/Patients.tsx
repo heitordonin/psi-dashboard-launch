@@ -150,6 +150,7 @@ const Patients = () => {
       toast.error(`Você atingiu o limite de ${patientLimit} pacientes do seu plano atual. Faça upgrade para adicionar mais pacientes.`);
       return;
     }
+    setEditingPatient(null); // Ensure we're in creation mode
     setShowWizard(true);
   };
 
@@ -284,24 +285,12 @@ const Patients = () => {
               </Card>
             </div>
 
-            {/* Wizard Modal */}
+            {/* Wizard Modal - Used for both creation and editing */}
             {showWizard && (
-              <CreatePatientWizard onClose={handleWizardClose} />
-            )}
-
-            {/* Edit Patient Form Modal - Keep for editing existing patients */}
-            {editingPatient && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-                  <div className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Editar Paciente</h2>
-                    <PatientForm
-                      patient={editingPatient}
-                      onClose={handleWizardClose}
-                    />
-                  </div>
-                </div>
-              </div>
+              <CreatePatientWizard 
+                onClose={handleWizardClose} 
+                patientToEdit={editingPatient}
+              />
             )}
 
             {/* Delete Confirmation */}
