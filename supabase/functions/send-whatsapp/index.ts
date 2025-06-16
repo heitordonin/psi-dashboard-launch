@@ -49,7 +49,7 @@ serve(async (req) => {
     if (templateSid === 'TWILIO_TEMPLATE_SID_LEMBRETE') {
       resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_LEMBRETE')
     } else if (templateSid === 'TWILIO_TEMPLATE_SID_OTP') {
-      resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_OTP_BUSINESS')
+      resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_OTP')
     }
 
     if (!resolvedTemplateSid && templateSid) {

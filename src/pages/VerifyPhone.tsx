@@ -69,25 +69,30 @@ const VerifyPhone = () => {
     setIsResending(true);
 
     try {
-      // Chamar a edge function para reenviar o OTP usando o telefone do state
-      const { data: otpData, error: otpError } = await supabase.functions.invoke('trigger-phone-otp', {
-        body: { phone: phone }
+      // This now calls the correct function 'send-whatsapp'
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { 
+          to: phone, // The phone number passed via state
+          templateSid: 'TWILIO_TEMPLATE_SID_OTP', // The key to trigger the OTP template
+          templateVariables: {
+            // NOTE: Twilio templates for OTPs usually don't need variables, 
+            // as the code is part of the template body itself.
+            // We pass an empty object for compatibility.
+          },
+          messageType: 'phone_verification'
+        }
       });
 
-      if (otpError) {
-        console.error('Erro ao reenviar código:', otpError);
-        // Extrair a mensagem específica do erro retornado pela edge function
-        const specificError = otpError.context?.details || otpError.message || 'Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.';
-        toast.error(specificError);
+      if (error) {
+        console.error('Erro ao reenviar código via send-whatsapp:', error);
+        toast.error('Falha ao reenviar o código. Verifique o console para mais detalhes.');
       } else {
         toast.success('Novo código enviado para seu WhatsApp!');
         setOtp('');
       }
     } catch (error: any) {
-      console.error('Full error object on resend:', error);
-      // Try to extract the detailed message from the function's response
-      const specificError = error.context?.details || error.message || 'Falha ao reenviar o código. Tente novamente.';
-      toast.error(specificError);
+      console.error('Erro ao chamar a função send-whatsapp:', error);
+      toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
     } finally {
       setIsResending(false);
     }
