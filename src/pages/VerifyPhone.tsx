@@ -75,9 +75,9 @@ const VerifyPhone = () => {
           to: phone, // The phone number passed via state
           templateSid: 'TWILIO_TEMPLATE_SID_OTP', // The key to trigger the OTP template
           templateVariables: {
-            // NOTE: Twilio templates for OTPs usually don't need variables, 
-            // as the code is part of the template body itself.
-            // We pass an empty object for compatibility.
+            // The Twilio template requires a value for the {{1}} parameter.
+            // We will pass the user's full name, with a generic fallback.
+            "1": user?.user_metadata?.full_name || "usuário(a)"
           },
           messageType: 'phone_verification'
         }
