@@ -379,6 +379,7 @@ export type Database = {
           city: string | null
           complement: string | null
           cpf: string | null
+          cpf_encrypted: string | null
           created_at: string
           crp_number: string | null
           display_name: string | null
@@ -391,6 +392,7 @@ export type Database = {
           pagarme_recipient_id: string | null
           phone: string | null
           phone_country_code: string
+          phone_encrypted: string | null
           phone_verified: boolean
           state: string | null
           street: string | null
@@ -403,6 +405,7 @@ export type Database = {
           city?: string | null
           complement?: string | null
           cpf?: string | null
+          cpf_encrypted?: string | null
           created_at?: string
           crp_number?: string | null
           display_name?: string | null
@@ -415,6 +418,7 @@ export type Database = {
           pagarme_recipient_id?: string | null
           phone?: string | null
           phone_country_code?: string
+          phone_encrypted?: string | null
           phone_verified?: boolean
           state?: string | null
           street?: string | null
@@ -427,6 +431,7 @@ export type Database = {
           city?: string | null
           complement?: string | null
           cpf?: string | null
+          cpf_encrypted?: string | null
           created_at?: string
           crp_number?: string | null
           display_name?: string | null
@@ -439,6 +444,7 @@ export type Database = {
           pagarme_recipient_id?: string | null
           phone?: string | null
           phone_country_code?: string
+          phone_encrypted?: string | null
           phone_verified?: boolean
           state?: string | null
           street?: string | null
