@@ -57,22 +57,82 @@ serve(async (req) => {
       )
     }
 
-    console.log('Verificando OTP para telefone:', phone, 'token:', token)
+    console.log('Verificando OTP para usuário:', user.id, 'telefone:', phone, 'token:', token)
 
-    // Verificar o token OTP usando o tipo correto para phone_change
-    const { data: verifyData, error: verifyError } = await supabaseClient.auth.verifyOtp({
-      token,
-      type: 'phone_change', // Correct type for this flow
-      phone: phone
-    })
+    // Buscar o código de verificação válido
+    const { data: verificationCode, error: fetchError } = await supabaseClient
+      .from('phone_verification_codes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('phone', phone)
+      .eq('code', token)
+      .eq('verified', false)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
 
-    if (verifyError) {
-      console.error('Erro na verificação OTP:', verifyError)
+    if (fetchError || !verificationCode) {
+      console.error('Código não encontrado ou inválido:', fetchError)
+      
+      // Incrementar tentativas se o código existir
+      const { data: existingCode } = await supabaseClient
+        .from('phone_verification_codes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('phone', phone)
+        .eq('verified', false)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (existingCode) {
+        const newAttempts = existingCode.attempts + 1
+        
+        // Se exceder 3 tentativas, marcar como verificado (inválido)
+        const updateData = newAttempts >= 3 
+          ? { attempts: newAttempts, verified: true }
+          : { attempts: newAttempts }
+
+        await supabaseClient
+          .from('phone_verification_codes')
+          .update(updateData)
+          .eq('id', existingCode.id)
+
+        if (newAttempts >= 3) {
+          return new Response(
+            JSON.stringify({ error: 'Muitas tentativas incorretas. Solicite um novo código.' }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400 
+            }
+          )
+        }
+      }
+
       return new Response(
         JSON.stringify({ error: 'Código inválido ou expirado' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
+        }
+      )
+    }
+
+    // Marcar o código como verificado
+    const { error: updateCodeError } = await supabaseClient
+      .from('phone_verification_codes')
+      .update({ verified: true })
+      .eq('id', verificationCode.id)
+
+    if (updateCodeError) {
+      console.error('Erro ao marcar código como verificado:', updateCodeError)
+      return new Response(
+        JSON.stringify({ error: 'Erro interno do servidor' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
         }
       )
     }
@@ -84,13 +144,17 @@ serve(async (req) => {
     )
 
     // Atualizar o perfil do usuário marcando o telefone como verificado
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateProfileError } = await supabaseAdmin
       .from('profiles')
-      .update({ phone_verified: true })
+      .update({ 
+        phone_verified: true,
+        phone: phone.replace(/^\+55/, ''), // Remove o +55 para salvar apenas o número
+        phone_country_code: '+55'
+      })
       .eq('id', user.id)
 
-    if (updateError) {
-      console.error('Erro ao atualizar perfil:', updateError)
+    if (updateProfileError) {
+      console.error('Erro ao atualizar perfil:', updateProfileError)
       return new Response(
         JSON.stringify({ error: 'Erro interno do servidor' }),
         { 
@@ -99,6 +163,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Telefone verificado com sucesso para usuário:', user.id)
 
     return new Response(
       JSON.stringify({ success: true, message: 'Telefone verificado com sucesso!' }),

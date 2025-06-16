@@ -337,6 +337,39 @@ export type Database = {
           },
         ]
       }
+      phone_verification_codes: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           birth_date: string | null
@@ -601,6 +634,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_verification_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_admin_financial_overview: {
         Args: { start_date: string; end_date: string }
         Returns: {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -15,6 +16,8 @@ const VerifyPhone = () => {
   const [otp, setOtp] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendCount, setResendCount] = useState(0);
+  const [canResend, setCanResend] = useState(true);
 
   // Obter o telefone do state da navegação
   const phone = location.state?.phone;
@@ -35,7 +38,7 @@ const VerifyPhone = () => {
     setIsVerifying(true);
 
     try {
-      // Chamar a edge function para verificar o OTP incluindo o telefone
+      // Chamar nossa edge function customizada para verificar o OTP
       const { data, error } = await supabase.functions.invoke('verify-phone-otp', {
         body: { 
           token: otp,
@@ -45,7 +48,7 @@ const VerifyPhone = () => {
 
       if (error) {
         console.error('Erro na verificação:', error);
-        toast.error('O código de verificação é inválido ou já expirou. Por favor, tente novamente.');
+        toast.error(error.message || 'O código de verificação é inválido ou já expirou. Por favor, tente novamente.');
         setIsVerifying(false);
         return;
       }
@@ -65,31 +68,47 @@ const VerifyPhone = () => {
   };
 
   const handleResendCode = async () => {
+    // Rate limiting no frontend: máximo 3 reenvios a cada 10 minutos
+    if (resendCount >= 3) {
+      toast.error('Muitas tentativas de reenvio. Aguarde 10 minutos antes de tentar novamente.');
+      return;
+    }
+
     setIsResending(true);
 
     try {
-      // This now calls the correct function 'send-whatsapp'
-      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+      // Chamar nossa edge function customizada para gerar e enviar novo OTP
+      const { data, error } = await supabase.functions.invoke('generate-phone-otp', {
         body: { 
-          to: phone, // The phone number passed via state
-          templateSid: 'TWILIO_TEMPLATE_SID_OTP', // The key to trigger the OTP template
-          templateVariables: {
-            // Sending a hardcoded test OTP to match the template's expectation.
-            "1": "987654"
-          },
-          messageType: 'phone_verification'
+          phone: phone
         }
       });
 
       if (error) {
-        console.error('Erro ao reenviar código via send-whatsapp:', error);
-        toast.error('Falha ao reenviar o código. Verifique o console para mais detalhes.');
+        console.error('Erro ao reenviar código:', error);
+        
+        if (error.message?.includes('Muitas tentativas')) {
+          toast.error('Muitas tentativas. Tente novamente em 1 hora.');
+          setCanResend(false);
+        } else {
+          toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
+        }
       } else {
         toast.success('Novo código enviado para seu WhatsApp!');
         setOtp('');
+        setResendCount(prev => prev + 1);
+        
+        // Se atingir 3 reenvios, desabilitar por 10 minutos
+        if (resendCount + 1 >= 3) {
+          setCanResend(false);
+          setTimeout(() => {
+            setCanResend(true);
+            setResendCount(0);
+          }, 10 * 60 * 1000); // 10 minutos
+        }
       }
     } catch (error: any) {
-      console.error('Erro ao chamar a função send-whatsapp:', error);
+      console.error('Erro ao chamar a função generate-phone-otp:', error);
       toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
     } finally {
       setIsResending(false);
@@ -134,7 +153,7 @@ const VerifyPhone = () => {
             <Button 
               variant="ghost" 
               onClick={handleResendCode}
-              disabled={isResending}
+              disabled={isResending || !canResend}
               className="text-sm"
             >
               {isResending ? (
@@ -143,14 +162,26 @@ const VerifyPhone = () => {
                   Reenviando...
                 </>
               ) : (
-                'Reenviar Código'
+                `Reenviar Código ${resendCount > 0 ? `(${resendCount}/3)` : ''}`
               )}
             </Button>
           </div>
 
-          <p className="text-xs text-gray-500 text-center">
-            Não recebeu o código? Verifique se o número está correto e tente reenviar.
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-xs text-gray-500">
+              Não recebeu o código? Verifique se o número está correto e tente reenviar.
+            </p>
+            {resendCount > 0 && (
+              <p className="text-xs text-amber-600">
+                ⚠️ Tentativas de reenvio: {resendCount}/3
+              </p>
+            )}
+            {!canResend && (
+              <p className="text-xs text-red-600">
+                🚫 Limite de reenvios atingido. Aguarde alguns minutos.
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
