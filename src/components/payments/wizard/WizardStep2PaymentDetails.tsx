@@ -23,6 +23,17 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
     });
   };
 
+  // Create input props conditionally to completely omit min attribute for manual charges
+  const dateInputProps = {
+    id: "due_date",
+    type: "date" as const,
+    value: formData.due_date,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => updateFormData({ due_date: e.target.value }),
+    ...(formData.chargeType === 'link' && {
+      min: new Date().toISOString().split('T')[0]
+    })
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -36,13 +47,7 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
 
           <div>
             <Label htmlFor="due_date">Data de Vencimento</Label>
-            <Input
-              id="due_date"
-              type="date"
-              value={formData.due_date}
-              onChange={(e) => updateFormData({ due_date: e.target.value })}
-              min={formData.chargeType === 'link' ? new Date().toISOString().split('T')[0] : undefined}
-            />
+            <Input {...dateInputProps} />
           </div>
 
           <PaymentDescriptionField

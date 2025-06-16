@@ -10,12 +10,17 @@ export function isNextDisabled(currentStep: number, formData: WizardFormData, pa
     case 1:
       return !formData.paymentType;
     case 2:
-      // Validate due date only for payment links (not manual charges)
-      const isDueDateValid = formData.chargeType === 'manual' || 
-        !formData.due_date || 
-        new Date(formData.due_date) >= new Date(new Date().toDateString());
-      
-      return !formData.amount || !formData.due_date || !formData.description || !isDueDateValid;
+      // For manual charges, any date is valid
+      // For payment links, only today or future dates are valid
+      if (formData.chargeType === 'manual') {
+        return !formData.amount || !formData.due_date || !formData.description;
+      } else {
+        // Payment link validation
+        const isDueDateValid = !formData.due_date || 
+          new Date(formData.due_date) >= new Date(new Date().toDateString());
+        
+        return !formData.amount || !formData.due_date || !formData.description || !isDueDateValid;
+      }
     case 3:
       return false; // This step has no required fields
     case 4:
