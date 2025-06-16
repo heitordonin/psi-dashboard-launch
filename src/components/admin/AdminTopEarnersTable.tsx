@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface TopEarner {
   user_id: string;
   user_name: string;
-  total_revenue: string;
+  total_revenue: number;
 }
 
 interface AdminTopEarnersTableProps {
@@ -36,7 +36,7 @@ export const AdminTopEarnersTable = ({ topEarners }: AdminTopEarnersTableProps) 
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
-                  }).format(Number(earner.total_revenue))}
+                  }).format(earner.total_revenue)}
                 </TableCell>
               </TableRow>
             ))}
