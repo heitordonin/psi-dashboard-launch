@@ -29,7 +29,7 @@ export function usePaymentCreation({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Validate due date only for payment links
+      // Validate due date ONLY for payment links, not for manual charges
       if (formData.chargeType === 'link' && formData.due_date) {
         const dueDate = new Date(formData.due_date);
         const today = new Date();
@@ -137,7 +137,7 @@ export function usePaymentCreation({
     mutationFn: async () => {
       if (!paymentToEdit) throw new Error('No payment to update');
 
-      // Only validate due date for payment links
+      // Validate due date ONLY for payment links, not for manual charges
       if (paymentToEdit.has_payment_link && formData.due_date) {
         const dueDate = new Date(formData.due_date);
         const today = new Date();
