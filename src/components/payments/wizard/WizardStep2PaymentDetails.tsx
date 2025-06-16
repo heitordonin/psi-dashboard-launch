@@ -41,6 +41,7 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
               type="date"
               value={formData.due_date}
               onChange={(e) => updateFormData({ due_date: e.target.value })}
+              min={formData.chargeType === 'link' ? new Date().toISOString().split('T')[0] : undefined}
             />
           </div>
 
