@@ -76,7 +76,9 @@ const VerifyPhone = () => {
 
       if (otpError) {
         console.error('Erro ao reenviar código:', otpError);
-        toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
+        // Extrair a mensagem específica do erro retornado pela edge function
+        const specificError = otpError.context?.details || otpError.message || 'Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.';
+        toast.error(specificError);
       } else {
         toast.success('Novo código enviado para seu WhatsApp!');
         setOtp('');
