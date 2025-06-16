@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -98,8 +97,8 @@ export function usePaymentCreation({
         toast.success('Cobrança criada com sucesso!');
       }
       
-      // Send email if notification is enabled and it's a link charge
-      if (formData.chargeType === 'link' && formData.sendEmailNotification && formData.email && selectedPatient) {
+      // Send email if notification is enabled
+      if (formData.sendEmailNotification && formData.email && selectedPatient) {
         try {
           const { error: emailError } = await supabase.functions.invoke('send-email-reminder', {
             body: {
