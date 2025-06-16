@@ -7,6 +7,7 @@ import { validatePatientForm } from '@/utils/patientFormValidation';
 import { PersonalInfoFields } from '@/components/patients/form/PersonalInfoFields';
 import { GuardianFields } from '@/components/patients/form/GuardianFields';
 import { PatientFormActions } from '@/components/patients/form/PatientFormActions';
+import { PatientReactivateModal } from '@/components/patients/PatientReactivateModal';
 
 interface PatientFormData {
   full_name: string;
@@ -27,7 +28,15 @@ interface PatientFormProps {
 
 export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   const { user } = useAuth();
-  const { createPatientMutation, updatePatientMutation, isLoading } = usePatientMutations(user?.id, onClose);
+  const { 
+    createPatientMutation, 
+    updatePatientMutation, 
+    isLoading,
+    showReactivateModal,
+    deletedPatient,
+    handleReactivateConfirm,
+    handleReactivateCancel
+  } = usePatientMutations(user?.id, onClose);
 
   const [formData, setFormData] = useState<PatientFormData>({
     full_name: patient?.full_name || '',
@@ -88,24 +97,36 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   }, [formData.is_payment_from_abroad, errors.cpf, errors.cnpj]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PersonalInfoFields
-        formData={formData}
-        setFormData={setFormData}
-        errors={errors}
-        onPatientTypeChange={handlePatientTypeChange}
-      />
-      
-      <GuardianFields
-        formData={formData}
-        setFormData={setFormData}
-        errors={errors}
-      />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PersonalInfoFields
+          formData={formData}
+          setFormData={setFormData}
+          errors={errors}
+          onPatientTypeChange={handlePatientTypeChange}
+        />
+        
+        <GuardianFields
+          formData={formData}
+          setFormData={setFormData}
+          errors={errors}
+        />
 
-      <PatientFormActions
-        onClose={onClose}
-        isLoading={isLoading}
-      />
-    </form>
+        <PatientFormActions
+          onClose={onClose}
+          isLoading={isLoading}
+        />
+      </form>
+
+      {deletedPatient && (
+        <PatientReactivateModal
+          isOpen={showReactivateModal}
+          onClose={handleReactivateCancel}
+          onConfirm={handleReactivateConfirm}
+          deletedPatient={deletedPatient}
+          isLoading={isLoading}
+        />
+      )}
+    </>
   );
 };
