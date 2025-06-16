@@ -53,7 +53,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in trigger-phone-otp function:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to send verification code.' }),
+      JSON.stringify({ 
+        error: 'Failed to send verification code.',
+        // Add the specific error details to the response
+        details: error.message 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 

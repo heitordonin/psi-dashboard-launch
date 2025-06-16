@@ -82,8 +82,10 @@ const VerifyPhone = () => {
         setOtp('');
       }
     } catch (error: any) {
-      console.error('Erro ao reenviar código:', error);
-      toast.error('Falha ao reenviar o código. Por favor, tente novamente em alguns instantes.');
+      console.error('Full error object on resend:', error);
+      // Try to extract the detailed message from the function's response
+      const specificError = error.context?.details || error.message || 'Falha ao reenviar o código. Tente novamente.';
+      toast.error(specificError);
     } finally {
       setIsResending(false);
     }
