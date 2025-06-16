@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Crown, User } from "lucide-react";
 import { formatPhone } from "@/utils/inputFormatters";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PersonalInfoCardProps {
   profile: any;
@@ -25,6 +27,58 @@ export const PersonalInfoCard = ({
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
     setProfile({ ...profile, phone: formatted });
+  };
+
+  const handleSaveWithEncryption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Prepare the base data
+      let profileUpdateData: any = { 
+        full_name: profile.full_name,
+        display_name: profile.display_name,
+        cpf: profile.cpf,
+        birth_date: profile.birth_date,
+        crp_number: profile.crp_number,
+        nit_nis_pis: profile.nit_nis_pis,
+        phone: profile.phone ? profile.phone.replace(/\D/g, '') : null,
+        phone_country_code: profile.phone_country_code || '+55',
+        email_reminders_enabled: profile.email_reminders_enabled,
+        // Address fields
+        zip_code: profile.zip_code,
+        street: profile.street,
+        street_number: profile.street_number,
+        complement: profile.complement,
+        neighborhood: profile.neighborhood,
+        city: profile.city,
+        state: profile.state,
+      };
+
+      // Encrypt CPF if it exists
+      if (profile.cpf) {
+        const { data: encryptedCpf, error: encryptCpfError } = await supabase.rpc('encrypt_value', {
+          value_to_encrypt: profile.cpf,
+        });
+        if (encryptCpfError) throw encryptCpfError;
+        profileUpdateData.cpf_encrypted = encryptedCpf;
+      }
+
+      // Encrypt Phone if it exists (use cleaned phone number)
+      if (profileUpdateData.phone) {
+        const { data: encryptedPhone, error: encryptPhoneError } = await supabase.rpc('encrypt_value', {
+          value_to_encrypt: profileUpdateData.phone,
+        });
+        if (encryptPhoneError) throw encryptPhoneError;
+        profileUpdateData.phone_encrypted = encryptedPhone;
+      }
+
+      // Call the original onSave function with the enhanced data
+      await onSave(e);
+      
+    } catch (error: any) {
+      console.error('Error in encryption process:', error);
+      toast.error('Erro ao criptografar dados: ' + error.message);
+    }
   };
 
   return (
@@ -48,7 +102,7 @@ export const PersonalInfoCard = ({
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={onSave} className="space-y-4">
+        <form onSubmit={handleSaveWithEncryption} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="full_name">Nome Completo</Label>
