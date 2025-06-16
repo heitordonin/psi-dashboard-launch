@@ -15,9 +15,9 @@ serve(async (req) => {
   try {
     const { phone } = await req.json()
 
-    if (!phone) {
+    if (!phone || !phone.startsWith('+')) {
       return new Response(
-        JSON.stringify({ error: 'Número de telefone é obrigatório' }),
+        JSON.stringify({ error: 'A valid phone number in E.164 format is required.' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -25,18 +25,7 @@ serve(async (req) => {
       )
     }
 
-    // Validar formato E.164 (deve começar com +)
-    if (!phone.startsWith('+')) {
-      return new Response(
-        JSON.stringify({ error: 'Número deve estar no formato E.164 (+55XXXXXXXXXXX)' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Criar cliente Supabase com a autorização do usuário
+    // Create a Supabase client with the user's authorization
     const authHeader = req.headers.get('Authorization')!
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,47 +33,17 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Obter o usuário autenticado
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-
-    if (userError || !user) {
-      console.error('Erro ao obter usuário:', userError)
-      return new Response(
-        JSON.stringify({ error: 'Usuário não autenticado' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401 
-        }
-      )
-    }
-
-    console.log('Enviando OTP para:', phone)
-
-    // Gerar e enviar o OTP. A opção shouldCreateUser:false é CRÍTICA.
-    // Ela garante que NENHUM novo utilizador seja criado, prevenindo o bug da duplicação.
-    const { data, error } = await supabaseClient.auth.signInWithOtp({
-      phone: phone,
-      options: {
-        shouldCreateUser: false,
-        channel: 'sms'
-      }
-    });
+    // This is the correct method to trigger a phone verification OTP for an existing user.
+    // It associates the phone number with the user and automatically sends the code.
+    const { data, error } = await supabaseClient.auth.updateUser({ phone: phone })
 
     if (error) {
-      console.error('Erro ao enviar OTP:', error)
-      return new Response(
-        JSON.stringify({ error: 'Erro ao enviar código de verificação' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500 
-        }
-      )
+      console.error('Error triggering phone verification (updateUser):', error)
+      throw error
     }
 
-    console.log('OTP enviado com sucesso:', data)
-
     return new Response(
-      JSON.stringify({ success: true, message: 'Código enviado com sucesso!' }),
+      JSON.stringify({ success: true, message: 'Verification code sent successfully!' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
@@ -92,9 +51,9 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Erro na função trigger-phone-otp:', error)
+    console.error('Error in trigger-phone-otp function:', error)
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor' }),
+      JSON.stringify({ error: 'Failed to send verification code.' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
