@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,8 +69,8 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
         updateFormData({ payer_cpf: selectedPatient?.cpf || '' });
       }
     } else {
-      // Se escolheu "other", limpa o campo para o usuário preencher
-      updateFormData({ payer_cpf: '' });
+      // Se escolheu "other", puxa o guardian_cpf se existir, senão limpa
+      updateFormData({ payer_cpf: selectedPatient?.guardian_cpf || '' });
     }
   };
 
