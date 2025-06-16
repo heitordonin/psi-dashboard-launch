@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
@@ -54,7 +53,7 @@ const Patients = () => {
     }
   };
 
-  const hasActiveFilters = filters.patientId || filters.cpfSearch || filters.hasGuardian || filters.isFromAbroad;
+  const hasActiveFilters = !!(filters.patientId || filters.cpfSearch || filters.hasGuardian || filters.isFromAbroad);
 
   if (isLoading) {
     return (
