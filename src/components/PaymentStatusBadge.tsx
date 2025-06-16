@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 
 interface PaymentStatusBadgeProps {
-  status: 'draft' | 'pending' | 'paid' | 'failed';
+  status: 'draft' | 'pending' | 'paid' | 'failed' | 'overdue';
 }
 
 const statusConfig = {
@@ -20,6 +20,10 @@ const statusConfig = {
   },
   failed: {
     label: 'Falhou',
+    className: 'bg-red-100 text-red-800 border-red-300'
+  },
+  overdue: {
+    label: 'Vencida',
     className: 'bg-red-100 text-red-800 border-red-300'
   }
 };

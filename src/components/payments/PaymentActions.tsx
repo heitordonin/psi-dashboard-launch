@@ -22,6 +22,13 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
   const queryClient = useQueryClient();
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
 
+  // Calculate display status for overdue payments
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize today's date to the beginning of the day
+
+  const isOverdue = payment.status === 'pending' && new Date(payment.due_date) < today;
+  const displayStatus = isOverdue ? 'overdue' : payment.status;
+
   const markAsPaidMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -81,7 +88,7 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
     <div className="space-y-4">
       {/* Status and badges row */}
       <div className="flex flex-wrap items-center gap-2">
-        <PaymentStatusBadge status={payment.status} />
+        <PaymentStatusBadge status={displayStatus} />
         {payment.has_payment_link && (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             Com link de cobrança
