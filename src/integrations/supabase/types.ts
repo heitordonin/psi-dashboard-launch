@@ -641,6 +641,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      decrypt_value: {
+        Args: { value_to_decrypt: string }
+        Returns: string
+      }
+      encrypt_value: {
+        Args: { value_to_encrypt: string }
+        Returns: string
+      }
       get_admin_financial_overview: {
         Args: { start_date: string; end_date: string }
         Returns: {
@@ -679,6 +687,10 @@ export type Database = {
       get_user_plan_features: {
         Args: { user_id?: string }
         Returns: Json
+      }
+      hash_value: {
+        Args: { value_to_hash: string }
+        Returns: string
       }
       is_admin: {
         Args: { user_id?: string }
