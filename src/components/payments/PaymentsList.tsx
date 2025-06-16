@@ -10,6 +10,7 @@ interface PaymentsListProps {
   isLoading: boolean;
   onDeletePayment: (paymentId: string) => void;
   onEditPayment: (payment: Payment) => void;
+  onAddPayment: () => void;
   hasFilters?: boolean;
 }
 
@@ -18,13 +19,9 @@ export const PaymentsList = ({
   isLoading,
   onDeletePayment,
   onEditPayment,
+  onAddPayment,
   hasFilters = false
 }: PaymentsListProps) => {
-  
-  const onNewPayment = () => {
-    // Legacy function - not implemented in this version
-    console.log('New payment clicked');
-  };
 
   return (
     <Card>
@@ -43,7 +40,7 @@ export const PaymentsList = ({
                 : 'Nenhuma cobrança cadastrada'
               }
             </p>
-            <Button onClick={onNewPayment} variant="outline">
+            <Button onClick={onAddPayment} variant="outline">
               <Plus className="w-4 h-4 mr-2" />
               Criar primeira cobrança
             </Button>

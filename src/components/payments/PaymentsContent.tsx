@@ -63,6 +63,7 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
           isLoading={paymentsLoading}
           onDeletePayment={handleDeletePayment}
           onEditPayment={handleEditPayment}
+          onAddPayment={handleAddPayment}
           hasFilters={hasFilters}
         />
       </div>
