@@ -18,7 +18,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, canPerformAdminAction } = useSecureAuth();
   const { currentPlan } = useSubscription();
 
-  console.log('AppSidebar - canPerformAdminAction:', canPerformAdminAction(), 'user:', user?.email);
+  if (import.meta.env.MODE === 'development') {
+    console.log('AppSidebar - canPerformAdminAction:', canPerformAdminAction(), 'user:', user?.email);
+  }
 
   // Show Psiclo Bank section only for paid plans (not gratis) AND admin users
   const showPsicloBankSection = currentPlan?.slug !== 'gratis' && canPerformAdminAction();

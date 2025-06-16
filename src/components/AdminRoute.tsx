@@ -14,13 +14,19 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        console.log('User not authenticated, redirecting to login');
+        if (import.meta.env.MODE === 'development') {
+          console.log('User not authenticated, redirecting to login');
+        }
         navigate('/login');
       } else if (!canPerformAdminAction()) {
-        console.log('User not admin, redirecting to dashboard');
+        if (import.meta.env.MODE === 'development') {
+          console.log('User not admin, redirecting to dashboard');
+        }
         navigate('/dashboard');
       } else {
-        console.log('User is admin, granting access');
+        if (import.meta.env.MODE === 'development') {
+          console.log('User is admin, granting access');
+        }
       }
     }
   }, [user, isAuthenticated, isLoading, canPerformAdminAction, navigate]);

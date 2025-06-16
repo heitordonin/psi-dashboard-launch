@@ -26,7 +26,9 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
           .single();
 
         if (error) {
-          console.error('PhoneVerificationGuard: Error fetching profile:', error);
+          if (import.meta.env.MODE === 'development') {
+            console.log('PhoneVerificationGuard: Error fetching profile:', error);
+          }
         } else {
           setProfile(data);
         }

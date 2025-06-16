@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,9 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        if (import.meta.env.MODE === 'development') {
+          console.log('Auth state changed:', event, session?.user?.email);
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -52,7 +55,9 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 .eq('id', session.user.id)
                 .single();
               
-              console.log('Admin check result:', profile?.is_admin);
+              if (import.meta.env.MODE === 'development') {
+                console.log('Admin check result:', profile?.is_admin);
+              }
               setIsAdmin(profile?.is_admin || false);
             } catch (error) {
               console.error('Error checking admin status:', error);
