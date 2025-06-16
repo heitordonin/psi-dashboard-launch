@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,25 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { usePatientMutations } from '@/hooks/usePatientMutations';
 import { Badge } from '@/components/ui/badge';
 import { Patient } from '@/types/patient';
-
-interface PatientWizardData {
-  full_name: string;
-  patient_type: "individual" | "company";
-  cpf: string;
-  cnpj: string;
-  email: string;
-  phone: string;
-  zip_code: string;
-  street: string;
-  street_number: string;
-  complement: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  has_financial_guardian: boolean;
-  guardian_cpf: string;
-  is_payment_from_abroad: boolean;
-}
+import { PatientWizardData } from './types';
 
 interface Step5_SummaryProps {
   formData: PatientWizardData;

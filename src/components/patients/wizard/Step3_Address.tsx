@@ -2,17 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AddressForm } from '@/components/profile/AddressForm';
-
-interface PatientWizardData {
-  zip_code: string;
-  street: string;
-  street_number: string;
-  complement: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  [key: string]: any;
-}
+import { PatientWizardData } from './types';
 
 interface Step3_AddressProps {
   formData: PatientWizardData;

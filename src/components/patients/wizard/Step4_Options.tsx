@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatCpf } from '@/utils/inputFormatters';
 import { validateCpf } from '@/utils/validators';
-
-interface PatientWizardData {
-  has_financial_guardian: boolean;
-  guardian_cpf: string;
-  is_payment_from_abroad: boolean;
-  [key: string]: any;
-}
+import { PatientWizardData } from './types';
 
 interface Step4_OptionsProps {
   formData: PatientWizardData;

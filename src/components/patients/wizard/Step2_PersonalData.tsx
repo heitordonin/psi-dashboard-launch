@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,19 +6,7 @@ import { validatePatientForm } from '@/utils/patientFormValidation';
 import { PatientTypeSection } from './sections/PatientTypeSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { ContactSection } from './sections/ContactSection';
-
-interface PatientWizardData {
-  full_name: string;
-  patient_type: "individual" | "company";
-  cpf: string;
-  cnpj: string;
-  email: string;
-  phone: string;
-  has_financial_guardian: boolean;
-  guardian_cpf: string;
-  is_payment_from_abroad: boolean;
-  [key: string]: any;
-}
+import { PatientWizardData } from './types';
 
 interface Step2_PersonalDataProps {
   formData: PatientWizardData;
