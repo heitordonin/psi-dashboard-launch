@@ -6,6 +6,7 @@ import { PaymentsList } from './PaymentsList';
 import { CreatePaymentWizard } from './CreatePaymentWizard';
 import { usePaymentData } from '@/hooks/usePaymentData';
 import { usePaymentFilters } from '@/hooks/usePaymentFilters';
+import { toast } from 'sonner';
 import type { Payment } from '@/types/payment';
 
 interface PaymentsContentProps {
@@ -27,6 +28,12 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   };
 
   const handleEditPayment = (payment: Payment) => {
+    // Check if payment is blocked by receita saude receipt
+    if (payment.receita_saude_receipt_issued) {
+      toast.error('Não é possível editar uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.');
+      return;
+    }
+    
     setEditingPayment(payment);
     setShowCreateWizard(true);
   };
@@ -37,6 +44,14 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   };
 
   const handleDeletePayment = (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
+    
+    // Check if payment is blocked by receita saude receipt
+    if (payment?.receita_saude_receipt_issued) {
+      toast.error('Não é possível excluir uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.');
+      return;
+    }
+    
     if (window.confirm('Tem certeza que deseja excluir esta cobrança?')) {
       deletePaymentMutation.mutate(paymentId);
     }

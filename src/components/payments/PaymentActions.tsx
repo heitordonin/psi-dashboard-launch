@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { CheckCircle, Pencil, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,9 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
 
   const isOverdue = payment.status === 'pending' && new Date(payment.due_date) < today;
   const displayStatus = isOverdue ? 'overdue' : payment.status;
+
+  // Check if payment is blocked due to receita saude receipt
+  const isBlockedByReceitaSaude = payment.receita_saude_receipt_issued;
 
   const markAsPaidMutation = useMutation({
     mutationFn: async () => {
@@ -94,12 +98,17 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
             Com link de cobrança
           </Badge>
         )}
+        {isBlockedByReceitaSaude && (
+          <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+            Recibo Emitido
+          </Badge>
+        )}
       </div>
 
       {/* Main action buttons row */}
       <div className="flex flex-wrap gap-2">
         {/* Mark as Paid/Unpaid button */}
-        {payment.status !== 'paid' && !payment.has_payment_link && (
+        {payment.status !== 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude && (
           <Button
             variant="outline"
             size="sm"
@@ -111,7 +120,7 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
           </Button>
         )}
 
-        {payment.status === 'paid' && !payment.has_payment_link && (
+        {payment.status === 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude && (
           <Button
             variant="outline"
             size="sm"
@@ -121,6 +130,30 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
             <Undo2 className="w-4 h-4 mr-1" />
             Marcar como não pago
           </Button>
+        )}
+
+        {/* Blocked mark as unpaid button with tooltip */}
+        {payment.status === 'paid' && isBlockedByReceitaSaude && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={true}
+                  >
+                    <Undo2 className="w-4 h-4 mr-1" />
+                    Marcar como não pago
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Não é possível alterar uma cobrança com recibo emitido.</p>
+                <p>Desmarque no Controle Receita Saúde para permitir alterações.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {/* Payment link button */}
@@ -138,7 +171,7 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
       {/* Edit/Delete actions row */}
       <div className="flex gap-2">
         {/* Edit button with tooltip when disabled */}
-        {payment.has_payment_link ? (
+        {(payment.has_payment_link || isBlockedByReceitaSaude) ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -150,7 +183,12 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Não é possível editar uma cobrança com link de pagamento.</p>
+                <p>
+                  {payment.has_payment_link 
+                    ? "Não é possível editar uma cobrança com link de pagamento."
+                    : "Não é possível editar uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações."
+                  }
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -166,7 +204,7 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
         )}
         
         {/* Delete button with tooltip when disabled */}
-        {payment.status === 'paid' ? (
+        {(payment.status === 'paid' || isBlockedByReceitaSaude) ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -178,7 +216,14 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Não é possível excluir uma cobrança já recebida.</p>
+                <p>
+                  {payment.status === 'paid' && isBlockedByReceitaSaude
+                    ? "Não é possível excluir uma cobrança paga com recibo emitido."
+                    : payment.status === 'paid'
+                    ? "Não é possível excluir uma cobrança já recebida."
+                    : "Não é possível excluir uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações."
+                  }
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

@@ -137,6 +137,11 @@ export function usePaymentCreation({
     mutationFn: async () => {
       if (!paymentToEdit) throw new Error('No payment to update');
 
+      // Check if payment has receita saude receipt issued - block editing
+      if (paymentToEdit.receita_saude_receipt_issued) {
+        throw new Error('Não é possível editar uma cobrança com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.');
+      }
+
       // Validate due date ONLY for payment links, not for manual charges
       if (paymentToEdit.has_payment_link && formData.due_date) {
         const dueDate = new Date(formData.due_date);
@@ -176,7 +181,7 @@ export function usePaymentCreation({
     },
     onError: (error) => {
       console.error('Error updating payment:', error);
-      toast.error('Erro ao atualizar cobrança');
+      toast.error(error.message || 'Erro ao atualizar cobrança');
     }
   });
 
