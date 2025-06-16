@@ -66,7 +66,7 @@ serve(async (req) => {
       phone: phone,
       options: {
         shouldCreateUser: false,
-        channel: 'whatsapp'
+        channel: 'sms'
       }
     });
 
