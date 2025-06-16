@@ -222,6 +222,7 @@ export type Database = {
           cnpj: string | null
           cpf: string | null
           created_at: string
+          deleted_at: string | null
           email: string | null
           full_name: string
           guardian_cpf: string | null
@@ -237,6 +238,7 @@ export type Database = {
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           full_name: string
           guardian_cpf?: string | null
@@ -252,6 +254,7 @@ export type Database = {
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           full_name?: string
           guardian_cpf?: string | null

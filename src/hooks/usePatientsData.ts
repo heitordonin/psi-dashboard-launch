@@ -19,6 +19,7 @@ export const usePatientsData = () => {
         .from('patients')
         .select('*')
         .eq('owner_id', user.id)
+        .is('deleted_at', null) // Apenas pacientes não deletados
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -41,7 +42,8 @@ export const usePatientsData = () => {
       const { count, error } = await supabase
         .from('patients')
         .select('*', { count: 'exact', head: true })
-        .eq('owner_id', user.id);
+        .eq('owner_id', user.id)
+        .is('deleted_at', null); // Apenas pacientes não deletados
       
       if (error) throw error;
       return count || 0;
@@ -51,15 +53,17 @@ export const usePatientsData = () => {
 
   const deletePatientMutation = useMutation({
     mutationFn: async (patientId: string) => {
+      // Soft delete: atualizar deleted_at em vez de deletar fisicamente
       const { error } = await supabase
         .from('patients')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', patientId);
       
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
+      queryClient.invalidateQueries({ queryKey: ['patients-count'] });
       toast.success('Paciente excluído com sucesso!');
     },
     onError: (error) => {

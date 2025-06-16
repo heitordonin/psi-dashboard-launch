@@ -30,6 +30,7 @@ export const checkForDuplicates = async (
       .select('id')
       .eq('owner_id', userId)
       .eq('cpf', cleanCpf)
+      .is('deleted_at', null) // Apenas pacientes não deletados
       .limit(1);
     
     // Only apply ID filter if we have a patientId (during edit)
@@ -48,6 +49,7 @@ export const checkForDuplicates = async (
       .select('id')
       .eq('owner_id', userId)
       .eq('cnpj', cleanCnpj)
+      .is('deleted_at', null) // Apenas pacientes não deletados
       .limit(1);
     
     // Only apply ID filter if we have a patientId (during edit)
@@ -65,6 +67,7 @@ export const checkForDuplicates = async (
       .select('id')
       .eq('owner_id', userId)
       .eq('email', data.email.trim())
+      .is('deleted_at', null) // Apenas pacientes não deletados
       .limit(1);
     
     // Only apply ID filter if we have a patientId (during edit)
