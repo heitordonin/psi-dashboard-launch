@@ -3,11 +3,19 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+type ProfileStatus = 'loading' | 'verified' | 'needs_verification' | 'needs_phone' | 'no_profile';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  profileStatus: ProfileStatus;
+  profileData: {
+    phone?: string;
+    phoneVerified?: boolean;
+    phoneCountryCode?: string;
+  } | null;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -30,48 +38,16 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Cache de verificação de admin para evitar múltiplas chamadas
-  const [adminCheckCache, setAdminCheckCache] = useState<Record<string, boolean>>({});
-
-  // Função para verificar status de admin com cache
-  const checkAdminStatus = async (userId: string) => {
-    // Se já temos o resultado em cache, usar ele
-    if (adminCheckCache[userId] !== undefined) {
-      setIsAdmin(adminCheckCache[userId]);
-      return adminCheckCache[userId];
-    }
-
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', userId)
-        .single();
-      
-      const adminStatus = !error && (profile?.is_admin || false);
-      
-      // Atualizar cache e estado
-      setAdminCheckCache(prev => ({ ...prev, [userId]: adminStatus }));
-      setIsAdmin(adminStatus);
-      
-      if (import.meta.env.MODE === 'development') {
-        console.log('SupabaseAuthContext: Admin check result:', adminStatus);
-      }
-      
-      return adminStatus;
-    } catch (error) {
-      console.error('SupabaseAuthContext: Exception during admin check:', error);
-      setIsAdmin(false);
-      setAdminCheckCache(prev => ({ ...prev, [userId]: false }));
-      return false;
-    }
-  };
+  const [profileStatus, setProfileStatus] = useState<ProfileStatus>('loading');
+  const [profileData, setProfileData] = useState<{
+    phone?: string;
+    phoneVerified?: boolean;
+    phoneCountryCode?: string;
+  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    // Função para lidar com mudanças de autenticação
     const handleAuthChange = async (event: string, session: Session | null) => {
       if (!mounted) return;
 
@@ -83,39 +59,84 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Verificar admin status apenas se ainda montado
-        await checkAdminStatus(session.user.id);
+        try {
+          // Single query to fetch ALL profile data at once
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('is_admin, phone, phone_verified, phone_country_code')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!mounted) return;
+
+          if (error || !profile) {
+            if (import.meta.env.MODE === 'development') {
+              console.log('SupabaseAuthContext: Profile not found or error:', error);
+            }
+            setIsAdmin(false);
+            setProfileStatus('no_profile');
+            setProfileData(null);
+          } else {
+            // Set admin status
+            setIsAdmin(profile.is_admin || false);
+            
+            // Set profile data
+            setProfileData({
+              phone: profile.phone,
+              phoneVerified: profile.phone_verified,
+              phoneCountryCode: profile.phone_country_code
+            });
+
+            // Determine profile status based on phone verification
+            if (profile.phone_verified) {
+              setProfileStatus('verified');
+            } else if (profile.phone) {
+              setProfileStatus('needs_verification');
+            } else {
+              setProfileStatus('needs_phone');
+            }
+
+            if (import.meta.env.MODE === 'development') {
+              console.log('SupabaseAuthContext: Profile loaded:', {
+                isAdmin: profile.is_admin || false,
+                phoneVerified: profile.phone_verified,
+                hasPhone: !!profile.phone,
+                profileStatus: profile.phone_verified ? 'verified' : (profile.phone ? 'needs_verification' : 'needs_phone')
+              });
+            }
+          }
+        } catch (error) {
+          if (!mounted) return;
+          console.error('SupabaseAuthContext: Error fetching profile:', error);
+          setIsAdmin(false);
+          setProfileStatus('no_profile');
+          setProfileData(null);
+        }
       } else {
-        // User logged out - reset admin state
+        // User logged out - reset everything
         setIsAdmin(false);
-        setAdminCheckCache({});
+        setProfileStatus('no_profile');
+        setProfileData(null);
       }
       
-      // Definir loading como false apenas depois de todas as verificações
+      // Set loading to false only after ALL operations are complete
       if (mounted) {
         setIsLoading(false);
       }
     };
 
-    // Configurar listener de mudanças de auth
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Obter sessão inicial
+    // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await checkAdminStatus(session.user.id);
+        if (mounted) {
+          await handleAuthChange('INITIAL_SESSION', session);
         }
       } catch (error) {
         console.error('SupabaseAuthContext: Error during initialization:', error);
-      } finally {
         if (mounted) {
           setIsLoading(false);
         }
@@ -188,6 +209,8 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     session,
     isLoading,
     isAdmin,
+    profileStatus,
+    profileData,
     signUp,
     signIn,
     signOut,
