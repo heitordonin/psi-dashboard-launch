@@ -17,7 +17,9 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
       const { data, error } = await supabase.rpc('get_admin_user_kpis');
       if (error) throw error;
       return data[0] || { total_users: 0, new_users_last_30_days: 0, inactive_users: 0 };
-    }
+    },
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    retry: 1
   });
 
   const { data: userGrowth, isLoading: userGrowthLoading } = useQuery({
@@ -29,7 +31,9 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
       });
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    retry: 1
   });
 
   const { data: topEarners, isLoading: topEarnersLoading } = useQuery({
@@ -40,7 +44,9 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
       });
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 10 * 60 * 1000, // Cache por 10 minutos
+    retry: 1
   });
 
   return {

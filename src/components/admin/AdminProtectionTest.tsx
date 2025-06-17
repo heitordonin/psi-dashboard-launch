@@ -6,20 +6,18 @@ import { useSecureAuth } from "@/hooks/useSecureAuth";
  * Este componente deve NUNCA mostrar conteúdo admin para usuários não-admin
  */
 export const AdminProtectionTest = () => {
-  const { user, isLoading, isAdminLoading, isAdmin, canPerformAdminAction } = useSecureAuth();
+  const { user, isLoading, isAdmin } = useSecureAuth();
 
   if (import.meta.env.MODE === 'development') {
     console.log('AdminProtectionTest render:', {
       hasUser: !!user,
       isLoading,
-      isAdminLoading,
-      isAdmin,
-      canPerformAdminAction: canPerformAdminAction()
+      isAdmin
     });
   }
 
-  // Mostrar loading enquanto qualquer verificação estiver em andamento
-  if (isLoading || isAdminLoading) {
+  // Mostrar loading enquanto carregando
+  if (isLoading) {
     return (
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <div className="flex items-center space-x-2">
@@ -30,8 +28,8 @@ export const AdminProtectionTest = () => {
     );
   }
 
-  // Só mostrar conteúdo admin se TODAS as verificações passaram
-  if (!user || !canPerformAdminAction()) {
+  // Só mostrar conteúdo admin se todas as verificações passaram
+  if (!user || !isAdmin) {
     return (
       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <span className="text-gray-600">Usuário comum - sem acesso admin</span>

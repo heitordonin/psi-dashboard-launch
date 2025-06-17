@@ -15,25 +15,27 @@ import { AdminSection } from "@/components/sidebar/AdminSection";
 import { SidebarFooter } from "@/components/sidebar/SidebarFooter";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, canPerformAdminAction, isLoading, isAdminLoading } = useSecureAuth();
+  const { user, isLoading, isAdmin } = useSecureAuth();
   const { currentPlan } = useSubscription();
+
+  // Memoizar os valores calculados para evitar recálculos desnecessários
+  const isAdminUser = React.useMemo(() => {
+    return !isLoading && !!user && isAdmin;
+  }, [isLoading, user, isAdmin]);
+
+  const showPsicloBankSection = React.useMemo(() => {
+    return isAdminUser && currentPlan?.slug !== 'gratis';
+  }, [isAdminUser, currentPlan?.slug]);
 
   if (import.meta.env.MODE === 'development') {
     console.log('AppSidebar state:', {
       hasUser: !!user,
       isLoading,
-      isAdminLoading,
-      canPerformAdminAction: canPerformAdminAction(),
+      isAdmin,
+      isAdminUser,
       currentPlan: currentPlan?.slug
     });
   }
-
-  // Don't show admin sections while loading or admin verification is in progress
-  const isVerificationComplete = !isLoading && !isAdminLoading;
-  const isAdminUser = isVerificationComplete && canPerformAdminAction();
-
-  // Show Psiclo Bank section only for paid plans (not gratis) AND admin users AND verification complete
-  const showPsicloBankSection = isVerificationComplete && currentPlan?.slug !== 'gratis' && isAdminUser;
 
   return (
     <Sidebar collapsible="icon" {...props}>

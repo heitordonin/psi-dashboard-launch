@@ -8,7 +8,6 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  isCheckingAdmin: boolean;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -31,15 +30,18 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(false);
 
-  // Função para verificar status de admin de forma síncrona
+  // Cache de verificação de admin para evitar múltiplas chamadas
+  const [adminCheckCache, setAdminCheckCache] = useState<Record<string, boolean>>({});
+
+  // Função para verificar status de admin com cache
   const checkAdminStatus = async (userId: string) => {
-    if (import.meta.env.MODE === 'development') {
-      console.log('SupabaseAuthContext: Starting admin check for user:', userId);
+    // Se já temos o resultado em cache, usar ele
+    if (adminCheckCache[userId] !== undefined) {
+      setIsAdmin(adminCheckCache[userId]);
+      return adminCheckCache[userId];
     }
-    
-    setIsCheckingAdmin(true);
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -47,53 +49,63 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('SupabaseAuthContext: Error checking admin status:', error);
-        setIsAdmin(false);
-      } else {
-        const adminStatus = profile?.is_admin || false;
-        if (import.meta.env.MODE === 'development') {
-          console.log('SupabaseAuthContext: Admin check result:', adminStatus);
-        }
-        setIsAdmin(adminStatus);
+      const adminStatus = !error && (profile?.is_admin || false);
+      
+      // Atualizar cache e estado
+      setAdminCheckCache(prev => ({ ...prev, [userId]: adminStatus }));
+      setIsAdmin(adminStatus);
+      
+      if (import.meta.env.MODE === 'development') {
+        console.log('SupabaseAuthContext: Admin check result:', adminStatus);
       }
+      
+      return adminStatus;
     } catch (error) {
       console.error('SupabaseAuthContext: Exception during admin check:', error);
       setIsAdmin(false);
-    } finally {
-      setIsCheckingAdmin(false);
+      setAdminCheckCache(prev => ({ ...prev, [userId]: false }));
+      return false;
     }
   };
 
   useEffect(() => {
-    // Set up the auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (import.meta.env.MODE === 'development') {
-          console.log('SupabaseAuthContext: Auth state changed:', event, session?.user?.email);
-        }
-        
-        setSession(session);
-        setUser(session?.user ?? null);
+    let mounted = true;
 
-        // Check admin status immediately when user logs in or session changes
-        if (session?.user) {
-          await checkAdminStatus(session.user.id);
-        } else {
-          // User logged out - reset admin state immediately
-          setIsAdmin(false);
-          setIsCheckingAdmin(false);
-        }
-        
-        // Only set loading to false after all checks are complete
+    // Função para lidar com mudanças de autenticação
+    const handleAuthChange = async (event: string, session: Session | null) => {
+      if (!mounted) return;
+
+      if (import.meta.env.MODE === 'development') {
+        console.log('SupabaseAuthContext: Auth state changed:', event, session?.user?.email);
+      }
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        // Verificar admin status apenas se ainda montado
+        await checkAdminStatus(session.user.id);
+      } else {
+        // User logged out - reset admin state
+        setIsAdmin(false);
+        setAdminCheckCache({});
+      }
+      
+      // Definir loading como false apenas depois de todas as verificações
+      if (mounted) {
         setIsLoading(false);
       }
-    );
+    };
 
-    // Get initial session and handle it properly
+    // Configurar listener de mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    // Obter sessão inicial
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -104,26 +116,30 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       } catch (error) {
         console.error('SupabaseAuthContext: Error during initialization:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/login`;
     
-    // Se userData contém phone, criar o número completo E.164
     let processedUserData = userData;
     if (userData?.phone) {
       const cleanedPhone = userData.phone.replace(/\D/g, '');
       processedUserData = {
         ...userData,
-        phone_number: cleanedPhone, // Use phone_number instead of phone to avoid conflicts
-        phone: undefined // Explicitly remove the old key
+        phone_number: cleanedPhone,
+        phone: undefined
       };
     }
     
@@ -172,7 +188,6 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     session,
     isLoading,
     isAdmin,
-    isCheckingAdmin,
     signUp,
     signIn,
     signOut,

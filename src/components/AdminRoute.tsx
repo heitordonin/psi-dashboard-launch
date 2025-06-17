@@ -8,12 +8,12 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isAuthenticated, isLoading, canPerformAdminAction, isAdminLoading } = useSecureAuth();
+  const { user, isAuthenticated, isLoading, canPerformAdminAction } = useSecureAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Wait for ALL loading states to complete before making decisions
-    if (!isLoading && !isAdminLoading) {
+    // Aguardar apenas o loading principal
+    if (!isLoading) {
       if (!isAuthenticated) {
         if (import.meta.env.MODE === 'development') {
           console.log('AdminRoute: User not authenticated, redirecting to login');
@@ -30,12 +30,12 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         }
       }
     }
-  }, [user, isAuthenticated, isLoading, isAdminLoading, canPerformAdminAction, navigate]);
+  }, [user, isAuthenticated, isLoading, canPerformAdminAction, navigate]);
 
-  // Show loading screen while ANY verification is in progress
-  if (isLoading || isAdminLoading) {
+  // Mostrar loading apenas durante o carregamento principal
+  if (isLoading) {
     if (import.meta.env.MODE === 'development') {
-      console.log('AdminRoute: Loading state - isLoading:', isLoading, 'isAdminLoading:', isAdminLoading);
+      console.log('AdminRoute: Loading state - isLoading:', isLoading);
     }
     
     return (
@@ -48,7 +48,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // Additional safety check - only render if user is authenticated AND admin
+  // Verificação de segurança adicional
   if (!isAuthenticated || !canPerformAdminAction()) {
     if (import.meta.env.MODE === 'development') {
       console.log('AdminRoute: Access denied - authenticated:', isAuthenticated, 'canPerformAdminAction:', canPerformAdminAction());
