@@ -3,19 +3,12 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type ProfileStatus = 'loading' | 'verified' | 'needs_verification' | 'needs_phone' | 'no_profile';
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  profileStatus: ProfileStatus;
-  profileData: {
-    phone?: string;
-    phoneVerified?: boolean;
-    phoneCountryCode?: string;
-  } | null;
+  isCheckingAdmin: boolean;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -38,129 +31,69 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [profileStatus, setProfileStatus] = useState<ProfileStatus>('loading');
-  const [profileData, setProfileData] = useState<{
-    phone?: string;
-    phoneVerified?: boolean;
-    phoneCountryCode?: string;
-  } | null>(null);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
-    const handleAuthChange = async (event: string, session: Session | null) => {
-      if (!mounted) return;
-
-      if (import.meta.env.MODE === 'development') {
-        console.log('SupabaseAuthContext: Auth state changed:', event, session?.user?.email);
-      }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        try {
-          // Single query to fetch ALL profile data at once
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('is_admin, phone, phone_verified, phone_country_code')
-            .eq('id', session.user.id)
-            .single();
-
-          if (!mounted) return;
-
-          if (error || !profile) {
-            if (import.meta.env.MODE === 'development') {
-              console.log('SupabaseAuthContext: Profile not found or error:', error);
-            }
-            setIsAdmin(false);
-            setProfileStatus('no_profile');
-            setProfileData(null);
-          } else {
-            // Set admin status
-            setIsAdmin(profile.is_admin || false);
-            
-            // Set profile data
-            setProfileData({
-              phone: profile.phone,
-              phoneVerified: profile.phone_verified,
-              phoneCountryCode: profile.phone_country_code
-            });
-
-            // Determine profile status based on phone verification
-            if (profile.phone_verified) {
-              setProfileStatus('verified');
-            } else if (profile.phone) {
-              setProfileStatus('needs_verification');
-            } else {
-              setProfileStatus('needs_phone');
-            }
-
-            if (import.meta.env.MODE === 'development') {
-              console.log('SupabaseAuthContext: Profile loaded:', {
-                isAdmin: profile.is_admin || false,
-                phoneVerified: profile.phone_verified,
-                hasPhone: !!profile.phone,
-                profileStatus: profile.phone_verified ? 'verified' : (profile.phone ? 'needs_verification' : 'needs_phone')
-              });
-            }
-          }
-        } catch (error) {
-          if (!mounted) return;
-          console.error('SupabaseAuthContext: Error fetching profile:', error);
-          setIsAdmin(false);
-          setProfileStatus('no_profile');
-          setProfileData(null);
+    // Set up the auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (import.meta.env.MODE === 'development') {
+          console.log('Auth state changed:', event, session?.user?.email);
         }
-      } else {
-        // User logged out - reset everything
-        setIsAdmin(false);
-        setProfileStatus('no_profile');
-        setProfileData(null);
-      }
-      
-      // Set loading to false only after ALL operations are complete
-      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
         setIsLoading(false);
-      }
-    };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+        // Check admin status when user logs in or session changes
+        if (session?.user) {
+          setTimeout(async () => {
+            setIsCheckingAdmin(true);
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (import.meta.env.MODE === 'development') {
+                console.log('Admin check result:', profile?.is_admin);
+              }
+              setIsAdmin(profile?.is_admin || false);
+            } catch (error) {
+              console.error('Error checking admin status:', error);
+              setIsAdmin(false);
+            } finally {
+              setIsCheckingAdmin(false);
+            }
+          }, 0);
+        } else {
+          setIsAdmin(false);
+          setIsCheckingAdmin(false);
+        }
+      }
+    );
 
     // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          await handleAuthChange('INITIAL_SESSION', session);
-        }
-      } catch (error) {
-        console.error('SupabaseAuthContext: Error during initialization:', error);
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
-    initializeAuth();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/login`;
     
+    // Se userData contém phone, criar o número completo E.164
     let processedUserData = userData;
     if (userData?.phone) {
       const cleanedPhone = userData.phone.replace(/\D/g, '');
       processedUserData = {
         ...userData,
-        phone_number: cleanedPhone,
-        phone: undefined
+        phone_number: cleanedPhone, // Use phone_number instead of phone to avoid conflicts
+        phone: undefined // Explicitly remove the old key
       };
     }
     
@@ -209,8 +142,7 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     session,
     isLoading,
     isAdmin,
-    profileStatus,
-    profileData,
+    isCheckingAdmin,
     signUp,
     signIn,
     signOut,

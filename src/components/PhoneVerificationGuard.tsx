@@ -1,84 +1,88 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PhoneVerificationGuardProps {
   children: React.ReactNode;
 }
 
 const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
-  const { user, isLoading, profileStatus, profileData } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // Step 1: Fetch the user's profile as soon as the user is available.
   useEffect(() => {
-    // Wait for all authentication and profile data to be loaded
-    if (isLoading) {
-      return;
+    const fetchProfile = async () => {
+      if (user) {
+        setLoadingProfile(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('phone, phone_verified, phone_country_code')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          if (import.meta.env.MODE === 'development') {
+            console.log('PhoneVerificationGuard: Error fetching profile:', error);
+          }
+        } else {
+          setProfile(data);
+        }
+        setLoadingProfile(false);
+      } else if (!isAuthLoading) {
+        // If there's no user and auth is not loading, it's a logged-out state.
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, isAuthLoading]);
+
+  // Step 2: Implement the redirection logic based on the loaded profile status.
+  useEffect(() => {
+    // Wait until all authentication and profile data has been loaded.
+    if (isAuthLoading || loadingProfile) {
+      return; 
     }
 
-    // Not authenticated - redirect to login
     if (!user) {
       navigate('/login');
       return;
     }
 
-    // Handle different profile statuses
-    switch (profileStatus) {
-      case 'verified':
-        // Phone is verified - allow access
-        if (import.meta.env.MODE === 'development') {
-          console.log('PhoneVerificationGuard: Phone verified, granting access');
-        }
-        break;
-
-      case 'needs_verification':
-        // Phone exists but not verified - redirect to OTP verification
-        if (profileData?.phone) {
-          const countryCode = profileData.phoneCountryCode || '+55';
-          const fullPhoneNumber = `${countryCode}${profileData.phone}`;
-          
-          if (import.meta.env.MODE === 'development') {
-            console.log('PhoneVerificationGuard: Phone needs verification, redirecting to verify-phone');
+    if (profile) {
+      // Case 1: User's phone is already verified. Grant access.
+      if (profile.phone_verified) {
+        return;
+      }
+      
+      // Case 2: Phone exists but is not verified. Redirect to OTP page.
+      if (profile.phone) {
+        const countryCode = profile.phone_country_code || '+55';
+        const fullPhoneNumber = `${countryCode}${profile.phone}`;
+        navigate('/verify-phone', {
+          state: {
+            phone: fullPhoneNumber,
+            displayPhone: `${countryCode} ${profile.phone}`
           }
-          
-          navigate('/verify-phone', {
-            state: {
-              phone: fullPhoneNumber,
-              displayPhone: `${countryCode} ${profileData.phone}`
-            }
-          });
-        } else {
-          // Fallback: if status says needs_verification but no phone data
-          navigate('/update-phone');
-        }
-        break;
-
-      case 'needs_phone':
-        // No phone number - redirect to phone update
-        if (import.meta.env.MODE === 'development') {
-          console.log('PhoneVerificationGuard: No phone number, redirecting to update-phone');
-        }
+        });
+      } else {
+        // Case 3: No phone number exists. Redirect to the update page.
         navigate('/update-phone');
-        break;
-
-      case 'no_profile':
-        // Profile error or doesn't exist - redirect to phone update
-        if (import.meta.env.MODE === 'development') {
-          console.log('PhoneVerificationGuard: No profile found, redirecting to update-phone');
-        }
-        navigate('/update-phone');
-        break;
-
-      default:
-        // Unknown status - redirect to phone update as fallback
-        navigate('/update-phone');
-        break;
+      }
+    } else {
+       // Case 4: Profile does not exist. This is a failsafe.
+       navigate('/update-phone');
     }
-  }, [user, isLoading, profileStatus, profileData, navigate]);
 
-  // Show loading while checking authentication and profile
-  if (isLoading) {
+  }, [profile, loadingProfile, isAuthLoading, user, navigate]);
+
+  // Step 3: Render a loading indicator or the protected content.
+  if (isAuthLoading || loadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -89,12 +93,12 @@ const PhoneVerificationGuard = ({ children }: PhoneVerificationGuardProps) => {
     );
   }
 
-  // Only render children if phone is verified
-  if (profileStatus === 'verified') {
+  // Render children only if the phone is verified. Otherwise, the useEffect handles the redirect.
+  if (profile?.phone_verified) {
     return <>{children}</>;
   }
 
-  // While redirecting, render nothing to avoid flashing content
+  // While redirecting, render nothing to avoid flashing incorrect content.
   return null;
 };
 

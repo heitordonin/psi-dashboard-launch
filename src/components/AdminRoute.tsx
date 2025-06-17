@@ -12,32 +12,26 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Aguardar apenas o loading principal
     if (!isLoading) {
       if (!isAuthenticated) {
         if (import.meta.env.MODE === 'development') {
-          console.log('AdminRoute: User not authenticated, redirecting to login');
+          console.log('User not authenticated, redirecting to login');
         }
         navigate('/login');
       } else if (!canPerformAdminAction()) {
         if (import.meta.env.MODE === 'development') {
-          console.log('AdminRoute: User not admin, redirecting to dashboard');
+          console.log('User not admin, redirecting to dashboard');
         }
         navigate('/dashboard');
       } else {
         if (import.meta.env.MODE === 'development') {
-          console.log('AdminRoute: User is admin, granting access');
+          console.log('User is admin, granting access');
         }
       }
     }
   }, [user, isAuthenticated, isLoading, canPerformAdminAction, navigate]);
 
-  // Mostrar loading apenas durante o carregamento principal
   if (isLoading) {
-    if (import.meta.env.MODE === 'development') {
-      console.log('AdminRoute: Loading state - isLoading:', isLoading);
-    }
-    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -48,11 +42,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // Verificação de segurança adicional
   if (!isAuthenticated || !canPerformAdminAction()) {
-    if (import.meta.env.MODE === 'development') {
-      console.log('AdminRoute: Access denied - authenticated:', isAuthenticated, 'canPerformAdminAction:', canPerformAdminAction());
-    }
     return null;
   }
 
