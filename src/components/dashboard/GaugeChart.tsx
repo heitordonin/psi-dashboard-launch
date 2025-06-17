@@ -28,7 +28,7 @@ export function GaugeChart({ percentage, hasData }: GaugeChartProps) {
       </CardHeader>
       <CardContent className="pt-0">
         {hasData ? (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center justify-center mt-4">
             <div className="relative w-48 h-24">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -56,7 +56,7 @@ export function GaugeChart({ percentage, hasData }: GaugeChartProps) {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-32">
+          <div className="flex items-center justify-center h-32 mt-4">
             <p className="text-gray-500 text-center">Sem informação registrada</p>
           </div>
         )}
