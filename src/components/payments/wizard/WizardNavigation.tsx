@@ -26,6 +26,11 @@ export function WizardNavigation({
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 
+  // Don't render navigation on the last step (summary step)
+  if (isLastStep) {
+    return null;
+  }
+
   return (
     <div className="flex justify-between pt-4 border-t">
       {/* Left side: Back button or Cancel button */}

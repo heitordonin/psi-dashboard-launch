@@ -1,26 +1,20 @@
 
-import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
 interface WizardHeaderProps {
   currentStep: number;
   totalSteps: number;
   stepTitle: string;
-  onClose: () => void;
   title?: string;
 }
 
-export function WizardHeader({ currentStep, totalSteps, stepTitle, onClose, title = 'Nova Cobrança' }: WizardHeaderProps) {
+export function WizardHeader({ currentStep, totalSteps, stepTitle, title = 'Nova Cobrança' }: WizardHeaderProps) {
   const progress = (currentStep / totalSteps) * 100;
 
   return (
     <div className="border-b pb-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
       </div>
       
       <div className="space-y-2">

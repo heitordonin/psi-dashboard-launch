@@ -51,7 +51,6 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
           currentStep={getDisplayStepNumber(currentStep, formData, isEditMode)}
           totalSteps={getDisplayTotalSteps(formData, isEditMode)}
           stepTitle={getCurrentStepTitle(currentStep, formData, isEditMode)}
-          onClose={handleClose}
           title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
         />
 
