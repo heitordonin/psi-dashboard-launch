@@ -16,11 +16,33 @@ export const useDashboardData = (startDate: string, endDate: string) => {
         .select('*')
         .eq('owner_id', user.id);
 
-      if (startDate) {
-        query = query.gte('created_at', startDate);
-      }
-      if (endDate) {
-        query = query.lte('created_at', endDate + 'T23:59:59');
+      // For paid payments, filter by paid_date
+      // For non-paid payments, filter by created_at
+      if (startDate || endDate) {
+        // Get all payments first, then filter based on appropriate date field
+        const { data: allPayments, error } = await query;
+        
+        if (error) throw error;
+        
+        return allPayments.filter(payment => {
+          let dateToCheck: string;
+          
+          // Use paid_date for paid payments, created_at for others
+          if (payment.status === 'paid' && payment.paid_date) {
+            dateToCheck = payment.paid_date;
+          } else {
+            dateToCheck = payment.created_at;
+          }
+          
+          const checkDate = new Date(dateToCheck);
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+          
+          if (start && checkDate < start) return false;
+          if (end && checkDate > end) return false;
+          
+          return true;
+        });
       }
       
       const { data, error } = await query;
@@ -41,11 +63,12 @@ export const useDashboardData = (startDate: string, endDate: string) => {
         .select('*')
         .eq('owner_id', user.id);
 
+      // For expenses, use payment_date instead of created_at
       if (startDate) {
-        query = query.gte('created_at', startDate);
+        query = query.gte('payment_date', startDate);
       }
       if (endDate) {
-        query = query.lte('created_at', endDate + 'T23:59:59');
+        query = query.lte('payment_date', endDate);
       }
       
       const { data, error } = await query;
