@@ -17,7 +17,10 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    // Para datas no formato YYYY-MM-DD, criar a data diretamente sem conversão de timezone
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month - 1 porque Date usa 0-based months
+    return format(date, 'dd/MM/yyyy', { locale: ptBR });
   };
 
   return (
