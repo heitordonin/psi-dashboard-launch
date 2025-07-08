@@ -35,6 +35,23 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
     if (paymentToEdit && isOpen) {
       const patient = patients.find(p => p.id === paymentToEdit.patient_id);
       
+      // Determine if payer_cpf matches patient's document
+      let paymentTitular: 'patient' | 'other' = 'patient';
+      if (paymentToEdit.payer_cpf && patient) {
+        // For company patients, compare with CNPJ
+        if (patient.patient_type === 'company') {
+          paymentTitular = paymentToEdit.payer_cpf === patient.cnpj ? 'patient' : 'other';
+        } 
+        // For foreign patients, if payer_cpf exists, it's always 'other' since they don't have CPF
+        else if (patient.is_payment_from_abroad) {
+          paymentTitular = 'other';
+        } 
+        // For individual patients, compare with CPF
+        else {
+          paymentTitular = paymentToEdit.payer_cpf === patient.cpf ? 'patient' : 'other';
+        }
+      }
+      
       setFormData({
         chargeType: paymentToEdit.has_payment_link ? 'link' : 'manual',
         paymentType: 'single',
@@ -45,7 +62,7 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
         monthlyInterest: 0,
         lateFee: 0,
         patient_id: paymentToEdit.patient_id,
-        paymentTitular: paymentToEdit.payer_cpf ? 'other' : 'patient',
+        paymentTitular,
         payer_cpf: paymentToEdit.payer_cpf || '',
         sendEmailNotification: false,
         email: patient?.email || '',
