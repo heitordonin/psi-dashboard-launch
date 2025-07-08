@@ -12,13 +12,15 @@ interface Step4_OptionsProps {
   updateFormData: (updates: Partial<PatientWizardData>) => void;
   onNext: () => void;
   onPrevious: () => void;
+  isLastStep?: boolean;
 }
 
 export const Step4_Options = ({ 
   formData, 
   updateFormData, 
   onNext, 
-  onPrevious 
+  onPrevious,
+  isLastStep = false
 }: Step4_OptionsProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -95,14 +97,16 @@ export const Step4_Options = ({
         </div>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button type="button" variant="outline" onClick={onPrevious}>
-          Voltar
-        </Button>
-        <Button type="button" onClick={handleNext}>
-          Próximo
-        </Button>
-      </div>
+      {!isLastStep && (
+        <div className="flex justify-between pt-4">
+          <Button type="button" variant="outline" onClick={onPrevious}>
+            Voltar
+          </Button>
+          <Button type="button" onClick={handleNext}>
+            Próximo
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

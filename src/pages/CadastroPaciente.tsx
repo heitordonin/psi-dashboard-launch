@@ -173,6 +173,7 @@ const CadastroPaciente = () => {
             updateFormData={updateFormData}
             onNext={handleFinalSubmit}
             onPrevious={handlePrevious}
+            isLastStep={true}
           />
         );
       default:
