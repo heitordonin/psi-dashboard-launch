@@ -14,6 +14,8 @@ import Referral from '@/pages/Referral';
 import UpdatePhone from '@/pages/UpdatePhone';
 import VerifyPhone from '@/pages/VerifyPhone';
 import SupportTicket from '@/pages/SupportTicket';
+import DocumentosRecebidos from '@/pages/DocumentosRecebidos';
+import DocumentoDetalhes from '@/pages/DocumentoDetalhes';
 
 export const protectedRoutes = [
   <Route key="update-phone" path="/update-phone" element={
@@ -90,6 +92,20 @@ export const protectedRoutes = [
   <Route key="suporte" path="/suporte" element={
     <ProtectedRoute>
       <SupportTicket />
+    </ProtectedRoute>
+  } />,
+  <Route key="documentos-recebidos" path="/documentos-recebidos" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <DocumentosRecebidos />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="documento-detalhes" path="/documento/:id" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <DocumentoDetalhes />
+      </PhoneVerificationGuard>
     </ProtectedRoute>
   } />
 ];

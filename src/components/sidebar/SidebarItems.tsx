@@ -6,7 +6,8 @@ import {
   FileText,
   Receipt,
   Crown,
-  Mail
+  Mail,
+  FolderOpen
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
@@ -14,8 +15,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton
 } from "@/components/ui/sidebar";
+import { useSubscription } from "@/hooks/useSubscription";
 
-const items = [
+const baseItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -53,8 +55,21 @@ const items = [
   },
 ];
 
+const psiRegularItem = {
+  title: "Documentos Recebidos",
+  url: "/documentos-recebidos",
+  icon: FolderOpen,
+};
+
 export const SidebarItems = () => {
   const location = useLocation();
+  const { currentPlan } = useSubscription();
+
+  // Add Documentos Recebidos if user has Psi Regular plan
+  const items = [...baseItems];
+  if (currentPlan?.slug === 'psi_regular') {
+    items.splice(5, 0, psiRegularItem); // Insert after "Controle Receita Saúde"
+  }
 
   return (
     <SidebarMenu>

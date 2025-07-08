@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_documents: {
+        Row: {
+          amount: number
+          competency: string
+          created_at: string
+          created_by_admin_id: string
+          due_date: string
+          file_path: string
+          id: string
+          marked_as_paid_at: string | null
+          paid_date: string | null
+          penalty_amount: number | null
+          status: Database["public"]["Enums"]["admin_document_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          competency: string
+          created_at?: string
+          created_by_admin_id: string
+          due_date: string
+          file_path: string
+          id?: string
+          marked_as_paid_at?: string | null
+          paid_date?: string | null
+          penalty_amount?: number | null
+          status?: Database["public"]["Enums"]["admin_document_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          competency?: string
+          created_at?: string
+          created_by_admin_id?: string
+          due_date?: string
+          file_path?: string
+          id?: string
+          marked_as_paid_at?: string | null
+          paid_date?: string | null
+          penalty_amount?: number | null
+          status?: Database["public"]["Enums"]["admin_document_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       banks: {
         Row: {
           code: string
@@ -763,6 +814,7 @@ export type Database = {
       }
     }
     Enums: {
+      admin_document_status: "pending" | "paid" | "overdue"
       payment_status: "draft" | "pending" | "paid" | "failed"
     }
     CompositeTypes: {
@@ -891,6 +943,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_document_status: ["pending", "paid", "overdue"],
       payment_status: ["draft", "pending", "paid", "failed"],
     },
   },
