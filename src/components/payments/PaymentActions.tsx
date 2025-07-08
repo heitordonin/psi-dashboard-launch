@@ -88,9 +88,16 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
     setIsDateModalOpen(true);
   };
 
+  const formatDateForDatabase = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleConfirmPayment = (date: Date) => {
     setIsMarkingAsPaid(true);
-    const paidDate = date.toISOString().split('T')[0];
+    const paidDate = formatDateForDatabase(date);
     markAsPaidMutation.mutate(paidDate);
   };
 
