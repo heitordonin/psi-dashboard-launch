@@ -14,4 +14,12 @@ export interface Patient {
   updated_at?: string;
   deleted_at?: string | null; // Nova coluna para soft delete
   owner_id?: string;
+  // Address fields
+  zip_code?: string;
+  street?: string;
+  street_number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }

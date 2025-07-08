@@ -81,6 +81,14 @@ Deno.serve(async (req) => {
       has_financial_guardian: formData.has_financial_guardian,
       guardian_cpf: formData.guardian_cpf || null,
       is_payment_from_abroad: formData.is_payment_from_abroad,
+      // Address fields
+      zip_code: formData.zip_code || null,
+      street: formData.street || null,
+      street_number: formData.street_number || null,
+      complement: formData.complement || null,
+      neighborhood: formData.neighborhood || null,
+      city: formData.city || null,
+      state: formData.state || null,
     }
 
     // Create the patient record

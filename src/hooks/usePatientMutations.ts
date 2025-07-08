@@ -16,6 +16,14 @@ interface PatientFormData {
   has_financial_guardian: boolean;
   guardian_cpf: string;
   is_payment_from_abroad: boolean;
+  // Address fields
+  zip_code?: string;
+  street?: string;
+  street_number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 interface DeletedPatient {
@@ -43,6 +51,14 @@ export const usePatientMutations = (userId: string | undefined, onClose: () => v
         has_financial_guardian: data.has_financial_guardian,
         is_payment_from_abroad: data.is_payment_from_abroad,
         deleted_at: null, // Reactivate by clearing deleted_at
+        // Address fields
+        zip_code: data.zip_code?.trim() || null,
+        street: data.street?.trim() || null,
+        street_number: data.street_number?.trim() || null,
+        complement: data.complement?.trim() || null,
+        neighborhood: data.neighborhood?.trim() || null,
+        city: data.city?.trim() || null,
+        state: data.state?.trim() || null,
       };
       
       // Clean and include only relevant document field
@@ -110,7 +126,15 @@ export const usePatientMutations = (userId: string | undefined, onClose: () => v
         phone: data.phone?.trim() || null,
         has_financial_guardian: data.has_financial_guardian,
         is_payment_from_abroad: data.is_payment_from_abroad,
-        owner_id: userId
+        owner_id: userId,
+        // Address fields
+        zip_code: data.zip_code?.trim() || null,
+        street: data.street?.trim() || null,
+        street_number: data.street_number?.trim() || null,
+        complement: data.complement?.trim() || null,
+        neighborhood: data.neighborhood?.trim() || null,
+        city: data.city?.trim() || null,
+        state: data.state?.trim() || null,
       };
       
       // Clean and include only relevant document field
@@ -169,6 +193,14 @@ export const usePatientMutations = (userId: string | undefined, onClose: () => v
         phone: data.phone?.trim() || null,
         has_financial_guardian: data.has_financial_guardian,
         is_payment_from_abroad: data.is_payment_from_abroad,
+        // Address fields
+        zip_code: data.zip_code?.trim() || null,
+        street: data.street?.trim() || null,
+        street_number: data.street_number?.trim() || null,
+        complement: data.complement?.trim() || null,
+        neighborhood: data.neighborhood?.trim() || null,
+        city: data.city?.trim() || null,
+        state: data.state?.trim() || null,
       };
       
       // Clean and include only relevant document field

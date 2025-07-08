@@ -19,6 +19,14 @@ interface PatientFormData {
   has_financial_guardian: boolean;
   guardian_cpf: string;
   is_payment_from_abroad: boolean;
+  // Address fields
+  zip_code?: string;
+  street?: string;
+  street_number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 interface PatientFormProps {
@@ -48,6 +56,14 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     has_financial_guardian: patient?.has_financial_guardian || false,
     guardian_cpf: patient?.guardian_cpf || '',
     is_payment_from_abroad: patient?.is_payment_from_abroad || false,
+    // Address fields
+    zip_code: patient?.zip_code || '',
+    street: patient?.street || '',
+    street_number: patient?.street_number || '',
+    complement: patient?.complement || '',
+    neighborhood: patient?.neighborhood || '',
+    city: patient?.city || '',
+    state: patient?.state || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
