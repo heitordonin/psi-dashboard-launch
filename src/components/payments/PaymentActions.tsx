@@ -10,6 +10,7 @@ import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
 import { PaymentLinkButton } from "./PaymentLinkButton";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { WhatsAppButton } from "./WhatsAppButton";
+import { PaymentDateModal } from "./PaymentDateModal";
 import { toast } from "sonner";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
@@ -22,6 +23,7 @@ interface PaymentActionsProps {
 export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProps) {
   const queryClient = useQueryClient();
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
 
   // Calculate display status for overdue payments
   const today = new Date();
@@ -34,12 +36,12 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
   const isBlockedByReceitaSaude = payment.receita_saude_receipt_issued;
 
   const markAsPaidMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (paidDate: string) => {
       const { error } = await supabase
         .from('payments')
         .update({ 
           status: 'paid',
-          paid_date: new Date().toISOString().split('T')[0]
+          paid_date: paidDate
         })
         .eq('id', payment.id);
       
@@ -48,10 +50,14 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Pagamento marcado como pago!');
+      setIsMarkingAsPaid(false);
+      setIsDateModalOpen(false);
     },
     onError: (error) => {
       console.error('Error marking payment as paid:', error);
       toast.error('Erro ao marcar pagamento como pago');
+      setIsMarkingAsPaid(false);
+      setIsDateModalOpen(false);
     }
   });
 
@@ -79,9 +85,13 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
 
   const handleMarkAsPaid = () => {
     if (payment.status === 'paid') return;
+    setIsDateModalOpen(true);
+  };
+
+  const handleConfirmPayment = (date: Date) => {
     setIsMarkingAsPaid(true);
-    markAsPaidMutation.mutate();
-    setIsMarkingAsPaid(false);
+    const paidDate = date.toISOString().split('T')[0];
+    markAsPaidMutation.mutate(paidDate);
   };
 
   const handleMarkAsUnpaid = () => {
@@ -239,6 +249,13 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
           </Button>
         )}
       </div>
+
+      <PaymentDateModal
+        isOpen={isDateModalOpen}
+        onClose={() => setIsDateModalOpen(false)}
+        onConfirm={handleConfirmPayment}
+        isLoading={isMarkingAsPaid}
+      />
     </div>
   );
 }
