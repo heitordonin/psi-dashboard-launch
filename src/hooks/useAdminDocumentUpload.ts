@@ -62,8 +62,8 @@ export const useAdminDocumentUpload = () => {
           fileUrl: urlData.signedUrl
         });
 
-        // Process OCR for the file
-        await processDocumentOCR(fileId, file);
+        // TODO: Reativar OCR quando melhorar a extração de dados
+        // await processDocumentOCR(fileId, file);
 
       } catch (error) {
         console.error(`Error uploading ${file.name}:`, error);
