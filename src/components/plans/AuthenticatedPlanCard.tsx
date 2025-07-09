@@ -41,12 +41,15 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
 
       <CardContent>
         <div className="space-y-3 mb-6">
-          <div className="flex items-center">
-            <Check className="w-4 h-4 text-green-500 mr-2" />
-            <span className="text-sm">
-              {plan.max_patients ? `Até ${plan.max_patients} pacientes` : 'Pacientes ilimitados'}
-            </span>
-          </div>
+          {/* Only show patient limit for plans other than Psi Regular */}
+          {plan.slug !== 'psi_regular' && (
+            <div className="flex items-center">
+              <Check className="w-4 h-4 text-green-500 mr-2" />
+              <span className="text-sm">
+                {plan.max_patients ? `Até ${plan.max_patients} pacientes` : 'Pacientes ilimitados'}
+              </span>
+            </div>
+          )}
           
           {getFeatureLabels(plan.features).map((feature, index) => (
             <div key={index} className="flex items-center">
