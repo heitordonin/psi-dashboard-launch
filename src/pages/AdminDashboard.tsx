@@ -9,12 +9,13 @@ import { AdminDashboardLoading } from "@/components/admin/AdminDashboardLoading"
 import { AdminKPICards } from "@/components/admin/AdminKPICards";
 import { AdminUserGrowthChart } from "@/components/admin/AdminUserGrowthChart";
 import { AdminTopEarnersTable } from "@/components/admin/AdminTopEarnersTable";
+import { AdminDarfControlBox } from "@/components/admin/AdminDarfControlBox";
 
 const AdminDashboard = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  const { userKpis, userGrowth, topEarners, isLoading } = useAdminDashboardData(startDate, endDate);
+  const { userKpis, userGrowth, userGrowthByPlan, topEarners, isLoading } = useAdminDashboardData(startDate, endDate);
 
   if (isLoading) {
     return <AdminDashboardLoading />;
@@ -29,12 +30,13 @@ const AdminDashboard = () => {
           <div className="container mx-auto p-6 space-y-6">
             <AdminKPICards userKpis={userKpis} />
             <AdminUserGrowthChart 
-              userGrowth={userGrowth}
+              userGrowthByPlan={userGrowthByPlan}
               startDate={startDate}
               endDate={endDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
             />
+            <AdminDarfControlBox />
             <AdminTopEarnersTable topEarners={topEarners} />
           </div>
         </SidebarInset>

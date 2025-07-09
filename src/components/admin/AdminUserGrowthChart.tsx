@@ -2,11 +2,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { format } from "date-fns";
 
 interface AdminUserGrowthChartProps {
-  userGrowth?: Array<{ date: string; count: number }>;
+  userGrowthByPlan?: Array<{ 
+    date: string; 
+    free_count: number; 
+    gestao_count: number; 
+    psi_regular_count: number; 
+  }>;
   startDate: string;
   endDate: string;
   onStartDateChange: (date: string) => void;
@@ -14,7 +19,7 @@ interface AdminUserGrowthChartProps {
 }
 
 export const AdminUserGrowthChart = ({ 
-  userGrowth, 
+  userGrowthByPlan, 
   startDate, 
   endDate, 
   onStartDateChange, 
@@ -23,7 +28,7 @@ export const AdminUserGrowthChart = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Crescimento de Usuários</CardTitle>
+        <CardTitle>Crescimento de Usuários por Plano</CardTitle>
         <div className="flex gap-4 mt-4">
           <div>
             <Label htmlFor="start-date">Data Inicial</Label>
@@ -47,7 +52,7 @@ export const AdminUserGrowthChart = ({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={userGrowth}>
+          <BarChart data={userGrowthByPlan}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="date" 
@@ -56,9 +61,26 @@ export const AdminUserGrowthChart = ({
             <YAxis />
             <Tooltip 
               labelFormatter={(date) => format(new Date(date), 'dd/MM/yyyy')}
-              formatter={(value) => [value, 'Novos usuários']}
             />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Legend />
+            <Bar 
+              dataKey="free_count" 
+              stackId="stack" 
+              fill="hsl(var(--success))" 
+              name="Grátis"
+            />
+            <Bar 
+              dataKey="gestao_count" 
+              stackId="stack" 
+              fill="hsl(var(--primary))" 
+              name="Gestão"
+            />
+            <Bar 
+              dataKey="psi_regular_count" 
+              stackId="stack" 
+              fill="hsl(var(--warning))" 
+              name="Psi Regular"
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
