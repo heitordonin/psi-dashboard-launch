@@ -30,31 +30,28 @@ export default function AdminEnviarDocumentos() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 space-y-6 p-6">
       {/* Header */}
-      <header className="bg-[#002472] border-b border-border/40">
-        <div className="flex h-16 items-center gap-4 px-6">
-          <SidebarTrigger className="text-white hover:bg-white/10" />
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold text-white">Enviar Documentos</h1>
-            <p className="text-sm text-blue-200 mt-1">
-              Faça upload e gerencie documentos para envio aos usuários
-            </p>
-          </div>
-          {uploadedFiles.length > 0 && (
-            <Button 
-              onClick={handleSendDocuments}
-              disabled={!canSendDocuments || isLoading}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Enviar Documentos ({uploadedFiles.length})
-            </Button>
-          )}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Enviar Documentos</h1>
+          <p className="text-muted-foreground">
+            Faça upload e gerencie documentos para envio aos usuários
+          </p>
         </div>
-      </header>
+        {uploadedFiles.length > 0 && (
+          <Button 
+            onClick={handleSendDocuments}
+            disabled={!canSendDocuments || isLoading}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Enviar Documentos ({uploadedFiles.length})
+          </Button>
+        )}
+      </div>
 
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         {/* Upload Zone */}
         <Card>
           <CardHeader>

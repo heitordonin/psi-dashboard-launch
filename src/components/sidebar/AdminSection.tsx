@@ -1,6 +1,6 @@
 
 import { LayoutDashboard, Users, Upload } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
   SidebarGroupLabel,
@@ -41,10 +41,10 @@ export const AdminSection = () => {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton size="sm" isActive={isActive} asChild>
-                  <a href={item.url}>
+                  <Link to={item.url}>
                     <item.icon className="size-4" />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
