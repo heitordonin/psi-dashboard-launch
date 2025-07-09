@@ -133,18 +133,19 @@ export const AdminSentDocumentsTable = ({
                             <Eye className="w-4 h-4" />
                           </Button>
                           
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                title="Remover do Painel do Usuário"
-                                disabled={isRemoving}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
+                          {document.status !== 'deleted' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  title="Remover do Painel do Usuário"
+                                  disabled={isRemoving}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
@@ -164,6 +165,7 @@ export const AdminSentDocumentsTable = ({
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                          )}
                         </div>
                       </td>
                     </tr>

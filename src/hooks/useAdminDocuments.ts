@@ -17,6 +17,7 @@ export const useAdminDocuments = () => {
         .from('admin_documents')
         .select('*')
         .eq('user_id', user.id)
+        .eq('hidden_from_user', false)
         .order('due_date', { ascending: false });
       
       if (error) throw error;

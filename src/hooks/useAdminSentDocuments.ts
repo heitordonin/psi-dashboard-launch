@@ -9,10 +9,11 @@ export interface SentDocument {
   amount: number;
   due_date: string;
   competency: string;
-  status: 'pending' | 'paid' | 'overdue';
+  status: 'pending' | 'paid' | 'overdue' | 'deleted';
   file_path: string;
   created_at: string;
   marked_as_paid_at: string | null;
+  hidden_from_user?: boolean;
   user_profile?: {
     full_name: string;
   } | null;
@@ -48,11 +49,14 @@ export const useAdminSentDocuments = (filteredUserId?: string | null, showAllUse
       // Create a map for quick profile lookup
       const profileMap = new Map(profiles.map(profile => [profile.id, profile]));
 
-      // Calculate dynamic status based on due_date and current status
+       // Calculate dynamic status based on due_date and current status
       const documentsWithStatus = documents.map(doc => {
-        let calculatedStatus = doc.status;
+        let calculatedStatus: 'pending' | 'paid' | 'overdue' | 'deleted' = doc.status as 'pending' | 'paid' | 'overdue';
         
-        if (doc.status !== 'paid') {
+        // If document is hidden from user, show as deleted
+        if (doc.hidden_from_user) {
+          calculatedStatus = 'deleted';
+        } else if (doc.status !== 'paid') {
           const today = new Date();
           const dueDate = new Date(doc.due_date);
           today.setHours(0, 0, 0, 0);
@@ -76,16 +80,17 @@ export const useAdminSentDocuments = (filteredUserId?: string | null, showAllUse
 
   const removeFromUserPanelMutation = useMutation({
     mutationFn: async (documentId: string) => {
-      // Here you could add a field like 'hidden_from_user' or 'removed_from_panel'
-      // For now, we'll just add a note in the database or handle it differently
-      // This would require a database migration to add a proper field
-      
-      // Placeholder - in a real implementation, you'd update a specific field
-      console.log(`Document ${documentId} would be removed from user panel`);
-      toast.success("Documento removido do painel do usuário");
+      const { error } = await supabase
+        .from('admin_documents')
+        .update({ hidden_from_user: true })
+        .eq('id', documentId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sent-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-documents'] });
+      toast.success("Documento removido do painel do usuário");
     },
     onError: (error) => {
       console.error('Error removing document from user panel:', error);
@@ -108,6 +113,8 @@ export const useAdminSentDocuments = (filteredUserId?: string | null, showAllUse
         return 'default';
       case 'overdue':
         return 'destructive';
+      case 'deleted':
+        return 'outline';
       default:
         return 'secondary';
     }
@@ -121,6 +128,8 @@ export const useAdminSentDocuments = (filteredUserId?: string | null, showAllUse
         return 'Vencido';
       case 'pending':
         return 'A Vencer';
+      case 'deleted':
+        return 'Documento deletado';
       default:
         return status;
     }

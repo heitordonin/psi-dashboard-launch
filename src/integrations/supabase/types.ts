@@ -22,6 +22,7 @@ export type Database = {
           created_by_admin_id: string
           due_date: string
           file_path: string
+          hidden_from_user: boolean
           id: string
           marked_as_paid_at: string | null
           paid_date: string | null
@@ -38,6 +39,7 @@ export type Database = {
           created_by_admin_id: string
           due_date: string
           file_path: string
+          hidden_from_user?: boolean
           id?: string
           marked_as_paid_at?: string | null
           paid_date?: string | null
@@ -54,6 +56,7 @@ export type Database = {
           created_by_admin_id?: string
           due_date?: string
           file_path?: string
+          hidden_from_user?: boolean
           id?: string
           marked_as_paid_at?: string | null
           paid_date?: string | null
