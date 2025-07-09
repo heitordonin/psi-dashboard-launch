@@ -883,7 +883,7 @@ export type Database = {
       }
     }
     Enums: {
-      admin_document_status: "pending" | "paid" | "overdue"
+      admin_document_status: "pending" | "paid" | "overdue" | "draft"
       payment_status: "draft" | "pending" | "paid" | "failed"
     }
     CompositeTypes: {
@@ -1012,7 +1012,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      admin_document_status: ["pending", "paid", "overdue"],
+      admin_document_status: ["pending", "paid", "overdue", "draft"],
       payment_status: ["draft", "pending", "paid", "failed"],
     },
   },
