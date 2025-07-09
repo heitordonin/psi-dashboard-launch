@@ -42,7 +42,7 @@ const Referral = () => {
                     <Gift className="w-8 h-8 text-indigo-600" />
                   </div>
                   <CardTitle className="text-xl text-indigo-900">
-                    Indique o Declara Psi e ganhe 3 meses grátis!
+                    Indique o Declara Psi e ganhe 1 mês grátis!
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -60,10 +60,9 @@ const Referral = () => {
                       Como funciona:
                     </h3>
                     <ol className="space-y-2 text-sm text-gray-600">
-                      <li>1. Compartilhe o Declara Psi com suas colegas</li>
+                      <li>1. Compartilhe o Psiclo com suas colegas</li>
                       <li>2. Sua colega se cadastra usando seu link de indicação</li>
-                      <li>3. Após o primeiro mês ativo dela, você ganha 3 meses grátis</li>
-                      <li>4. Sua colega também ganha desconto especial no primeiro mês</li>
+                      <li>3. Após o primeiro mês ativo dela, você ganha 1 mês grátis</li>
                     </ol>
                   </div>
 
