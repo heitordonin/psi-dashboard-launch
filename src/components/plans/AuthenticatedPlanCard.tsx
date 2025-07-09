@@ -33,7 +33,7 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
           <div className="text-sm text-gray-500">por mês</div>
           {plan.price_yearly > 0 && (
             <div className="text-sm text-green-600 mt-1">
-              ou R$ {(plan.price_yearly / 100).toFixed(2)}/ano
+              ou R$ {(plan.price_yearly / 100).toFixed(2)} por mês (pagamento anual)
             </div>
           )}
         </div>

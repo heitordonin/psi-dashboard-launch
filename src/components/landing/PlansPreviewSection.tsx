@@ -35,11 +35,10 @@ export const PlansPreviewSection = () => {
       price: "R$ 189,00",
       period: "/mês",
       features: [
-        "Tudo do plano Gestão +",
-        "Nós emitimos o Receita Saúde pra você",
-        "Nós emitimos o seu DARF do carnê leão mensal",
-        "Suporte via WhatsApp",
-        "Nunca mais se preocupe com o Carnê Leão"
+        "Nós lançamos o seu Receita Saúde",
+        "Nós lançamos as suas despesas no Carnê Leão",
+        "Nós emitimos o seu DARF mensal",
+        "Tudo do plano Gestão +"
       ],
       popular: true
     }

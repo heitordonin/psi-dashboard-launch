@@ -19,10 +19,10 @@ export const getFeatureLabels = (features: string[]) => {
     basic_dashboard: 'Dashboard básico',
     email_support: 'Suporte por chamado',
     whatsapp_reminders: 'Lembretes de cobranças via WhatsApp',
-    whatsapp_support: 'Suporte via WhatsApp',
-    receita_saude_receipts: 'Nós emitimos o Receita Saúde pra você',
-    monthly_darf: 'Nós emitimos o seu DARF do carnê leão mensal',
-    carne_leao_tracking: 'Nunca mais se preocupe com o Carnê Leão'
+    whatsapp_support: 'Tudo do plano Gestão +',
+    receita_saude_receipts: 'Nós lançamos o seu Receita Saúde',
+    monthly_darf: 'Nós emitimos o seu DARF mensal',
+    carne_leao_tracking: 'Nós lançamos as suas despesas no Carnê Leão'
   };
 
   return features.map(feature => featureMap[feature] || feature);

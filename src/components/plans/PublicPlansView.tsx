@@ -25,7 +25,7 @@ const PublicPlansView = () => {
       description: "Para profissionais organizados",
       price: "R$ 69,00",
       period: "por mês",
-      yearlyPrice: "ou R$ 55,20/mês no anual",
+      yearlyPrice: "ou R$ 55,20 por mês (pagamento anual)",
       features: [
         { text: "Pacientes ilimitados" },
         { text: "Cobranças ilimitadas" },
@@ -39,16 +39,15 @@ const PublicPlansView = () => {
     },
     {
       name: "Psi Regular",
-      description: "Para profissionais sérios",
+      description: "Nunca mais se preocupe com impostos",
       price: "R$ 189,00",
       period: "por mês",
-      yearlyPrice: "ou R$ 151,20/mês no anual",
+      yearlyPrice: "ou R$ 151,20 por mês (pagamento anual)",
       features: [
-        { text: "Tudo do plano Gestão +", isBold: true },
-        { text: "Nós emitimos o Receita Saúde pra você" },
-        { text: "Nós emitimos o seu DARF do carnê leão mensal" },
-        { text: "Suporte via WhatsApp" },
-        { text: "Nunca mais se preocupe com o Carnê Leão", isBold: true }
+        { text: "Nós lançamos o seu Receita Saúde", isBold: true },
+        { text: "Nós lançamos as suas despesas no Carnê Leão", isBold: true },
+        { text: "Nós emitimos o seu DARF mensal", isBold: true },
+        { text: "Tudo do plano Gestão +" }
       ],
       icon: <Crown className="w-8 h-8 text-psiclo-primary" />,
       isPopular: true,
