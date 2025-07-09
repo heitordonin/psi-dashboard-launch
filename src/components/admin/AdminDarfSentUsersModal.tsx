@@ -87,6 +87,10 @@ export const AdminDarfSentUsersModal = ({
     }
   };
 
+  const isDocumentDeleted = (user: typeof sentUsers[0]) => {
+    return user.completion_type === 'document' && user.darf_document?.status === 'deleted';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">

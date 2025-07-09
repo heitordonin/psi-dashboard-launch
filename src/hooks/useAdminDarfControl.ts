@@ -65,7 +65,8 @@ export const useAdminDarfControl = (dueMonth: string) => {
         .select('user_id')
         .ilike('title', '%DARF%')
         .gte('due_date', startOfMonth)
-        .lt('due_date', endOfMonth);
+        .lt('due_date', endOfMonth)
+        .eq('hidden_from_user', false); // Excluir documentos deletados
 
       if (darfError) throw darfError;
 
@@ -138,7 +139,8 @@ export const useAdminDarfControl = (dueMonth: string) => {
         .select('user_id, title, status, created_at')
         .ilike('title', '%DARF%')
         .gte('due_date', startOfMonth)
-        .lt('due_date', endOfMonth);
+        .lt('due_date', endOfMonth)
+        .eq('hidden_from_user', false); // Excluir documentos deletados
 
       if (darfError) throw darfError;
 
