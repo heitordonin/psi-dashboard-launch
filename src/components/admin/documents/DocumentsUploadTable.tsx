@@ -8,10 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Trash2, User, Calendar, DollarSign, FileText, Send } from "lucide-react";
+import { Edit2, Trash2, User, Calendar, DollarSign, FileText, Send, Loader, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { DocumentOCRStatus } from "./DocumentOCRStatus";
 
 interface UploadedDocument {
   id: string;
@@ -24,6 +25,19 @@ interface UploadedDocument {
   observations?: string;
   isComplete: boolean;
   isSent?: boolean;
+  isProcessingOCR?: boolean;
+  ocrExtracted?: {
+    cpf?: string;
+    competency?: string;
+    due_date?: string;
+    amount?: number;
+    confidence: {
+      cpf: number;
+      competency: number;
+      due_date: number;
+      amount: number;
+    };
+  };
 }
 
 interface User {
@@ -38,16 +52,18 @@ interface DocumentsUploadTableProps {
   onEdit: (id: string, data: any) => void;
   onDelete: (id: string) => void;
   onSendSingle?: (id: string) => void;
+  onReprocessOCR?: (id: string) => void;
   isLoading: boolean;
 }
 
-export const DocumentsUploadTable = ({
-  documents,
-  users,
-  onEdit,
-  onDelete,
-  onSendSingle,
-  isLoading
+export const DocumentsUploadTable = ({ 
+  documents, 
+  users, 
+  onEdit, 
+  onDelete, 
+  onSendSingle, 
+  onReprocessOCR,
+  isLoading 
 }: DocumentsUploadTableProps) => {
   const navigate = useNavigate();
   const getUserName = (userId?: string) => {
@@ -124,8 +140,15 @@ export const DocumentsUploadTable = ({
             {documents.map((document) => (
               <TableRow key={document.id}>
                 <TableCell className="font-medium">
-                  <div className="truncate max-w-[180px]" title={document.fileName}>
-                    {document.fileName}
+                  <div className="space-y-2">
+                    <div className="truncate max-w-[180px]" title={document.fileName}>
+                      {document.fileName}
+                    </div>
+                    <DocumentOCRStatus 
+                      isProcessingOCR={document.isProcessingOCR}
+                      ocrExtracted={document.ocrExtracted}
+                      onReprocessOCR={onReprocessOCR ? () => onReprocessOCR(document.id) : undefined}
+                    />
                   </div>
                 </TableCell>
                 <TableCell>

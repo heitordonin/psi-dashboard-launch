@@ -8,6 +8,7 @@ import { DocumentUploadZone } from "@/components/admin/documents/DocumentUploadZ
 import { DocumentsUploadTable } from "@/components/admin/documents/DocumentsUploadTable";
 import { useAdminDocumentUpload } from "@/hooks/useAdminDocumentUpload";
 import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
+import { toast } from "sonner";
 
 export default function AdminEnviarDocumentos() {
   const {
@@ -19,7 +20,8 @@ export default function AdminEnviarDocumentos() {
     deleteDocument,
     sendDocuments,
     sendSingleDocument,
-    canSendDocuments
+    canSendDocuments,
+    processDocumentOCR
   } = useAdminDocumentUpload();
 
   const [isDragOver, setIsDragOver] = useState(false);
@@ -30,6 +32,15 @@ export default function AdminEnviarDocumentos() {
 
   const handleSendAllDocuments = async () => {
     await sendDocuments();
+  };
+
+  const handleReprocessOCR = async (documentId: string) => {
+    // Find the original file and reprocess OCR
+    const doc = uploadedFiles.find(d => d.id === documentId);
+    if (doc) {
+      // Since we don't store the original file, we'll show a message to re-upload
+      toast.info("Para reprocessar o OCR, faça upload do arquivo novamente.");
+    }
   };
 
   const completeDocuments = uploadedFiles.filter(doc => doc.isComplete);
@@ -96,6 +107,7 @@ export default function AdminEnviarDocumentos() {
                       onEdit={updateDocument}
                       onDelete={deleteDocument}
                       onSendSingle={sendSingleDocument}
+                      onReprocessOCR={handleReprocessOCR}
                       isLoading={isLoading}
                     />
                   </CardContent>

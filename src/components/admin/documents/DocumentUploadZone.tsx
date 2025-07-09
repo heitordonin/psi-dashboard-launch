@@ -61,8 +61,11 @@ export const DocumentUploadZone = ({
                 <Upload className="w-12 h-12 text-primary" />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Fazendo upload...</p>
+                <p className="text-sm font-medium">Fazendo upload e processando OCR...</p>
                 <Progress value={uploadProgress} className="w-48" />
+                <p className="text-xs text-muted-foreground">
+                  Os dados do DARF serão extraídos automaticamente
+                </p>
               </div>
             </>
           ) : (

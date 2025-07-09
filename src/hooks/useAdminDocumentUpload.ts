@@ -14,6 +14,19 @@ interface UploadedDocument {
   observations?: string;
   isComplete: boolean;
   isSent?: boolean;
+  isProcessingOCR?: boolean;
+  ocrExtracted?: {
+    cpf?: string;
+    competency?: string;
+    due_date?: string;
+    amount?: number;
+    confidence: {
+      cpf: number;
+      competency: number;
+      due_date: number;
+      amount: number;
+    };
+  };
 }
 
 interface User {
@@ -70,11 +83,99 @@ export const useAdminDocumentUpload = () => {
     }
   };
 
+  const processDocumentOCR = async (documentId: string, file: File) => {
+    try {
+      // Mark document as processing OCR
+      setUploadedFiles(prev => 
+        prev.map(doc => 
+          doc.id === documentId 
+            ? { ...doc, isProcessingOCR: true }
+            : doc
+        )
+      );
+
+      // Create form data for OCR API
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Call OCR edge function
+      const { data: ocrData, error: ocrError } = await supabase.functions
+        .invoke('extract-darf-data', {
+          body: formData,
+        });
+
+      if (ocrError) throw ocrError;
+
+      // Find user by CPF if extracted
+      let foundUserId: string | undefined;
+      if (ocrData.cpf) {
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('cpf', ocrData.cpf)
+          .single();
+        
+        if (!userError && userData) {
+          foundUserId = userData.id;
+          toast.success(`Usuário encontrado automaticamente: ${userData.full_name}`);
+        }
+      }
+
+      // Update document with OCR results
+      setUploadedFiles(prev => 
+        prev.map(doc => {
+          if (doc.id === documentId) {
+            const updated = {
+              ...doc,
+              isProcessingOCR: false,
+              ocrExtracted: ocrData,
+              user_id: foundUserId || doc.user_id,
+              competency: ocrData.competency || doc.competency,
+              due_date: ocrData.due_date || doc.due_date,
+              amount: ocrData.amount || doc.amount,
+            };
+            
+            // Check if document is complete after OCR
+            updated.isComplete = !!(
+              updated.user_id && 
+              updated.competency && 
+              updated.due_date && 
+              updated.amount && 
+              updated.amount > 0
+            );
+            
+            return updated;
+          }
+          return doc;
+        })
+      );
+
+      const extractedCount = Object.values(ocrData.confidence || {}).filter((c): c is number => typeof c === 'number' && c > 0).length;
+      if (extractedCount > 0) {
+        toast.success(`OCR processado! ${extractedCount} campo(s) extraído(s) automaticamente.`);
+      } else {
+        toast.info("OCR processado, mas nenhum campo foi reconhecido. Preencha manualmente.");
+      }
+
+    } catch (error) {
+      console.error("Error processing OCR:", error);
+      setUploadedFiles(prev => 
+        prev.map(doc => 
+          doc.id === documentId 
+            ? { ...doc, isProcessingOCR: false }
+            : doc
+        )
+      );
+      toast.error("Erro ao processar OCR. Preencha os dados manualmente.");
+    }
+  };
+
   const uploadFiles = async (files: File[]) => {
     if (!user?.id) return;
 
     setIsLoading(true);
     const newDocuments: UploadedDocument[] = [];
+    const uploadedFiles: { doc: UploadedDocument, file: File }[] = [];
 
     try {
       for (const file of files) {
@@ -107,14 +208,21 @@ export const useAdminDocumentUpload = () => {
           fileName: file.name,
           fileUrl: urlData.signedUrl,
           isComplete: false,
-          isSent: false
+          isSent: false,
+          isProcessingOCR: false
         };
 
         newDocuments.push(document);
+        uploadedFiles.push({ doc: document, file });
       }
 
       setUploadedFiles(prev => [...prev, ...newDocuments]);
       toast.success(`${newDocuments.length} arquivo(s) carregado(s) com sucesso!`);
+
+      // Process OCR for each uploaded file
+      for (const { doc, file } of uploadedFiles) {
+        processDocumentOCR(doc.id, file);
+      }
 
     } catch (error) {
       console.error("Error uploading files:", error);
@@ -260,6 +368,7 @@ export const useAdminDocumentUpload = () => {
     deleteDocument,
     sendDocuments,
     sendSingleDocument,
-    canSendDocuments
+    canSendDocuments,
+    processDocumentOCR
   };
 };
