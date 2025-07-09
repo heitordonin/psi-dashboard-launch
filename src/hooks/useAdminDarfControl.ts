@@ -55,12 +55,17 @@ export const useAdminDarfControl = (competencyMonth: string) => {
       if (profilesError) throw profilesError;
 
       // Get users with DARF sent for this competency
+      const startOfMonth = `${competencyMonth}-01`;
+      const nextMonth = new Date(competencyMonth + '-01');
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const endOfMonth = format(nextMonth, 'yyyy-MM-dd');
+
       const { data: usersWithDarf, error: darfError } = await supabase
         .from('admin_documents')
         .select('user_id')
         .ilike('title', '%DARF%')
-        .gte('competency', `${competencyMonth}-01`)
-        .lt('competency', format(new Date(competencyMonth + '-01'), 'yyyy-MM-01'));
+        .gte('competency', startOfMonth)
+        .lt('competency', endOfMonth);
 
       if (darfError) throw darfError;
 
@@ -68,8 +73,8 @@ export const useAdminDarfControl = (competencyMonth: string) => {
       const { data: manuallyCompleted, error: manualError } = await supabase
         .from('darf_manual_completions')
         .select('user_id')
-        .gte('competency', `${competencyMonth}-01`)
-        .lt('competency', format(new Date(competencyMonth + '-01'), 'yyyy-MM-01'));
+        .gte('competency', startOfMonth)
+        .lt('competency', endOfMonth);
 
       if (manualError) throw manualError;
 
