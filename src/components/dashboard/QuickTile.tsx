@@ -15,7 +15,7 @@ export function QuickTile({ icon: Icon, label, onClick, disabled = false }: Quic
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex flex-col items-center justify-center p-4 bg-psiclo-secondary hover:bg-psiclo-primary text-white rounded-lg transition-colors min-w-[90px] w-[90px] h-[90px] md:min-w-[80px] md:w-auto md:h-[80px] flex-shrink-0",
+        "flex flex-col items-center justify-center p-3 bg-psiclo-secondary hover:bg-psiclo-primary text-white rounded-lg transition-colors w-[90px] h-[90px] md:w-[100px] md:h-[100px] flex-shrink-0",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
