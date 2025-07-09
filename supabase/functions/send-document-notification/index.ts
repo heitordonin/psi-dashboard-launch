@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "Psiclo <noreply@psiclo.com.br>",
+      from: "Psiclo <heitor@grupodeclara.com.br>",
       to: [userEmail],
       subject: "Novo documento DARF disponível - Psiclo",
       html: `
@@ -109,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://xwaxvupymmlbehloczyt.supabase.co/documentos-recebidos" 
+              <a href="https://app.psiclo.com.br/documentos-recebidos"
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         padding: 15px 30px; 
