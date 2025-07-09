@@ -11,6 +11,7 @@ import {
 import { Edit2, Trash2, User, Calendar, DollarSign, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface UploadedDocument {
   id: string;
@@ -45,6 +46,7 @@ export const DocumentsUploadTable = ({
   onDelete,
   isLoading
 }: DocumentsUploadTableProps) => {
+  const navigate = useNavigate();
   const getUserName = (userId?: string) => {
     if (!userId) return "Não selecionado";
     const user = users.find(u => u.id === userId);
@@ -69,8 +71,9 @@ export const DocumentsUploadTable = ({
   };
 
   const handleEdit = (document: UploadedDocument) => {
-    // Navigate to edit page
-    window.location.href = `/admin/documento/${document.id}/editar`;
+    // Store document data in sessionStorage for persistence across navigation
+    sessionStorage.setItem('editingDocument', JSON.stringify(document));
+    navigate(`/admin/documento/${document.id}/editar`);
   };
 
   return (
