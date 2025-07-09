@@ -274,7 +274,7 @@ export const useAdminDocumentUpload = () => {
     setIsLoading(true);
     try {
       // Create document record in database
-      const { error } = await supabase
+      const { data: insertedDocument, error } = await supabase
         .from('admin_documents')
         .insert({
           user_id: document.user_id,
@@ -285,9 +285,36 @@ export const useAdminDocumentUpload = () => {
           status: 'pending',
           file_path: `${user.id}/${document.id}_${document.fileName}`,
           created_by_admin_id: user.id
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Send notification email
+      try {
+        const { error: emailError } = await supabase.functions
+          .invoke('send-document-notification', {
+            body: {
+              user_id: document.user_id,
+              document_id: insertedDocument.id,
+              title: `DARF Carnê-Leão - ${document.fileName}`,
+              amount: document.amount,
+              due_date: document.due_date,
+              competency: document.competency
+            }
+          });
+
+        if (emailError) {
+          console.error("Error sending notification email:", emailError);
+          toast.warning("Documento enviado, mas houve erro ao enviar notificação por email");
+        } else {
+          toast.success("Documento enviado e usuário notificado por email!");
+        }
+      } catch (emailError) {
+        console.error("Error sending notification email:", emailError);
+        toast.warning("Documento enviado, mas houve erro ao enviar notificação por email");
+      }
 
       // Remove document from local list after successful send
       setUploadedFiles(prev => {
@@ -297,8 +324,6 @@ export const useAdminDocumentUpload = () => {
         }
         return filtered;
       });
-
-      toast.success("Documento enviado com sucesso!");
 
     } catch (error) {
       console.error("Error sending document:", error);
@@ -318,10 +343,13 @@ export const useAdminDocumentUpload = () => {
     }
 
     setIsLoading(true);
+    let successCount = 0;
+    let emailSuccessCount = 0;
+    
     try {
       for (const doc of completeDocuments) {
         // Create document record in database
-        const { error } = await supabase
+        const { data: insertedDocument, error } = await supabase
           .from('admin_documents')
           .insert({
             user_id: doc.user_id,
@@ -332,9 +360,36 @@ export const useAdminDocumentUpload = () => {
             status: 'pending',
             file_path: `${user.id}/${doc.id}_${doc.fileName}`,
             created_by_admin_id: user.id
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+        
+        successCount++;
+
+        // Send notification email for each document
+        try {
+          const { error: emailError } = await supabase.functions
+            .invoke('send-document-notification', {
+              body: {
+                user_id: doc.user_id,
+                document_id: insertedDocument.id,
+                title: `DARF Carnê-Leão - ${doc.fileName}`,
+                amount: doc.amount,
+                due_date: doc.due_date,
+                competency: doc.competency
+              }
+            });
+
+          if (!emailError) {
+            emailSuccessCount++;
+          } else {
+            console.error("Error sending notification email for document:", doc.fileName, emailError);
+          }
+        } catch (emailError) {
+          console.error("Error sending notification email for document:", doc.fileName, emailError);
+        }
       }
 
       // Remove all sent documents from local list
@@ -347,7 +402,14 @@ export const useAdminDocumentUpload = () => {
         return filtered;
       });
 
-      toast.success(`${completeDocuments.length} documento(s) enviado(s) com sucesso!`);
+      // Show appropriate success message
+      if (emailSuccessCount === successCount) {
+        toast.success(`${successCount} documento(s) enviado(s) e usuários notificados por email!`);
+      } else if (emailSuccessCount > 0) {
+        toast.warning(`${successCount} documento(s) enviado(s). ${emailSuccessCount} notificação(ões) por email enviada(s).`);
+      } else {
+        toast.warning(`${successCount} documento(s) enviado(s), mas houve erro ao enviar notificações por email.`);
+      }
 
     } catch (error) {
       console.error("Error sending documents:", error);
