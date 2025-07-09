@@ -15,6 +15,16 @@ export const getPlanIcon = (slug: string) => {
 
 export const getFeatureLabels = (features: string[]) => {
   const featureMap: Record<string, string> = {
+    // Plano Grátis features
+    unlimited_invoices: 'Cobranças ilimitadas',
+    basic_dashboard: 'Dashboard básico',
+    email_support: 'Suporte por chamado',
+    email_notifications: 'Notificações por email',
+    
+    // Plano Gestão features  
+    whatsapp_reminders: 'Lembretes de cobranças por WhatsApp',
+    
+    // Plano Psi Regular features
     whatsapp_support: 'Tudo do plano Gestão +',
     receita_saude_receipts: 'Nós lançamos o seu Receita Saúde',
     monthly_darf: 'Nós emitimos o seu DARF mensal',
