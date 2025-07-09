@@ -28,6 +28,28 @@ export const useAdminDocumentUpload = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load documents from localStorage on mount
+  useEffect(() => {
+    const savedDocuments = localStorage.getItem('admin_uploaded_documents');
+    if (savedDocuments) {
+      try {
+        const parsedDocuments = JSON.parse(savedDocuments);
+        setUploadedFiles(parsedDocuments);
+      } catch (error) {
+        console.error("Error loading saved documents:", error);
+      }
+    }
+  }, []);
+
+  // Save documents to localStorage whenever uploadedFiles changes
+  useEffect(() => {
+    if (uploadedFiles.length > 0) {
+      localStorage.setItem('admin_uploaded_documents', JSON.stringify(uploadedFiles));
+    } else {
+      localStorage.removeItem('admin_uploaded_documents');
+    }
+  }, [uploadedFiles]);
+
   // Load users on mount
   useEffect(() => {
     loadUsers();
@@ -122,7 +144,13 @@ export const useAdminDocumentUpload = () => {
   };
 
   const deleteDocument = (documentId: string) => {
-    setUploadedFiles(prev => prev.filter(doc => doc.id !== documentId));
+    setUploadedFiles(prev => {
+      const filtered = prev.filter(doc => doc.id !== documentId);
+      if (filtered.length === 0) {
+        localStorage.removeItem('admin_uploaded_documents');
+      }
+      return filtered;
+    });
     toast.success("Documento removido");
   };
 
@@ -153,12 +181,14 @@ export const useAdminDocumentUpload = () => {
 
       if (error) throw error;
 
-      // Mark document as sent locally
-      setUploadedFiles(prev => 
-        prev.map(doc => 
-          doc.id === documentId ? { ...doc, isSent: true } : doc
-        )
-      );
+      // Remove document from local list after successful send
+      setUploadedFiles(prev => {
+        const filtered = prev.filter(doc => doc.id !== documentId);
+        if (filtered.length === 0) {
+          localStorage.removeItem('admin_uploaded_documents');
+        }
+        return filtered;
+      });
 
       toast.success("Documento enviado com sucesso!");
 
@@ -199,14 +229,15 @@ export const useAdminDocumentUpload = () => {
         if (error) throw error;
       }
 
-      // Mark all sent documents as sent
-      setUploadedFiles(prev => 
-        prev.map(doc => 
-          completeDocuments.find(sent => sent.id === doc.id) 
-            ? { ...doc, isSent: true } 
-            : doc
-        )
-      );
+      // Remove all sent documents from local list
+      const sentDocumentIds = completeDocuments.map(doc => doc.id);
+      setUploadedFiles(prev => {
+        const filtered = prev.filter(doc => !sentDocumentIds.includes(doc.id));
+        if (filtered.length === 0) {
+          localStorage.removeItem('admin_uploaded_documents');
+        }
+        return filtered;
+      });
 
       toast.success(`${completeDocuments.length} documento(s) enviado(s) com sucesso!`);
 
