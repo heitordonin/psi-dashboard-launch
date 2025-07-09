@@ -7,39 +7,39 @@ export const PlansPreviewSection = () => {
   const plans = [
     {
       name: "Grátis",
-      price: "Grátis",
+      price: "R$ 0,00",
       period: "para sempre",
       features: [
         "Até 3 pacientes",
-        "Cobranças básicas",
-        "Dashboard simples",
-        "Suporte por email"
+        "Cobranças ilimitadas",
+        "Dashboard básico",
+        "Suporte por chamado"
       ],
       popular: false
     },
     {
       name: "Gestão",
-      price: "R$ 89,00",
+      price: "R$ 69,00",
       period: "/mês",
       features: [
-        "Até 50 pacientes",
-        "Dashboard avançado",
-        "Relatórios mensais",
-        "Suporte prioritário"
+        "Pacientes ilimitados",
+        "Cobranças ilimitadas",
+        "Dashboard básico",
+        "Suporte por chamado",
+        "Lembretes de cobranças por WhatsApp"
       ],
       popular: false
     },
     {
       name: "Psi Regular",
-      price: "R$ 389,00",
+      price: "R$ 189,00",
       period: "/mês",
       features: [
-        "Pacientes ilimitados",
-        "WhatsApp automático",
-        "Receita Saúde completa",
-        "Controle Carnê-Leão",
-        "DARF automática",
-        "Suporte prioritário"
+        "Tudo do plano Gestão +",
+        "Nós emitimos o Receita Saúde pra você",
+        "Nós emitimos o seu DARF do carnê leão mensal",
+        "Suporte via WhatsApp",
+        "Nunca mais se preocupe com o Carnê Leão"
       ],
       popular: true
     }
@@ -98,7 +98,7 @@ export const PlansPreviewSection = () => {
                 }`}
                 size="lg"
               >
-                {plan.price === "Grátis" ? "Começar Grátis" : "Escolher Plano"}
+                {plan.price === "R$ 0,00" ? "Começar Grátis" : "Escolher Plano"}
               </Button>
             </div>
           ))}

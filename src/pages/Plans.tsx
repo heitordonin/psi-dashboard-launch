@@ -40,14 +40,12 @@ const Plans = () => {
     const featureMap: Record<string, string> = {
       unlimited_invoices: 'Cobranças ilimitadas',
       basic_dashboard: 'Dashboard básico',
-      email_support: 'Suporte por email',
-      email_notifications: 'Notificações por email',
+      email_support: 'Suporte por chamado',
+      whatsapp_reminders: 'Lembretes de cobranças via WhatsApp',
       whatsapp_support: 'Suporte via WhatsApp',
-      whatsapp_reminders: 'Lembretes via WhatsApp',
-      receita_saude_receipts: 'Recibos Receita Saúde',
-      carne_leao_tracking: 'Controle Carnê-Leão',
-      monthly_darf: 'DARF mensal automática',
-      radar_pj: 'Radar PJ - Simulação PJ'
+      receita_saude_receipts: 'Nós emitimos o Receita Saúde pra você',
+      monthly_darf: 'Nós emitimos o seu DARF do carnê leão mensal',
+      carne_leao_tracking: 'Nunca mais se preocupe com o Carnê Leão'
     };
 
     return features.map(feature => featureMap[feature] || feature);
@@ -92,7 +90,7 @@ const Plans = () => {
                 <CardTitle className="text-2xl">Grátis</CardTitle>
                 <CardDescription>Ideal para começar</CardDescription>
                 <div className="mt-4">
-                  <div className="text-4xl font-bold text-gray-900">Grátis</div>
+                  <div className="text-4xl font-bold text-gray-900">R$ 0,00</div>
                   <div className="text-sm text-gray-500">para sempre</div>
                 </div>
               </CardHeader>
@@ -104,15 +102,15 @@ const Plans = () => {
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Cobranças básicas</span>
+                    <span className="text-sm">Cobranças ilimitadas</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Dashboard simples</span>
+                    <span className="text-sm">Dashboard básico</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Suporte por email</span>
+                    <span className="text-sm">Suporte por chamado</span>
                   </div>
                 </div>
                 <Link to="/signup">
@@ -130,27 +128,34 @@ const Plans = () => {
                 <CardTitle className="text-2xl">Gestão</CardTitle>
                 <CardDescription>Para profissionais organizados</CardDescription>
                 <div className="mt-4">
-                  <div className="text-4xl font-bold text-psiclo-secondary">R$ 89,00</div>
+                  <div className="text-4xl font-bold text-psiclo-secondary">R$ 69,00</div>
                   <div className="text-sm text-gray-500">por mês</div>
+                  <div className="text-sm text-green-600 mt-1">
+                    ou R$ 55,20/mês no anual
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Até 50 pacientes</span>
+                    <span className="text-sm">Pacientes ilimitados</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Dashboard avançado</span>
+                    <span className="text-sm">Cobranças ilimitadas</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Relatórios mensais</span>
+                    <span className="text-sm">Dashboard básico</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Suporte prioritário</span>
+                    <span className="text-sm">Suporte por chamado</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Check className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-sm">Lembretes de cobranças por WhatsApp</span>
                   </div>
                 </div>
                 <Link to="/signup">
@@ -171,35 +176,34 @@ const Plans = () => {
                 <CardTitle className="text-2xl">Psi Regular</CardTitle>
                 <CardDescription>Para profissionais sérios</CardDescription>
                 <div className="mt-4">
-                  <div className="text-4xl font-bold text-psiclo-primary">R$ 389,00</div>
+                  <div className="text-4xl font-bold text-psiclo-primary">R$ 189,00</div>
                   <div className="text-sm text-gray-500">por mês</div>
+                  <div className="text-sm text-green-600 mt-1">
+                    ou R$ 151,20/mês no anual
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Pacientes ilimitados</span>
+                    <span className="text-sm font-medium">Tudo do plano Gestão +</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">WhatsApp automático</span>
+                    <span className="text-sm">Nós emitimos o Receita Saúde pra você</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Receita Saúde completa</span>
+                    <span className="text-sm">Nós emitimos o seu DARF do carnê leão mensal</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Controle Carnê-Leão</span>
+                    <span className="text-sm">Suporte via WhatsApp</span>
                   </div>
                   <div className="flex items-center">
                     <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">DARF automática</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                    <span className="text-sm">Suporte prioritário</span>
+                    <span className="text-sm font-medium">Nunca mais se preocupe com o Carnê Leão</span>
                   </div>
                 </div>
                 <Link to="/signup">
