@@ -1,11 +1,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuickTile } from "./QuickTile";
-import { UserPlus, Plus, DollarSign } from "lucide-react";
+import { UserPlus, Plus, DollarSign, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export const QuickActions = () => {
   const navigate = useNavigate();
+  const { currentPlan } = useSubscription();
 
   return (
     <Card>
@@ -30,6 +32,13 @@ export const QuickActions = () => {
               label="Nova Despesa"
               onClick={() => navigate("/expenses")}
             />
+            {currentPlan?.slug === 'psi_regular' && (
+              <QuickTile
+                icon={FolderOpen}
+                label="Documentos Recebidos"
+                onClick={() => navigate("/documentos-recebidos")}
+              />
+            )}
           </div>
         </div>
       </CardContent>
