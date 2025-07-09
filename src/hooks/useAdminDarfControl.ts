@@ -3,14 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 
-export const useAdminDarfControl = (competencyMonth: string) => {
+export const useAdminDarfControl = (dueMonth: string) => {
   const queryClient = useQueryClient();
 
   const { data: darfStats, isLoading: darfStatsLoading } = useQuery({
-    queryKey: ['admin-darf-stats', competencyMonth],
+    queryKey: ['admin-darf-stats', dueMonth],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_darf_completion_stats', {
-        competency_month: competencyMonth
+        due_month: dueMonth + '-01'
       });
       if (error) throw error;
       return data[0] || {
@@ -21,11 +21,11 @@ export const useAdminDarfControl = (competencyMonth: string) => {
         completion_percentage: 0
       };
     },
-    enabled: !!competencyMonth
+    enabled: !!dueMonth
   });
 
   const { data: pendingUsers, isLoading: pendingUsersLoading } = useQuery({
-    queryKey: ['admin-darf-pending-users', competencyMonth],
+    queryKey: ['admin-darf-pending-users', dueMonth],
     queryFn: async () => {
       // Get Psi Regular users with their subscription info
       const { data: subscriptions, error: subsError } = await supabase
@@ -54,9 +54,9 @@ export const useAdminDarfControl = (competencyMonth: string) => {
 
       if (profilesError) throw profilesError;
 
-      // Get users with DARF sent for this competency
-      const startOfMonth = `${competencyMonth}-01`;
-      const nextMonth = new Date(competencyMonth + '-01');
+      // Get users with DARF sent for this due month
+      const startOfMonth = `${dueMonth}-01`;
+      const nextMonth = new Date(dueMonth + '-01');
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       const endOfMonth = format(nextMonth, 'yyyy-MM-dd');
 
@@ -64,8 +64,8 @@ export const useAdminDarfControl = (competencyMonth: string) => {
         .from('admin_documents')
         .select('user_id')
         .ilike('title', '%DARF%')
-        .gte('competency', startOfMonth)
-        .lt('competency', endOfMonth);
+        .gte('due_date', startOfMonth)
+        .lt('due_date', endOfMonth);
 
       if (darfError) throw darfError;
 
@@ -94,7 +94,7 @@ export const useAdminDarfControl = (competencyMonth: string) => {
         }
       })) || [];
     },
-    enabled: !!competencyMonth
+    enabled: !!dueMonth
   });
 
   const markAsCompletedMutation = useMutation({
@@ -103,7 +103,7 @@ export const useAdminDarfControl = (competencyMonth: string) => {
         .from('darf_manual_completions')
         .insert({
           user_id: userId,
-          competency: `${competencyMonth}-01`,
+          competency: `${dueMonth}-01`,
           admin_notes: notes,
           created_by_admin_id: (await supabase.auth.getUser()).data.user?.id
         });

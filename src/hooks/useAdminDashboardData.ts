@@ -20,6 +20,22 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
     }
   });
 
+  const { data: userKpisByPlan, isLoading: userKpisByPlanLoading } = useQuery({
+    queryKey: ['admin-user-kpis-by-plan'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_admin_user_kpis_by_plan');
+      if (error) throw error;
+      return data[0] || { 
+        total_users_free: 0,
+        total_users_gestao: 0, 
+        total_users_psi_regular: 0,
+        new_users_free_30_days: 0,
+        new_users_gestao_30_days: 0,
+        new_users_psi_regular_30_days: 0
+      };
+    }
+  });
+
   const { data: userGrowth, isLoading: userGrowthLoading } = useQuery({
     queryKey: ['admin-user-growth', finalStartDate, finalEndDate],
     queryFn: async () => {
@@ -57,9 +73,10 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
 
   return {
     userKpis,
+    userKpisByPlan,
     userGrowth,
     userGrowthByPlan,
     topEarners,
-    isLoading: userKpisLoading || userGrowthLoading || userGrowthByPlanLoading || topEarnersLoading
+    isLoading: userKpisLoading || userKpisByPlanLoading || userGrowthLoading || userGrowthByPlanLoading || topEarnersLoading
   };
 };

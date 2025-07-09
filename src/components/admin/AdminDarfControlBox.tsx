@@ -72,7 +72,7 @@ export const AdminDarfControlBox = () => {
             <div className="flex-1">
               <Select value={selectedCompetency} onValueChange={setSelectedCompetency}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a competência" />
+                  <SelectValue placeholder="Selecione o mês de vencimento" />
                 </SelectTrigger>
                 <SelectContent>
                   {competencyOptions.map((option) => (

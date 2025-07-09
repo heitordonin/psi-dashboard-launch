@@ -784,6 +784,17 @@ export type Database = {
           inactive_users: number
         }[]
       }
+      get_admin_user_kpis_by_plan: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users_free: number
+          total_users_gestao: number
+          total_users_psi_regular: number
+          new_users_free_30_days: number
+          new_users_gestao_30_days: number
+          new_users_psi_regular_30_days: number
+        }[]
+      }
       get_daily_user_growth: {
         Args: { start_date: string; end_date: string }
         Returns: {
@@ -801,7 +812,7 @@ export type Database = {
         }[]
       }
       get_darf_completion_stats: {
-        Args: { competency_month: string }
+        Args: { due_month: string }
         Returns: {
           total_psi_regular_users: number
           users_with_darf_sent: number

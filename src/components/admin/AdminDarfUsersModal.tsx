@@ -67,7 +67,7 @@ export const AdminDarfUsersModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            Usuários Psi Regular sem DARF - {formatCompetency(competency)}
+            Usuários Psi Regular sem DARF - Vencimento {formatCompetency(competency)}
           </DialogTitle>
         </DialogHeader>
 
@@ -76,7 +76,7 @@ export const AdminDarfUsersModal = ({
             <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
             <h3 className="text-lg font-medium">Todos os DARFs foram enviados!</h3>
             <p className="text-muted-foreground">
-              Não há usuários Psi Regular pendentes para esta competência.
+              Não há usuários Psi Regular pendentes para este vencimento.
             </p>
           </div>
         ) : (
