@@ -15,6 +15,7 @@ import { useDataExport } from '@/hooks/useDataExport';
 import { UserFilter } from '@/components/admin/UserFilter';
 import { Download, Users, CreditCard, FileText, Calendar, User } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import { AdminSentDocumentsTable } from '@/components/admin/AdminSentDocumentsTable';
 
 const Admin = () => {
   const { isAdmin } = useAuth();
@@ -361,10 +362,11 @@ const Admin = () => {
 
             {/* Visualização dos dados */}
             <Tabs defaultValue="patients" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="patients">Pacientes</TabsTrigger>
                 <TabsTrigger value="payments">Cobranças</TabsTrigger>
                 <TabsTrigger value="expenses">Despesas</TabsTrigger>
+                <TabsTrigger value="documents">Documentos</TabsTrigger>
               </TabsList>
 
               <TabsContent value="patients">
@@ -518,6 +520,13 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="documents">
+                <AdminSentDocumentsTable 
+                  filteredUserId={filteredUserId}
+                  showAllUsers={showAllUsers}
+                />
               </TabsContent>
             </Tabs>
           </div>
