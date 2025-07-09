@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      darf_manual_completions: {
+        Row: {
+          admin_notes: string
+          competency: string
+          created_at: string
+          created_by_admin_id: string
+          id: string
+          marked_completed_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes: string
+          competency: string
+          created_at?: string
+          created_by_admin_id: string
+          id?: string
+          marked_completed_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string
+          competency?: string
+          created_at?: string
+          created_by_admin_id?: string
+          id?: string
+          marked_completed_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           content: string | null
@@ -756,6 +789,25 @@ export type Database = {
         Returns: {
           date: string
           count: number
+        }[]
+      }
+      get_daily_user_growth_by_plan: {
+        Args: { start_date: string; end_date: string }
+        Returns: {
+          date: string
+          free_count: number
+          gestao_count: number
+          psi_regular_count: number
+        }[]
+      }
+      get_darf_completion_stats: {
+        Args: { competency_month: string }
+        Returns: {
+          total_psi_regular_users: number
+          users_with_darf_sent: number
+          users_manually_completed: number
+          users_pending: number
+          completion_percentage: number
         }[]
       }
       get_decrypted_profile: {
