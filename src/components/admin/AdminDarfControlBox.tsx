@@ -6,15 +6,17 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { format, subMonths } from "date-fns";
 import { useAdminDarfControl } from "@/hooks/useAdminDarfControl";
 import { AdminDarfUsersModal } from "./AdminDarfUsersModal";
-import { FileText, Users } from "lucide-react";
+import { AdminDarfSentUsersModal } from "./AdminDarfSentUsersModal";
+import { FileText, Users, Send } from "lucide-react";
 
 export const AdminDarfControlBox = () => {
   const [selectedCompetency, setSelectedCompetency] = useState(
     format(subMonths(new Date(), 1), 'yyyy-MM')
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSentModalOpen, setIsSentModalOpen] = useState(false);
 
-  const { darfStats, pendingUsers, isLoading } = useAdminDarfControl(selectedCompetency);
+  const { darfStats, pendingUsers, sentUsers, isLoading } = useAdminDarfControl(selectedCompetency);
 
   // Generate last 12 months for competency selector
   const competencyOptions = Array.from({ length: 12 }, (_, i) => {
@@ -83,15 +85,26 @@ export const AdminDarfControlBox = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button 
-              onClick={() => setIsModalOpen(true)}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={isLoading || Number(darfStats?.users_pending || 0) === 0}
-            >
-              <Users className="h-4 w-4" />
-              Ver Pendentes ({darfStats?.users_pending || 0})
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setIsModalOpen(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled={isLoading || Number(darfStats?.users_pending || 0) === 0}
+              >
+                <Users className="h-4 w-4" />
+                Ver Pendentes ({darfStats?.users_pending || 0})
+              </Button>
+              <Button 
+                onClick={() => setIsSentModalOpen(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled={isLoading || ((Number(darfStats?.users_with_darf_sent || 0) + Number(darfStats?.users_manually_completed || 0)) === 0)}
+              >
+                <Send className="h-4 w-4" />
+                Ver Enviados ({(Number(darfStats?.users_with_darf_sent || 0) + Number(darfStats?.users_manually_completed || 0))})
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -154,6 +167,13 @@ export const AdminDarfControlBox = () => {
         onClose={() => setIsModalOpen(false)}
         competency={selectedCompetency}
         pendingUsers={pendingUsers || []}
+      />
+
+      <AdminDarfSentUsersModal
+        isOpen={isSentModalOpen}
+        onClose={() => setIsSentModalOpen(false)}
+        dueMonth={selectedCompetency}
+        sentUsers={sentUsers || []}
       />
     </>
   );
