@@ -20,3 +20,35 @@ export interface MarkAsPaidData {
   paid_date: string;
   penalty_amount: number;
 }
+
+export interface UploadedDocument {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  user_id?: string;
+  competency?: string;
+  due_date?: string;
+  amount?: number;
+  observations?: string;
+  isComplete: boolean;
+  isSent?: boolean;
+  isProcessingOCR?: boolean;
+  ocrExtracted?: {
+    cpf?: string;
+    competency?: string;
+    due_date?: string;
+    amount?: number;
+    confidence: {
+      cpf: number;
+      competency: number;
+      due_date: number;
+      amount: number;
+    };
+  };
+}
+
+export interface User {
+  id: string;
+  full_name?: string;
+  display_name?: string;
+}
