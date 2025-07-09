@@ -13,6 +13,7 @@ interface UploadedDocument {
   amount?: number;
   observations?: string;
   isComplete: boolean;
+  isSent?: boolean;
 }
 
 interface User {
@@ -83,7 +84,8 @@ export const useAdminDocumentUpload = () => {
           id: fileId,
           fileName: file.name,
           fileUrl: urlData.signedUrl,
-          isComplete: false
+          isComplete: false,
+          isSent: false
         };
 
         newDocuments.push(document);
@@ -124,10 +126,54 @@ export const useAdminDocumentUpload = () => {
     toast.success("Documento removido");
   };
 
+  const sendSingleDocument = async (documentId: string) => {
+    if (!user?.id) return;
+
+    const document = uploadedFiles.find(doc => doc.id === documentId);
+    if (!document || !document.isComplete) {
+      toast.error("Documento não encontrado ou incompleto");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Create document record in database
+      const { error } = await supabase
+        .from('admin_documents')
+        .insert({
+          user_id: document.user_id,
+          title: `DARF Carnê-Leão - ${document.fileName}`,
+          amount: document.amount,
+          due_date: document.due_date,
+          competency: document.competency,
+          status: 'pending',
+          file_path: `${user.id}/${document.id}_${document.fileName}`,
+          created_by_admin_id: user.id
+        });
+
+      if (error) throw error;
+
+      // Mark document as sent locally
+      setUploadedFiles(prev => 
+        prev.map(doc => 
+          doc.id === documentId ? { ...doc, isSent: true } : doc
+        )
+      );
+
+      toast.success("Documento enviado com sucesso!");
+
+    } catch (error) {
+      console.error("Error sending document:", error);
+      toast.error("Erro ao enviar documento");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const sendDocuments = async () => {
     if (!user?.id) return;
 
-    const completeDocuments = uploadedFiles.filter(doc => doc.isComplete);
+    const completeDocuments = uploadedFiles.filter(doc => doc.isComplete && !doc.isSent);
     if (completeDocuments.length === 0) {
       toast.error("Nenhum documento completo para enviar");
       return;
@@ -153,8 +199,15 @@ export const useAdminDocumentUpload = () => {
         if (error) throw error;
       }
 
-      // Clear uploaded files after sending
-      setUploadedFiles([]);
+      // Mark all sent documents as sent
+      setUploadedFiles(prev => 
+        prev.map(doc => 
+          completeDocuments.find(sent => sent.id === doc.id) 
+            ? { ...doc, isSent: true } 
+            : doc
+        )
+      );
+
       toast.success(`${completeDocuments.length} documento(s) enviado(s) com sucesso!`);
 
     } catch (error) {
@@ -165,7 +218,7 @@ export const useAdminDocumentUpload = () => {
     }
   };
 
-  const canSendDocuments = uploadedFiles.length > 0 && uploadedFiles.every(doc => doc.isComplete);
+  const canSendDocuments = uploadedFiles.some(doc => doc.isComplete && !doc.isSent);
 
   return {
     uploadedFiles,
@@ -175,6 +228,7 @@ export const useAdminDocumentUpload = () => {
     updateDocument,
     deleteDocument,
     sendDocuments,
+    sendSingleDocument,
     canSendDocuments
   };
 };

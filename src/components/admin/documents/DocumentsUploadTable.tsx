@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Trash2, User, Calendar, DollarSign, FileText } from "lucide-react";
+import { Edit2, Trash2, User, Calendar, DollarSign, FileText, Send } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ interface UploadedDocument {
   amount?: number;
   observations?: string;
   isComplete: boolean;
+  isSent?: boolean;
 }
 
 interface User {
@@ -36,6 +37,7 @@ interface DocumentsUploadTableProps {
   users: User[];
   onEdit: (id: string, data: any) => void;
   onDelete: (id: string) => void;
+  onSendSingle?: (id: string) => void;
   isLoading: boolean;
 }
 
@@ -44,6 +46,7 @@ export const DocumentsUploadTable = ({
   users,
   onEdit,
   onDelete,
+  onSendSingle,
   isLoading
 }: DocumentsUploadTableProps) => {
   const navigate = useNavigate();
@@ -137,30 +140,53 @@ export const DocumentsUploadTable = ({
                 <TableCell>{formatDate(document.due_date)}</TableCell>
                 <TableCell>{formatCurrency(document.amount)}</TableCell>
                 <TableCell>
-                  <Badge variant={document.isComplete ? "default" : "destructive"}>
-                    {document.isComplete ? "Completo" : "Pendente"}
+                  <Badge variant={
+                    document.isSent ? "secondary" : 
+                    document.isComplete ? "default" : "destructive"
+                  }>
+                    {document.isSent ? "Enviado" : 
+                     document.isComplete ? "Completo" : "Pendente"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(document)}
-                      disabled={isLoading}
-                    >
-                      <Edit2 className="w-3 h-3 mr-1" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDelete(document.id)}
-                      disabled={isLoading}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    {!document.isSent && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(document)}
+                          disabled={isLoading}
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Editar
+                        </Button>
+                        {document.isComplete && onSendSingle && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onSendSingle(document.id)}
+                            disabled={isLoading}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Send className="w-3 h-3 mr-1" />
+                            Enviar
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onDelete(document.id)}
+                          disabled={isLoading}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
+                    {document.isSent && (
+                      <Badge variant="secondary">Documento Enviado</Badge>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
