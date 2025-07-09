@@ -118,16 +118,35 @@ serve(async (req) => {
       }
     }
 
-    // Extract Valor Total do Documento (monetary format)
-    const amountRegex = /valor\s+total\s+do\s+documento[:\s]*R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
-    const amountMatch = extractedText.match(amountRegex);
-    if (amountMatch) {
-      const valueMatch = amountMatch[0].match(/(\d{1,3}(?:\.\d{3})*,\d{2})/);
-      if (valueMatch) {
-        // Convert Brazilian format (1.234,56) to decimal (1234.56)
-        const cleanValue = valueMatch[1].replace(/\./g, '').replace(',', '.');
-        extractedData.amount = parseFloat(cleanValue);
-        extractedData.confidence.amount = 0.9;
+    // Extract Valor (multiple patterns) - try from most specific to most generic
+    const amountPatterns = [
+      /valor\s+total\s+do\s+documento[:\s]*R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi,
+      /valor[:\s]*R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi,
+      /valor\s+a\s+recolher[:\s]*R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi,
+      /total\s+a\s+pagar[:\s]*R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/gi
+    ];
+
+    let amountFound = false;
+    for (const pattern of amountPatterns) {
+      if (amountFound) break;
+      
+      const amountMatch = extractedText.match(pattern);
+      if (amountMatch) {
+        console.log('Pattern matched:', pattern.source);
+        const valueMatch = amountMatch[0].match(/(\d{1,3}(?:\.\d{3})*,\d{2})/);
+        if (valueMatch) {
+          // Convert Brazilian format (1.234,56) to decimal (1234.56)
+          const cleanValue = valueMatch[1].replace(/\./g, '').replace(',', '.');
+          const parsedValue = parseFloat(cleanValue);
+          
+          // Validate if value is reasonable (between 0.01 and 999999.99)
+          if (parsedValue > 0 && parsedValue < 1000000) {
+            extractedData.amount = parsedValue;
+            extractedData.confidence.amount = 0.9;
+            amountFound = true;
+            console.log('Value extracted:', parsedValue, 'from pattern:', pattern.source);
+          }
+        }
       }
     }
 
