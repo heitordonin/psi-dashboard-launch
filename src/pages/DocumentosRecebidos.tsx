@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { DocumentsList } from '@/components/documents/DocumentsList';
+import { DocumentosRecebidosHeader } from '@/components/documents/DocumentosRecebidosHeader';
 import { useAdminDocuments } from '@/hooks/useAdminDocuments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,27 +24,28 @@ const DocumentosRecebidos = () => {
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar />
-          <SidebarInset>
-            <div className="min-h-screen bg-gray-50">
-              <div className="container mx-auto px-4 py-8">
-                <div className="space-y-6">
-                  <Skeleton className="h-8 w-64" />
-                  <Card>
-                    <CardHeader>
-                      <Skeleton className="h-6 w-48" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {[1, 2, 3].map(i => (
-                          <Skeleton key={i} className="h-20 w-full" />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+        <SidebarInset>
+          <div className="min-h-screen bg-gray-50">
+            <DocumentosRecebidosHeader totalDocuments={0} />
+            <div className="container mx-auto px-4 py-6 max-w-7xl">
+              <div className="space-y-6">
+                <Skeleton className="h-8 w-64" />
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </SidebarInset>
+          </div>
+        </SidebarInset>
         </div>
       </SidebarProvider>
     );
@@ -55,23 +57,12 @@ const DocumentosRecebidos = () => {
         <AppSidebar />
         <SidebarInset>
           <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-8">
+            <DocumentosRecebidosHeader totalDocuments={documents.length} />
+            
+            <div className="container mx-auto px-4 py-6 max-w-7xl">
               <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileText className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-semibold">Documentos Recebidos</h1>
-                    <p className="text-muted-foreground">
-                      Gerencie os documentos enviados pela administração
-                    </p>
-                  </div>
-                </div>
-
                 {/* Stats Card */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-center">
@@ -95,7 +86,7 @@ const DocumentosRecebidos = () => {
                   </Card>
 
                   <Card>
-                    <CardContent className="p-4">
+                    <CardContent className="p-4 sm:col-span-2 lg:col-span-1">
                       <div className="text-center">
                         <div className="text-2xl font-semibold text-red-600">
                           {documents.filter(d => d.status === 'overdue').length}
@@ -114,7 +105,7 @@ const DocumentosRecebidos = () => {
                       Seus Documentos
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0 sm:p-6">
                     <DocumentsList documents={documents} />
                   </CardContent>
                 </Card>
