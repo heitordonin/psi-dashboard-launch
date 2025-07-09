@@ -63,8 +63,17 @@ export const useAdminDraftDocuments = () => {
             competency: doc.competency,
             due_date: doc.due_date,
             amount: doc.amount,
-            observations: '', // We could add this field to the DB if needed
-            isComplete: !!(doc.user_id && doc.competency && doc.due_date && doc.amount && doc.amount > 0),
+            observations: '', // Campo não salvo no banco ainda
+            isComplete: !!(
+              doc.user_id && 
+              doc.competency && 
+              doc.due_date && 
+              doc.amount && 
+              doc.amount > 0 &&
+              // Verificar se não são os valores padrão temporários
+              doc.competency !== new Date().toISOString().split('T')[0] &&
+              doc.due_date !== new Date().toISOString().split('T')[0]
+            ),
             isProcessingOCR: false
           };
         })
@@ -88,13 +97,15 @@ export const useAdminDraftDocuments = () => {
         .from('admin_documents')
         .insert({
           title: `DARF Carnê-Leão - ${params.fileName}`,
+          // Campos obrigatórios com valores temporários (serão sobrescritos ao editar)
           amount: 0,
           due_date: new Date().toISOString().split('T')[0],
           competency: new Date().toISOString().split('T')[0],
+          user_id: user.id,
+          // Apenas configurações básicas no upload
           status: 'draft',
           file_path: params.filePath,
-          created_by_admin_id: user.id,
-          user_id: user.id // Temporary, will be updated when editing
+          created_by_admin_id: user.id
         })
         .select()
         .single();

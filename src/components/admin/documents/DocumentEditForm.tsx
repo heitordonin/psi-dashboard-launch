@@ -44,17 +44,23 @@ export const DocumentEditForm = ({
 }: DocumentEditFormProps) => {
   const [formData, setFormData] = useState({
     user_id: document.user_id || "",
-    competency: document.competency || "",
-    due_date: document.due_date || "",
-    amount: document.amount || "",
+    // Não preencher datas se forem os valores padrão temporários
+    competency: (document.competency === new Date().toISOString().split('T')[0]) ? "" : document.competency || "",
+    due_date: (document.due_date === new Date().toISOString().split('T')[0]) ? "" : document.due_date || "",
+    // Não preencher valor se for 0 (valor temporário)
+    amount: (document.amount === 0) ? "" : document.amount || "",
     observations: document.observations || ""
   });
 
   const [competencyDate, setCompetencyDate] = useState<Date | undefined>(
-    document.competency ? new Date(document.competency) : undefined
+    (document.competency && document.competency !== new Date().toISOString().split('T')[0]) 
+      ? new Date(document.competency) 
+      : undefined
   );
   const [dueDateDate, setDueDateDate] = useState<Date | undefined>(
-    document.due_date ? new Date(document.due_date) : undefined
+    (document.due_date && document.due_date !== new Date().toISOString().split('T')[0]) 
+      ? new Date(document.due_date) 
+      : undefined
   );
 
   const handleInputChange = (field: string, value: any) => {
@@ -89,8 +95,11 @@ export const DocumentEditForm = ({
 
   const handleSubmit = () => {
     const submitData = {
-      ...formData,
+      user_id: formData.user_id,
+      competency: formData.competency,
+      due_date: formData.due_date,
       amount: parseFloat(formData.amount) || 0
+      // Nota: observations não é salvo no banco ainda
     };
     onSave(submitData);
   };
