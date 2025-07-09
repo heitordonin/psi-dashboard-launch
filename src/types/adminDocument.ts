@@ -13,6 +13,7 @@ export interface AdminDocument {
   updated_at: string;
   marked_as_paid_at: string | null;
   created_by_admin_id: string;
+  viewed_at: string | null;
 }
 
 export interface MarkAsPaidData {

@@ -4,10 +4,12 @@ import { QuickTile } from "./QuickTile";
 import { UserPlus, Plus, DollarSign, FolderOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useUnviewedDocuments } from "@/hooks/useUnviewedDocuments";
 
 export const QuickActions = () => {
   const navigate = useNavigate();
   const { currentPlan } = useSubscription();
+  const { hasUnviewedDocuments } = useUnviewedDocuments();
 
   return (
     <Card>
@@ -37,6 +39,7 @@ export const QuickActions = () => {
                 icon={FolderOpen}
                 label="Documentos Recebidos"
                 onClick={() => navigate("/documentos-recebidos")}
+                showNotification={hasUnviewedDocuments}
               />
             )}
           </div>

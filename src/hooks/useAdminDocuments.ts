@@ -21,6 +21,20 @@ export const useAdminDocuments = () => {
         .order('due_date', { ascending: false });
       
       if (error) throw error;
+
+      // Mark unviewed documents as viewed
+      const unviewedDocuments = (data as AdminDocument[]).filter(doc => !doc.viewed_at);
+      if (unviewedDocuments.length > 0) {
+        const now = new Date().toISOString();
+        await supabase
+          .from('admin_documents')
+          .update({ viewed_at: now })
+          .in('id', unviewedDocuments.map(doc => doc.id));
+        
+        // Invalidate unviewed documents query to update the notification
+        queryClient.invalidateQueries({ queryKey: ['unviewed-documents'] });
+      }
+
       return data as AdminDocument[];
     },
     enabled: !!user?.id
