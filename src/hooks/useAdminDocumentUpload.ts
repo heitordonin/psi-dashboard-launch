@@ -1,0 +1,180 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { toast } from "sonner";
+
+interface UploadedDocument {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  user_id?: string;
+  competency?: string;
+  due_date?: string;
+  amount?: number;
+  observations?: string;
+  isComplete: boolean;
+}
+
+interface User {
+  id: string;
+  full_name?: string;
+  display_name?: string;
+}
+
+export const useAdminDocumentUpload = () => {
+  const { user } = useAuth();
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedDocument[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load users on mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, display_name')
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      toast.error("Erro ao carregar usuários");
+    }
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    if (!user?.id) return;
+
+    setIsLoading(true);
+    const newDocuments: UploadedDocument[] = [];
+
+    try {
+      for (const file of files) {
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+          toast.error(`${file.name} não é um arquivo PDF válido`);
+          continue;
+        }
+
+        // Generate unique file path
+        const fileId = crypto.randomUUID();
+        const filePath = `${user.id}/${fileId}_${file.name}`;
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('admin-documents')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get signed URL for preview
+        const { data: urlData, error: urlError } = await supabase.storage
+          .from('admin-documents')
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+        if (urlError) throw urlError;
+
+        const document: UploadedDocument = {
+          id: fileId,
+          fileName: file.name,
+          fileUrl: urlData.signedUrl,
+          isComplete: false
+        };
+
+        newDocuments.push(document);
+      }
+
+      setUploadedFiles(prev => [...prev, ...newDocuments]);
+      toast.success(`${newDocuments.length} arquivo(s) carregado(s) com sucesso!`);
+
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast.error("Erro ao fazer upload dos arquivos");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateDocument = async (documentId: string, updateData: any) => {
+    setUploadedFiles(prev => 
+      prev.map(doc => {
+        if (doc.id === documentId) {
+          const updated = { ...doc, ...updateData };
+          updated.isComplete = !!(
+            updated.user_id && 
+            updated.competency && 
+            updated.due_date && 
+            updated.amount && 
+            updated.amount > 0
+          );
+          return updated;
+        }
+        return doc;
+      })
+    );
+  };
+
+  const deleteDocument = (documentId: string) => {
+    setUploadedFiles(prev => prev.filter(doc => doc.id !== documentId));
+    toast.success("Documento removido");
+  };
+
+  const sendDocuments = async () => {
+    if (!user?.id) return;
+
+    const completeDocuments = uploadedFiles.filter(doc => doc.isComplete);
+    if (completeDocuments.length === 0) {
+      toast.error("Nenhum documento completo para enviar");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      for (const doc of completeDocuments) {
+        // Create document record in database
+        const { error } = await supabase
+          .from('admin_documents')
+          .insert({
+            user_id: doc.user_id,
+            title: `DARF Carnê-Leão - ${doc.fileName}`,
+            amount: doc.amount,
+            due_date: doc.due_date,
+            competency: doc.competency,
+            status: 'pending',
+            file_path: `${user.id}/${doc.id}_${doc.fileName}`,
+            created_by_admin_id: user.id
+          });
+
+        if (error) throw error;
+      }
+
+      // Clear uploaded files after sending
+      setUploadedFiles([]);
+      toast.success(`${completeDocuments.length} documento(s) enviado(s) com sucesso!`);
+
+    } catch (error) {
+      console.error("Error sending documents:", error);
+      toast.error("Erro ao enviar documentos");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const canSendDocuments = uploadedFiles.length > 0 && uploadedFiles.every(doc => doc.isComplete);
+
+  return {
+    uploadedFiles,
+    users,
+    isLoading,
+    uploadFiles,
+    updateDocument,
+    deleteDocument,
+    sendDocuments,
+    canSendDocuments
+  };
+};
