@@ -15,7 +15,9 @@ export function PaymentDueDateField({ value, onChange, isReceived }: PaymentDueD
 
   useEffect(() => {
     if (value && !isReceived) {
+      console.log('Validating due date:', value);
       const validation = validateDueDateReceitaSaude(value);
+      console.log('Validation result:', validation);
       if (!validation.isValid) {
         setError(validation.errorMessage || '');
       } else {
