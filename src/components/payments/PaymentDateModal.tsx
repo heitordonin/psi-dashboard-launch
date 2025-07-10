@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,66 +29,64 @@ interface PaymentDateModalProps {
 export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false }: PaymentDateModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [receitaSaudeError, setReceitaSaudeError] = useState<string | null>(null);
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
-  const [retroactiveDateConfirmed, setRetroactiveDateConfirmed] = useState(false);
+  const [pendingDate, setPendingDate] = useState<Date | null>(null);
+  const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
 
-  // Validação em tempo real da data selecionada
-  useEffect(() => {
-    if (selectedDate) {
-      // Normalizar a data selecionada
-      const normalizedDate = new Date(selectedDate);
-      normalizedDate.setHours(0, 0, 0, 0);
-      const formattedDate = format(normalizedDate, 'yyyy-MM-dd');
-      
-      console.log('🔄 PaymentDateModal - Validando data:', {
-        selectedDate: selectedDate.toISOString(),
-        formattedDate
-      });
-      
-      const validation = validatePaymentDateReceitaSaude(formattedDate);
-      
-      if (!validation.isValid) {
-        console.log('❌ PaymentDateModal - Erro de validação:', validation.errorMessage);
-        setReceitaSaudeError(validation.errorMessage || 'Data inválida');
-        setRetroactiveDateConfirmed(false);
-      } else {
-        console.log('✅ PaymentDateModal - Validação OK');
-        setReceitaSaudeError(null);
-        // Reset confirmation when date changes
-        setRetroactiveDateConfirmed(false);
-      }
+  const handleDateChange = (date: Date) => {
+    if (!date) {
+      setSelectedDate(new Date());
+      setHasRetroactiveWarning(false);
+      return;
     }
-  }, [selectedDate]);
+
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    const formattedDate = format(normalizedDate, 'yyyy-MM-dd');
+    
+    console.log('🔄 PaymentDateModal - Validando data:', {
+      selectedDate: date.toISOString(),
+      formattedDate
+    });
+    
+    const validation = validatePaymentDateReceitaSaude(formattedDate);
+    
+    if (!validation.isValid) {
+      console.log('❌ PaymentDateModal - Data retroativa detectada');
+      setPendingDate(date);
+      setShowRetroactiveDialog(true);
+      setHasRetroactiveWarning(true);
+    } else {
+      console.log('✅ PaymentDateModal - Data válida');
+      setSelectedDate(date);
+      setHasRetroactiveWarning(false);
+    }
+  };
 
   const handleConfirm = () => {
     if (selectedDate) {
-      console.log('🎯 PaymentDateModal - Tentativa de confirmação:', {
-        selectedDate: selectedDate.toISOString(),
-        receitaSaudeError,
-        retroactiveDateConfirmed
-      });
-      
-      // Se há erro de Receita Saúde e não foi confirmado, mostrar modal
-      if (receitaSaudeError && !retroactiveDateConfirmed) {
-        console.log('🚨 PaymentDateModal - Abrindo modal de confirmação retroativa');
-        setShowRetroactiveDialog(true);
-        return;
-      }
-      
       console.log('✅ PaymentDateModal - Confirmando data');
       onConfirm(selectedDate);
     }
   };
 
   const handleRetroactiveConfirm = () => {
-    setRetroactiveDateConfirmed(true);
+    if (pendingDate) {
+      setSelectedDate(pendingDate);
+      setShowRetroactiveDialog(false);
+      setHasRetroactiveWarning(false);
+      setPendingDate(null);
+      onConfirm(pendingDate);
+    }
+  };
+
+  const handleRetroactiveCancel = () => {
     setShowRetroactiveDialog(false);
-    onConfirm(selectedDate);
+    setHasRetroactiveWarning(false);
+    setPendingDate(null);
   };
 
   const isFutureDate = selectedDate > new Date();
-  const hasReceitaSaudeError = receitaSaudeError && !retroactiveDateConfirmed;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,7 +107,7 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
                 className={cn(
                   "w-full justify-start text-left font-normal",
                   !selectedDate && "text-muted-foreground",
-                  hasReceitaSaudeError && "border-destructive"
+                  hasRetroactiveWarning && "border-orange-500"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -122,7 +120,7 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
                 selected={selectedDate}
                 onSelect={(date) => {
                   if (date) {
-                    setSelectedDate(date);
+                    handleDateChange(date);
                     setIsCalendarOpen(false);
                   }
                 }}
@@ -139,9 +137,9 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
             </p>
           )}
           
-          {hasReceitaSaudeError && (
-            <p className="text-sm text-destructive mt-2">
-              ⚠️ Data retroativa detectada. Clique em "Confirmar" para prosseguir com a operação.
+          {hasRetroactiveWarning && (
+            <p className="text-sm text-orange-600 mt-2">
+              ⚠️ Data retroativa detectada - aguardando confirmação
             </p>
           )}
         </div>
@@ -161,9 +159,9 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
 
       <RetroactiveDateConfirmationDialog
         isOpen={showRetroactiveDialog}
-        onClose={() => setShowRetroactiveDialog(false)}
+        onClose={handleRetroactiveCancel}
         onConfirm={handleRetroactiveConfirm}
-        selectedDate={format(selectedDate, 'yyyy-MM-dd')}
+        selectedDate={pendingDate ? format(pendingDate, 'yyyy-MM-dd') : ''}
       />
     </Dialog>
   );

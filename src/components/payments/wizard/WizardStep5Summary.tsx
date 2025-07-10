@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Button } from '@/components/ui/button';
@@ -41,35 +41,10 @@ export function WizardStep5Summary({
   paymentToEdit
 }: WizardStep5Props) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [receitaSaudeError, setReceitaSaudeError] = useState<string | null>(null);
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
-  const [retroactiveDateConfirmed, setRetroactiveDateConfirmed] = useState(false);
+  const [pendingDate, setPendingDate] = useState<string>('');
+  const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
-  
-  // Validação em tempo real da data de recebimento
-  useEffect(() => {
-    if (formData.isReceived && formData.receivedDate) {
-      console.log('🔄 WizardStep5 - Validando data de recebimento:', {
-        isReceived: formData.isReceived,
-        receivedDate: formData.receivedDate
-      });
-      
-      const validation = validatePaymentDateReceitaSaude(formData.receivedDate);
-      
-      if (!validation.isValid) {
-        console.log('❌ WizardStep5 - Erro de validação:', validation.errorMessage);
-        setReceitaSaudeError(validation.errorMessage || 'Data inválida');
-        setRetroactiveDateConfirmed(false);
-      } else {
-        console.log('✅ WizardStep5 - Validação OK');
-        setReceitaSaudeError(null);
-        setRetroactiveDateConfirmed(false);
-      }
-    } else {
-      setReceitaSaudeError(null);
-      setRetroactiveDateConfirmed(false);
-    }
-  }, [formData.isReceived, formData.receivedDate]);
 
   const { handleSubmit: originalHandleSubmit, isLoading, isEditMode } = usePaymentCreation({
     formData,
@@ -79,31 +54,6 @@ export function WizardStep5Summary({
     paymentToEdit
   });
 
-  const handleSubmit = () => {
-    console.log('🎯 WizardStep5 - Tentativa de submissão:', {
-      receitaSaudeError,
-      retroactiveDateConfirmed,
-      isReceived: formData.isReceived,
-      receivedDate: formData.receivedDate
-    });
-    
-    // Se há erro de Receita Saúde e não foi confirmado, mostrar modal
-    if (receitaSaudeError && !retroactiveDateConfirmed) {
-      console.log('🚨 WizardStep5 - Abrindo modal de confirmação retroativa');
-      setShowRetroactiveDialog(true);
-      return;
-    }
-    
-    console.log('✅ WizardStep5 - Submetendo formulário');
-    originalHandleSubmit();
-  };
-
-  const handleRetroactiveConfirm = () => {
-    setRetroactiveDateConfirmed(true);
-    setShowRetroactiveDialog(false);
-    originalHandleSubmit();
-  };
-
   const formatDateForDatabase = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -111,12 +61,52 @@ export function WizardStep5Summary({
     return `${year}-${month}-${day}`;
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      const formattedDate = formatDateForDatabase(date);
-      updateFormData({ receivedDate: formattedDate });
+  const handleDateChange = (date: Date | undefined) => {
+    if (!date) {
+      updateFormData({ receivedDate: '' });
+      setHasRetroactiveWarning(false);
       setIsCalendarOpen(false);
+      return;
     }
+
+    const formattedDate = formatDateForDatabase(date);
+    
+    console.log('🔄 WizardStep5 - Validando data de recebimento:', {
+      formattedDate
+    });
+    
+    const validation = validatePaymentDateReceitaSaude(formattedDate);
+    
+    if (!validation.isValid) {
+      console.log('❌ WizardStep5 - Data retroativa detectada');
+      setPendingDate(formattedDate);
+      setShowRetroactiveDialog(true);
+      setHasRetroactiveWarning(true);
+    } else {
+      console.log('✅ WizardStep5 - Data válida');
+      updateFormData({ receivedDate: formattedDate });
+      setHasRetroactiveWarning(false);
+    }
+    setIsCalendarOpen(false);
+  };
+
+  const handleSubmit = () => {
+    console.log('✅ WizardStep5 - Submetendo formulário');
+    originalHandleSubmit();
+  };
+
+  const handleRetroactiveConfirm = () => {
+    updateFormData({ receivedDate: pendingDate });
+    setShowRetroactiveDialog(false);
+    setHasRetroactiveWarning(false);
+    setPendingDate('');
+    originalHandleSubmit();
+  };
+
+  const handleRetroactiveCancel = () => {
+    setShowRetroactiveDialog(false);
+    setHasRetroactiveWarning(false);
+    setPendingDate('');
   };
 
   return (
@@ -151,7 +141,7 @@ export function WizardStep5Summary({
                         className={cn(
                           "w-full justify-start text-left font-normal",
                           !formData.receivedDate && "text-muted-foreground",
-                          receitaSaudeError && !retroactiveDateConfirmed && "border-destructive"
+                          hasRetroactiveWarning && "border-orange-500"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -162,7 +152,7 @@ export function WizardStep5Summary({
                       <Calendar
                         mode="single"
                         selected={formData.receivedDate ? new Date(formData.receivedDate + 'T00:00:00') : undefined}
-                        onSelect={handleDateSelect}
+                        onSelect={handleDateChange}
                         disabled={(date) => date > new Date()}
                         initialFocus
                         className="pointer-events-auto"
@@ -170,9 +160,9 @@ export function WizardStep5Summary({
                     </PopoverContent>
                   </Popover>
                   
-                  {receitaSaudeError && !retroactiveDateConfirmed && (
-                    <p className="text-sm text-destructive mt-2">
-                      ⚠️ Data retroativa detectada. Clique em "Concluir" para prosseguir com a operação.
+                  {hasRetroactiveWarning && (
+                    <p className="text-sm text-orange-600 mt-2">
+                      ⚠️ Data retroativa detectada - aguardando confirmação
                     </p>
                   )}
                 </div>
@@ -202,9 +192,9 @@ export function WizardStep5Summary({
 
       <RetroactiveDateConfirmationDialog
         isOpen={showRetroactiveDialog}
-        onClose={() => setShowRetroactiveDialog(false)}
+        onClose={handleRetroactiveCancel}
         onConfirm={handleRetroactiveConfirm}
-        selectedDate={formData.receivedDate || ''}
+        selectedDate={pendingDate}
       />
     </div>
   );
