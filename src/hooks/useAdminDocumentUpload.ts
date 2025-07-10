@@ -1,7 +1,8 @@
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useAdminDocumentUsers } from "./useAdminDocumentUsers";
 import { useAdminDocumentOCR } from "./useAdminDocumentOCR";
-import { useAdminDraftDocuments, DraftDocument } from "./useAdminDraftDocuments";
+import { useAdminDraftDocuments } from "./useAdminDraftDocuments";
+import { DraftDocument } from "@/types/draftDocument";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
