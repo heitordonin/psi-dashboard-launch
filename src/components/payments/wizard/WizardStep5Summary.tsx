@@ -49,12 +49,19 @@ export function WizardStep5Summary({
   // Validação em tempo real da data de recebimento
   useEffect(() => {
     if (formData.isReceived && formData.receivedDate) {
+      console.log('🔄 WizardStep5 - Validando data de recebimento:', {
+        isReceived: formData.isReceived,
+        receivedDate: formData.receivedDate
+      });
+      
       const validation = validatePaymentDateReceitaSaude(formData.receivedDate);
       
       if (!validation.isValid) {
+        console.log('❌ WizardStep5 - Erro de validação:', validation.errorMessage);
         setReceitaSaudeError(validation.errorMessage || 'Data inválida');
         setRetroactiveDateConfirmed(false);
       } else {
+        console.log('✅ WizardStep5 - Validação OK');
         setReceitaSaudeError(null);
         setRetroactiveDateConfirmed(false);
       }
@@ -73,12 +80,21 @@ export function WizardStep5Summary({
   });
 
   const handleSubmit = () => {
+    console.log('🎯 WizardStep5 - Tentativa de submissão:', {
+      receitaSaudeError,
+      retroactiveDateConfirmed,
+      isReceived: formData.isReceived,
+      receivedDate: formData.receivedDate
+    });
+    
     // Se há erro de Receita Saúde e não foi confirmado, mostrar modal
     if (receitaSaudeError && !retroactiveDateConfirmed) {
+      console.log('🚨 WizardStep5 - Abrindo modal de confirmação retroativa');
       setShowRetroactiveDialog(true);
       return;
     }
     
+    console.log('✅ WizardStep5 - Submetendo formulário');
     originalHandleSubmit();
   };
 

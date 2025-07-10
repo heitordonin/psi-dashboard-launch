@@ -36,27 +36,47 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
   // Validação em tempo real da data selecionada
   useEffect(() => {
     if (selectedDate) {
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      // Normalizar a data selecionada
+      const normalizedDate = new Date(selectedDate);
+      normalizedDate.setHours(0, 0, 0, 0);
+      const formattedDate = format(normalizedDate, 'yyyy-MM-dd');
+      
+      console.log('🔄 PaymentDateModal - Validando data:', {
+        selectedDate: selectedDate.toISOString(),
+        formattedDate
+      });
+      
       const validation = validatePaymentDateReceitaSaude(formattedDate);
       
       if (!validation.isValid) {
+        console.log('❌ PaymentDateModal - Erro de validação:', validation.errorMessage);
         setReceitaSaudeError(validation.errorMessage || 'Data inválida');
         setRetroactiveDateConfirmed(false);
       } else {
+        console.log('✅ PaymentDateModal - Validação OK');
         setReceitaSaudeError(null);
+        // Reset confirmation when date changes
         setRetroactiveDateConfirmed(false);
       }
     }
   }, [selectedDate]);
 
   const handleConfirm = () => {
-    if (selectedDate && selectedDate <= new Date()) {
+    if (selectedDate) {
+      console.log('🎯 PaymentDateModal - Tentativa de confirmação:', {
+        selectedDate: selectedDate.toISOString(),
+        receitaSaudeError,
+        retroactiveDateConfirmed
+      });
+      
       // Se há erro de Receita Saúde e não foi confirmado, mostrar modal
       if (receitaSaudeError && !retroactiveDateConfirmed) {
+        console.log('🚨 PaymentDateModal - Abrindo modal de confirmação retroativa');
         setShowRetroactiveDialog(true);
         return;
       }
       
+      console.log('✅ PaymentDateModal - Confirmando data');
       onConfirm(selectedDate);
     }
   };
