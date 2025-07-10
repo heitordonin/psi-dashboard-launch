@@ -124,27 +124,64 @@ const handler = async (req: Request): Promise<Response> => {
 
     const formattedDate = new Date(dueDate).toLocaleDateString('pt-BR');
 
-    // Template do email em português
+    // Template do email em português usando o layout do DARF
     const emailSubject = "Lembrete de Pagamento - Psiclo";
+    
+    // Verificar se o pagamento está vencido
+    const isOverdue = new Date(dueDate) < new Date();
+    const dueDateColor = isOverdue ? '#e74c3c' : '#333';
+    
     const emailContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Lembrete de Pagamento</h2>
-        <p>Olá ${patientName},</p>
-        <p>Este é um lembrete amigável sobre seu pagamento pendente:</p>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p><strong>Terapeuta:</strong> ${therapistName}</p>
-          <p><strong>Valor:</strong> ${formattedAmount}</p>
-          <p><strong>Vencimento:</strong> ${formattedDate}</p>
-          ${description ? `<p><strong>Descrição:</strong> ${description}</p>` : ''}
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Psiclo</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Sistema de Gestão para Psicólogos</p>
         </div>
         
-        <p>Se você já realizou o pagamento, pode ignorar esta mensagem.</p>
-        
-        <hr style="margin: 30px 0;">
-        <p style="color: #666; font-size: 12px;">
-          Este email foi enviado automaticamente pelo sistema Psiclo.
-        </p>
+        <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+          <h2 style="color: #333; margin-top: 0; font-size: 20px;">Olá, ${patientName}!</h2>
+          
+          <p style="color: #666; font-size: 16px; line-height: 1.6;">
+            ${isOverdue ? 'Você possui um pagamento em atraso.' : 'Este é um lembrete amigável sobre seu pagamento pendente:'}
+          </p>
+          
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0; font-size: 18px;">💰 Detalhes do Pagamento</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Terapeuta:</td>
+                <td style="padding: 8px 0; color: #333;">${therapistName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666; font-weight: bold;">Valor:</td>
+                <td style="padding: 8px 0; color: #333; font-weight: bold; font-size: 18px;">${formattedAmount}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666; font-weight: bold;">Vencimento:</td>
+                <td style="padding: 8px 0; color: ${dueDateColor}; font-weight: bold;">${formattedDate}</td>
+              </tr>
+              ${description ? `
+              <tr>
+                <td style="padding: 8px 0; color: #666; font-weight: bold;">Descrição:</td>
+                <td style="padding: 8px 0; color: #333;">${description}</td>
+              </tr>
+              ` : ''}
+            </table>
+          </div>
+          
+          <div style="background: ${isOverdue ? '#f8d7da' : '#d1ecf1'}; border: 1px solid ${isOverdue ? '#f5c6cb' : '#bee5eb'}; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: ${isOverdue ? '#721c24' : '#0c5460'}; font-size: 14px;">
+              <strong>${isOverdue ? '⚠️ Atenção:' : '💡 Importante:'}</strong> ${isOverdue ? 'Este pagamento está em atraso. Entre em contato com seu terapeuta se já foi realizado.' : 'Se você já realizou o pagamento, pode ignorar esta mensagem.'}
+            </p>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+            Este é um email automático do Psiclo. Não responda a este email.<br>
+            Entre em contato com seu terapeuta para esclarecimentos sobre este pagamento.
+          </p>
+        </div>
       </div>
     `;
 
