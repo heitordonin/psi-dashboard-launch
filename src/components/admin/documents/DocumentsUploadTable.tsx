@@ -73,7 +73,7 @@ export const DocumentsUploadTable = ({
   };
 
   const formatCurrency = (amount?: number) => {
-    if (!amount) return "Não informado";
+    if (!amount || amount === 0) return "Não informado";
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'

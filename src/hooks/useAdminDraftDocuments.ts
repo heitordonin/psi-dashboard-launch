@@ -69,10 +69,7 @@ export const useAdminDraftDocuments = () => {
               doc.competency && 
               doc.due_date && 
               doc.amount && 
-              doc.amount > 0 &&
-              // Verificar se não são os valores padrão temporários
-              doc.competency !== new Date().toISOString().split('T')[0] &&
-              doc.due_date !== new Date().toISOString().split('T')[0]
+              doc.amount > 0
             ),
             isProcessingOCR: false
           };
@@ -93,20 +90,20 @@ export const useAdminDraftDocuments = () => {
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('admin_documents')
-        .insert({
-          title: `DARF Carnê-Leão - ${params.fileName}`,
-          // Campos obrigatórios com valores temporários (serão sobrescritos ao editar)
-          amount: 0,
-          due_date: new Date().toISOString().split('T')[0],
-          competency: new Date().toISOString().split('T')[0],
-          user_id: user.id,
-          // Apenas configurações básicas no upload
-          status: 'draft',
-          file_path: params.filePath,
-          created_by_admin_id: user.id
-        })
+    const { data, error } = await supabase
+      .from('admin_documents')
+      .insert({
+        title: `DARF Carnê-Leão - ${params.fileName}`,
+        // Somente campos essenciais no upload, deixar o resto NULL
+        status: 'draft',
+        file_path: params.filePath,
+        created_by_admin_id: user.id,
+        // Campos que serão preenchidos manualmente pelo admin:
+        // user_id: NULL (será definido na edição)
+        // competency: NULL (será definido na edição)  
+        // due_date: NULL (será definido na edição)
+        // amount: NULL (será definido na edição)
+      })
         .select()
         .single();
 
