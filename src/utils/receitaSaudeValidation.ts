@@ -29,29 +29,50 @@ export function validateReceitaSaudeDate(retroactiveDate: string, currentDate?: 
     return { isValid: true };
   }
   
-  // Calcular o dia 10 do mês subsequente à data retroativa
+  // Regra da Receita Saúde: após o dia 10 do mês atual, 
+  // não pode registrar datas retroativas do mês anterior
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const currentDay = today.getDate();
+  
   const targetMonth = targetDate.getMonth();
   const targetYear = targetDate.getFullYear();
   
-  // Dia 10 do mês seguinte
-  const deadline = new Date(targetYear, targetMonth + 1, 10);
-  deadline.setHours(0, 0, 0, 0);
+  // Calcular a diferença em meses
+  const monthsDifference = (currentYear - targetYear) * 12 + (currentMonth - targetMonth);
   
-  console.log('📅 Prazos:', {
-    deadline: deadline.toISOString(),
-    todayAfterDeadline: today > deadline
+  console.log('📅 Análise temporal:', {
+    currentDay,
+    monthsDifference,
+    targetMonth: targetMonth + 1, // +1 para exibir mês humano
+    currentMonth: currentMonth + 1 // +1 para exibir mês humano
   });
   
-  // Se hoje é após o dia 10 do mês subsequente, não pode registrar
-  if (today > deadline) {
-    const deadlineFormatted = deadline.toLocaleDateString('pt-BR');
-    const targetFormatted = targetDate.toLocaleDateString('pt-BR');
-    
-    console.log('❌ Data retroativa fora do prazo legal');
-    return {
-      isValid: false,
-      errorMessage: `Não é possível registrar data retroativa de ${targetFormatted}. Por impeditivo legal da legislação do Receita Saúde, cobranças/pagamentos retroativos devem ser registrados até o dia 10 do mês seguinte (prazo era ${deadlineFormatted}).`
-    };
+  // Se estamos no dia 10 ou depois do mês atual
+  if (currentDay >= 10) {
+    // Não pode registrar datas do mês anterior (1 mês atrás)
+    if (monthsDifference >= 1) {
+      const targetFormatted = targetDate.toLocaleDateString('pt-BR');
+      const todayFormatted = today.toLocaleDateString('pt-BR');
+      
+      console.log('❌ Data retroativa fora do prazo legal');
+      return {
+        isValid: false,
+        errorMessage: `Não é possível registrar data retroativa de ${targetFormatted}. Por impeditivo legal da legislação da Receita Saúde, após o dia 10 (hoje é ${todayFormatted}), não é permitido registrar datas retroativas do mês anterior ou anteriores.`
+      };
+    }
+  } else {
+    // Antes do dia 10 do mês atual, só pode registrar do mês passado
+    if (monthsDifference >= 2) {
+      const targetFormatted = targetDate.toLocaleDateString('pt-BR');
+      const todayFormatted = today.toLocaleDateString('pt-BR');
+      
+      console.log('❌ Data retroativa fora do prazo legal');
+      return {
+        isValid: false,
+        errorMessage: `Não é possível registrar data retroativa de ${targetFormatted}. Por impeditivo legal da legislação da Receita Saúde, antes do dia 10 (hoje é ${todayFormatted}), só é permitido registrar datas do mês anterior.`
+      };
+    }
   }
   
   console.log('⚠️ Data retroativa dentro do prazo legal');
