@@ -182,9 +182,36 @@ export const useAdminDraftDocuments = () => {
     }
   });
 
+  // Send notification email
+  const sendNotificationEmail = async (documentId: string, documentData: any) => {
+    try {
+      const { error: emailError } = await supabase.functions
+        .invoke('send-document-notification', {
+          body: {
+            user_id: documentData.user_id,
+            document_id: documentId,
+            title: documentData.title,
+            amount: documentData.amount,
+            due_date: documentData.due_date,
+            competency: documentData.competency
+          }
+        });
+
+      if (emailError) {
+        console.error("Error sending notification email:", emailError);
+        return false;
+      }
+      return true;
+    } catch (emailError) {
+      console.error("Error sending notification email:", emailError);
+      return false;
+    }
+  };
+
   // Send draft document (change status from draft to pending)
   const sendDraftMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First update the status
       const { error } = await supabase
         .from('admin_documents')
         .update({ status: 'pending' })
@@ -192,11 +219,30 @@ export const useAdminDraftDocuments = () => {
         .eq('status', 'draft');
 
       if (error) throw error;
+
+      // Then get the updated document data for email
+      const { data: documentData, error: fetchError } = await supabase
+        .from('admin_documents')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Send notification email
+      const emailSent = await sendNotificationEmail(id, documentData);
+      
+      return { documentData, emailSent };
     },
-    onSuccess: () => {
+    onSuccess: ({ emailSent }) => {
       queryClient.invalidateQueries({ queryKey: ['admin-draft-documents'] });
       queryClient.invalidateQueries({ queryKey: ['admin-sent-documents'] });
-      toast.success('Documento enviado com sucesso!');
+      
+      if (emailSent) {
+        toast.success('Documento enviado e usuário notificado por email!');
+      } else {
+        toast.warning('Documento enviado, mas houve erro ao enviar notificação por email');
+      }
     },
     onError: (error) => {
       console.error('Error sending draft document:', error);
