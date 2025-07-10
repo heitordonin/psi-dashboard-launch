@@ -1,8 +1,9 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
 
 interface ReceivedCheckboxProps {
   isAlreadyReceived: boolean;
@@ -21,12 +22,24 @@ export const ReceivedCheckbox = ({
   errors,
   isEditing = false
 }: ReceivedCheckboxProps) => {
+  const [receitaSaudeError, setReceitaSaudeError] = useState<string | null>(null);
+
   useEffect(() => {
     if (isAlreadyReceived && !receivedDate) {
       const today = new Date().toISOString().split('T')[0];
       setReceivedDate(today);
     }
   }, [isAlreadyReceived, receivedDate, setReceivedDate]);
+
+  // Validar data de recebimento quando mudar
+  useEffect(() => {
+    if (receivedDate) {
+      const validation = validatePaymentDateReceitaSaude(receivedDate);
+      setReceitaSaudeError(validation.isValid ? null : validation.errorMessage || null);
+    } else {
+      setReceitaSaudeError(null);
+    }
+  }, [receivedDate]);
 
   return (
     <div className="space-y-4">
@@ -50,9 +63,10 @@ export const ReceivedCheckbox = ({
             value={receivedDate}
             onChange={(e) => setReceivedDate(e.target.value)}
             max={new Date().toISOString().split('T')[0]}
-            className={errors.receivedDate ? 'border-red-500' : ''}
+            className={errors.receivedDate || receitaSaudeError ? 'border-red-500' : ''}
           />
           {errors.receivedDate && <p className="text-red-500 text-sm mt-1">{errors.receivedDate}</p>}
+          {receitaSaudeError && <p className="text-red-500 text-sm mt-1">{receitaSaudeError}</p>}
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 
 import { validateCPF, validateCNPJ, sanitizeTextInput, validateAmount } from '@/utils/securityValidation';
+import { validateDueDateReceitaSaude, validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
 
 export const validatePaymentForm = (
   formData: {
@@ -46,6 +47,22 @@ export const validatePaymentForm = (
       if (paymentTitular === 'patient' && selectedPatient.cpf && !validateCPF(selectedPatient.cpf)) {
         return 'CPF do paciente deve ser válido';
       }
+    }
+  }
+
+  // Validação Receita Saúde para data de vencimento retroativa
+  if (!isReceived && formData.due_date) {
+    const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
+    if (!dueDateValidation.isValid) {
+      return dueDateValidation.errorMessage;
+    }
+  }
+
+  // Validação Receita Saúde para data de recebimento retroativa
+  if (isReceived && receivedDate) {
+    const paymentDateValidation = validatePaymentDateReceitaSaude(receivedDate);
+    if (!paymentDateValidation.isValid) {
+      return paymentDateValidation.errorMessage;
     }
   }
 

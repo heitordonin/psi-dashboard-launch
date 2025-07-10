@@ -1,5 +1,6 @@
 
 import { validateAmount } from '@/utils/securityValidation';
+import { validateDueDateReceitaSaude } from '@/utils/receitaSaudeValidation';
 import type { WizardFormData, Patient } from './types';
 
 export function isNextDisabled(currentStep: number, formData: WizardFormData, patients: Patient[]) {
@@ -17,12 +18,20 @@ export function isNextDisabled(currentStep: number, formData: WizardFormData, pa
         formData.description.length >= 3 && 
         formData.description.length <= 500;
       
-      // Para manual charges, qualquer data é válida
-      // Para payment links, apenas hoje ou datas futuras são válidas
+      // Validação Receita Saúde para datas retroativas
+      if (formData.due_date) {
+        const receitaSaudeValidation = validateDueDateReceitaSaude(formData.due_date);
+        if (!receitaSaudeValidation.isValid) {
+          return true; // Bloqueia se inválido
+        }
+      }
+
+      // Para manual charges, aplicar apenas validação Receita Saúde
+      // Para payment links, aplicar validação Receita Saúde + data futura
       if (formData.chargeType === 'manual') {
         return !isAmountValid || !formData.due_date || !isDescriptionValid;
       } else {
-        // Payment link validation
+        // Payment link validation: deve ser hoje ou futuro
         const isDueDateValid = !formData.due_date || 
           new Date(formData.due_date) >= new Date(new Date().toDateString());
         
@@ -58,6 +67,14 @@ export function validateWizardFormData(formData: WizardFormData, selectedPatient
   // Validação de valor
   if (!validateAmount(formData.amount)) {
     errors.push('Valor deve estar entre R$ 0,01 e R$ 999.999.999,99');
+  }
+
+  // Validação Receita Saúde para data de vencimento
+  if (formData.due_date) {
+    const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
+    if (!dueDateValidation.isValid) {
+      errors.push(dueDateValidation.errorMessage || 'Data de vencimento inválida');
+    }
   }
 
   // Validação de descrição

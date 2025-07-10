@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { validateAmount, sanitizeTextInput } from '@/utils/securityValidation';
 import { sanitizePaymentFormData } from '@/components/payments/PaymentFormValidation';
+import { validateDueDateReceitaSaude, validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
 import type { WizardFormData } from '@/components/payments/wizard/types';
 import type { Patient } from '@/types/patient';
 import type { Payment } from '@/types/payment';
@@ -44,6 +45,14 @@ export function usePaymentCreation({
         throw new Error('Descrição deve ter no máximo 500 caracteres');
       }
 
+      // Validação Receita Saúde para data de vencimento
+      if (formData.due_date) {
+        const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
+        if (!dueDateValidation.isValid) {
+          throw new Error(dueDateValidation.errorMessage);
+        }
+      }
+
       // Validar due date APENAS para payment links, não para manual charges
       if (formData.chargeType === 'link' && formData.due_date) {
         const dueDate = new Date(formData.due_date);
@@ -52,6 +61,14 @@ export function usePaymentCreation({
         
         if (dueDate < today) {
           throw new Error('Data de vencimento deve ser hoje ou no futuro para links de pagamento');
+        }
+      }
+
+      // Validação Receita Saúde para data de recebimento (se marcado como recebido)
+      if (formData.isReceived && formData.receivedDate) {
+        const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
+        if (!paymentDateValidation.isValid) {
+          throw new Error(paymentDateValidation.errorMessage);
         }
       }
 
@@ -171,6 +188,14 @@ export function usePaymentCreation({
         throw new Error('Descrição deve ter no máximo 500 caracteres');
       }
 
+      // Validação Receita Saúde para data de vencimento
+      if (formData.due_date) {
+        const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
+        if (!dueDateValidation.isValid) {
+          throw new Error(dueDateValidation.errorMessage);
+        }
+      }
+
       // Validar due date APENAS para payment links, não para manual charges
       if (paymentToEdit.has_payment_link && formData.due_date) {
         const dueDate = new Date(formData.due_date);
@@ -179,6 +204,14 @@ export function usePaymentCreation({
         
         if (dueDate < today) {
           throw new Error('Data de vencimento deve ser hoje ou no futuro para links de pagamento');
+        }
+      }
+
+      // Validação Receita Saúde para data de recebimento (se marcado como recebido)
+      if (formData.isReceived && formData.receivedDate) {
+        const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
+        if (!paymentDateValidation.isValid) {
+          throw new Error(paymentDateValidation.errorMessage);
         }
       }
 
