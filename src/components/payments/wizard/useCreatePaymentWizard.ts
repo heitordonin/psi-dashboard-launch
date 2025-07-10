@@ -27,7 +27,8 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
     sendEmailNotification: false,
     email: '',
     isReceived: false,
-    receivedDate: ''
+    receivedDate: '',
+    retroactiveDateConfirmed: false
   });
 
   // Initialize form data when editing a payment
@@ -67,7 +68,8 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
         sendEmailNotification: false,
         email: patient?.email || '',
         isReceived: paymentToEdit.status === 'paid',
-        receivedDate: paymentToEdit.paid_date || ''
+        receivedDate: paymentToEdit.paid_date || '',
+        retroactiveDateConfirmed: false
       });
     }
   }, [paymentToEdit, isOpen, patients]);
@@ -111,7 +113,8 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
       sendEmailNotification: false,
       email: '',
       isReceived: false,
-      receivedDate: ''
+      receivedDate: '',
+      retroactiveDateConfirmed: false
     });
   };
 

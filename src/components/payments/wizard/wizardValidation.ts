@@ -21,8 +21,8 @@ export function isNextDisabled(currentStep: number, formData: WizardFormData, pa
       // Validação Receita Saúde para datas retroativas
       if (formData.due_date) {
         const receitaSaudeValidation = validateDueDateReceitaSaude(formData.due_date);
-        if (!receitaSaudeValidation.isValid) {
-          return true; // Bloqueia se inválido
+        if (!receitaSaudeValidation.isValid && !formData.retroactiveDateConfirmed) {
+          return true; // Bloqueia se inválido E não confirmado
         }
       }
 
@@ -72,7 +72,7 @@ export function validateWizardFormData(formData: WizardFormData, selectedPatient
   // Validação Receita Saúde para data de vencimento
   if (formData.due_date) {
     const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
-    if (!dueDateValidation.isValid) {
+    if (!dueDateValidation.isValid && !formData.retroactiveDateConfirmed) {
       errors.push(dueDateValidation.errorMessage || 'Data de vencimento inválida');
     }
   }

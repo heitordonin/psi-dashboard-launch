@@ -31,6 +31,9 @@ export interface WizardFormData {
   // Existing logic
   isReceived: boolean;
   receivedDate: string;
+  
+  // Retroactive date confirmation
+  retroactiveDateConfirmed: boolean;
 }
 
 export interface CreatePaymentWizardProps {
