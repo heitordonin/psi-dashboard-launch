@@ -1,6 +1,8 @@
 
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { validateDueDateReceitaSaude } from '@/utils/receitaSaudeValidation';
 
 interface PaymentDueDateFieldProps {
   value: string;
@@ -9,6 +11,21 @@ interface PaymentDueDateFieldProps {
 }
 
 export function PaymentDueDateField({ value, onChange, isReceived }: PaymentDueDateFieldProps) {
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    if (value && !isReceived) {
+      const validation = validateDueDateReceitaSaude(value);
+      if (!validation.isValid) {
+        setError(validation.errorMessage || '');
+      } else {
+        setError('');
+      }
+    } else {
+      setError('');
+    }
+  }, [value, isReceived]);
+
   if (isReceived) {
     return null;
   }
@@ -21,8 +38,13 @@ export function PaymentDueDateField({ value, onChange, isReceived }: PaymentDueD
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full"
+        className={`w-full ${error ? 'border-red-500' : ''}`}
       />
+      {error && (
+        <p className="text-sm text-red-600 mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
