@@ -16,11 +16,11 @@ export type Database = {
     Tables: {
       admin_documents: {
         Row: {
-          amount: number
-          competency: string
+          amount: number | null
+          competency: string | null
           created_at: string
           created_by_admin_id: string
-          due_date: string
+          due_date: string | null
           file_path: string
           hidden_from_user: boolean
           id: string
@@ -30,15 +30,15 @@ export type Database = {
           status: Database["public"]["Enums"]["admin_document_status"]
           title: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           viewed_at: string | null
         }
         Insert: {
-          amount: number
-          competency: string
+          amount?: number | null
+          competency?: string | null
           created_at?: string
           created_by_admin_id: string
-          due_date: string
+          due_date?: string | null
           file_path: string
           hidden_from_user?: boolean
           id?: string
@@ -48,15 +48,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["admin_document_status"]
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           viewed_at?: string | null
         }
         Update: {
-          amount?: number
-          competency?: string
+          amount?: number | null
+          competency?: string | null
           created_at?: string
           created_by_admin_id?: string
-          due_date?: string
+          due_date?: string | null
           file_path?: string
           hidden_from_user?: boolean
           id?: string
@@ -66,7 +66,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["admin_document_status"]
           title?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           viewed_at?: string | null
         }
         Relationships: []
