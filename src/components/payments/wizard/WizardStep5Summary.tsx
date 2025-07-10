@@ -1,21 +1,13 @@
 
-import React, { useState } from 'react';
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { PaymentSummaryDetails } from './PaymentSummaryDetails';
 import { PayerSummaryDetails } from './PayerSummaryDetails';
+import { ReceivedDatePicker } from './ReceivedDatePicker';
 import { usePaymentCreation } from '@/hooks/usePaymentCreation';
-import { validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { usePaymentDateHandler } from '@/hooks/usePaymentDateHandler';
 import { RetroactiveDateConfirmationDialog } from '../RetroactiveDateConfirmationDialog';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
@@ -40,10 +32,6 @@ export function WizardStep5Summary({
   updateFormData,
   paymentToEdit
 }: WizardStep5Props) {
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
-  const [pendingDate, setPendingDate] = useState<string>('');
-  const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
 
   const { handleSubmit: originalHandleSubmit, isLoading, isEditMode } = usePaymentCreation({
@@ -54,59 +42,21 @@ export function WizardStep5Summary({
     paymentToEdit
   });
 
-  const formatDateForDatabase = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const handleDateChange = (date: Date | undefined) => {
-    if (!date) {
-      updateFormData({ receivedDate: '' });
-      setHasRetroactiveWarning(false);
-      setIsCalendarOpen(false);
-      return;
-    }
-
-    const formattedDate = formatDateForDatabase(date);
-    
-    console.log('🔄 WizardStep5 - Validando data de recebimento:', {
-      formattedDate
-    });
-    
-    const validation = validatePaymentDateReceitaSaude(formattedDate);
-    
-    if (!validation.isValid) {
-      console.log('❌ WizardStep5 - Data retroativa detectada');
-      setPendingDate(formattedDate);
-      setShowRetroactiveDialog(true);
-      setHasRetroactiveWarning(true);
-    } else {
-      console.log('✅ WizardStep5 - Data válida');
-      updateFormData({ receivedDate: formattedDate });
-      setHasRetroactiveWarning(false);
-    }
-    setIsCalendarOpen(false);
-  };
+  const {
+    showRetroactiveDialog,
+    pendingDate,
+    hasRetroactiveWarning,
+    handleDateChange,
+    handleRetroactiveConfirm,
+    handleRetroactiveCancel
+  } = usePaymentDateHandler({
+    onDateChange: (date) => updateFormData({ receivedDate: date }),
+    onSubmitWithRetroactiveDate: originalHandleSubmit
+  });
 
   const handleSubmit = () => {
     console.log('✅ WizardStep5 - Submetendo formulário');
     originalHandleSubmit();
-  };
-
-  const handleRetroactiveConfirm = () => {
-    updateFormData({ receivedDate: pendingDate });
-    setShowRetroactiveDialog(false);
-    setHasRetroactiveWarning(false);
-    setPendingDate('');
-    originalHandleSubmit();
-  };
-
-  const handleRetroactiveCancel = () => {
-    setShowRetroactiveDialog(false);
-    setHasRetroactiveWarning(false);
-    setPendingDate('');
   };
 
   return (
@@ -132,40 +82,11 @@ export function WizardStep5Summary({
 
               {/* Campo de data do pagamento quando marcado como recebido */}
               {formData.isReceived && (
-                <div className="space-y-2">
-                  <Label htmlFor="receivedDate">Data do Pagamento *</Label>
-                  <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.receivedDate && "text-muted-foreground",
-                          hasRetroactiveWarning && "border-orange-500"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.receivedDate ? format(new Date(formData.receivedDate + 'T00:00:00'), "dd/MM/yyyy") : "Selecionar data do pagamento"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.receivedDate ? new Date(formData.receivedDate + 'T00:00:00') : undefined}
-                        onSelect={handleDateChange}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  {hasRetroactiveWarning && (
-                    <p className="text-sm text-orange-600 mt-2">
-                      ⚠️ Data retroativa detectada - aguardando confirmação
-                    </p>
-                  )}
-                </div>
+                <ReceivedDatePicker
+                  receivedDate={formData.receivedDate || ''}
+                  hasRetroactiveWarning={hasRetroactiveWarning}
+                  onDateChange={handleDateChange}
+                />
               )}
             </div>
           )}
