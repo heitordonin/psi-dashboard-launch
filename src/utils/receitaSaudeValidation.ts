@@ -92,3 +92,10 @@ export function validateDueDateReceitaSaude(dueDate: string) {
 export function validatePaymentDateReceitaSaude(paymentDate: string) {
   return validateReceitaSaudeDate(paymentDate);
 }
+
+/**
+ * Valida data de despesa considerando regras da Receita Saúde
+ */
+export function validateExpenseDateReceitaSaude(expenseDate: string) {
+  return validateReceitaSaudeDate(expenseDate);
+}

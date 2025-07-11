@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { ExpenseDateField } from "@/components/ExpenseDateField";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
@@ -298,13 +299,11 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
             control={form.control}
             name="payment_date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Data de Pagamento *</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+              <ExpenseDateField
+                value={field.value || ''}
+                onValueChange={field.onChange}
+                required
+              />
             )}
           />
 
