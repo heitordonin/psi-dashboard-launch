@@ -26,7 +26,7 @@ export function GaugeChart({ percentage, hasData }: GaugeChartProps) {
           Alíquota efetiva
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent>
         {hasData ? (
           <div className="flex flex-col items-center justify-center mt-4">
             <div className="relative w-48 h-24">

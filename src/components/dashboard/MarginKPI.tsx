@@ -14,7 +14,7 @@ export function MarginKPI({ margin, hasData }: MarginKPIProps) {
           Margem
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent>
         <div className="flex items-center justify-center h-32">
           {hasData ? (
             <span className="text-4xl font-bold text-psiclo-primary">

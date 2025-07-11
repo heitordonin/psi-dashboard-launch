@@ -32,7 +32,7 @@ export function RevenueExpenseChart({ revenue, expense }: RevenueExpenseChartPro
           Receita x Despesa
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 mt-4">
+      <CardContent>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
