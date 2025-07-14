@@ -6,6 +6,7 @@ import { PaymentsList } from './PaymentsList';
 import { CreatePaymentWizard } from './CreatePaymentWizard';
 import { usePaymentData } from '@/hooks/usePaymentData';
 import { usePaymentFilters } from '@/hooks/usePaymentFilters';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { Payment } from '@/types/payment';
 
@@ -16,11 +17,16 @@ interface PaymentsContentProps {
 export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const queryClient = useQueryClient();
 
   const { patients, payments, paymentsLoading, deletePaymentMutation } = usePaymentData(userId);
   const { searchTerm, setSearchTerm, filters, setFilters, getFilteredPayments, hasFilters } = usePaymentFilters();
 
   const filteredPayments = getFilteredPayments(payments);
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['payments', userId] });
+  };
 
   const handleAddPayment = () => {
     setEditingPayment(null);
@@ -79,6 +85,7 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
           onDeletePayment={handleDeletePayment}
           onEditPayment={handleEditPayment}
           onAddPayment={handleAddPayment}
+          onRefresh={handleRefresh}
           hasFilters={hasFilters}
         />
       </div>

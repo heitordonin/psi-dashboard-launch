@@ -227,6 +227,109 @@
     animation: shimmer 2s infinite;
   }
 
+  /* Phase 3 - Safe Area Support */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-insets {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Phase 3 - Landscape Optimization */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .landscape-compact {
+      padding: 0.5rem;
+    }
+
+    .landscape-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .landscape-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .modal-content-landscape {
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+  }
+
+  /* Phase 3 - Voice Input Support */
+  .voice-input-active {
+    border: 2px solid hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+    animation: pulse 2s infinite;
+  }
+
+  /* Phase 3 - Haptic Feedback Visual Cues */
+  .haptic-feedback {
+    transition: transform 0.1s ease;
+  }
+
+  .haptic-feedback:active {
+    transform: scale(0.95);
+  }
+
+  /* Phase 3 - Enhanced Scroll Areas */
+  .infinite-scroll-trigger {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Phase 3 - Bottom Sheet Animations */
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  .bottom-sheet-enter {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .bottom-sheet-exit {
+    animation: slideDown 0.3s ease-in;
+  }
+}
+
   @keyframes shimmer {
     0% {
       background-position: -200% 0;

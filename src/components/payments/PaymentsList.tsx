@@ -1,10 +1,13 @@
-
 import { CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentItem } from "./PaymentItem";
 import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 import { ThumbZoneActions } from "@/components/ui/thumb-zone-actions";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
@@ -14,6 +17,7 @@ interface PaymentsListProps {
   onDeletePayment: (paymentId: string) => void;
   onEditPayment: (payment: Payment) => void;
   onAddPayment: () => void;
+  onRefresh?: () => Promise<void>;
   hasFilters?: boolean;
 }
 
@@ -23,9 +27,24 @@ export const PaymentsList = ({
   onDeletePayment,
   onEditPayment,
   onAddPayment,
+  onRefresh,
   hasFilters = false
 }: PaymentsListProps) => {
   const isMobile = useIsMobile();
+  const { triggerHaptic } = useHapticFeedback();
+
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: async () => {
+      triggerHaptic('light');
+      await onRefresh?.();
+      triggerHaptic('success');
+    }
+  });
+
+  const handleAddPayment = () => {
+    triggerHaptic('light');
+    onAddPayment();
+  };
 
   const LoadingState = () => (
     <Card>
@@ -60,7 +79,7 @@ export const PaymentsList = ({
             }
           </p>
           {!isMobile && (
-            <Button onClick={onAddPayment} variant="outline" className="touch-target">
+            <Button onClick={handleAddPayment} variant="outline" className="touch-target haptic-feedback">
               <Plus className="w-4 h-4 mr-2" />
               Criar primeira cobrança
             </Button>
@@ -79,21 +98,26 @@ export const PaymentsList = ({
       <>
         <EmptyState />
         {isMobile && (
-          <ThumbZoneActions>
-            <Button onClick={onAddPayment} className="flex-1 touch-target">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar primeira cobrança
-            </Button>
-          </ThumbZoneActions>
+          <>
+            <ThumbZoneActions>
+              <Button onClick={handleAddPayment} className="flex-1 touch-target haptic-feedback">
+                <Plus className="w-4 h-4 mr-2" />
+                Criar primeira cobrança
+              </Button>
+            </ThumbZoneActions>
+            <FloatingActionButton onClick={handleAddPayment}>
+              <Plus className="w-5 h-5" />
+            </FloatingActionButton>
+          </>
         )}
       </>
     );
   }
 
-  return (
+  const content = (
     <>
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 safe-area-insets">
           <div className="flex flex-col">
             {payments.map((payment) => (
               <PaymentItem
@@ -108,13 +132,35 @@ export const PaymentsList = ({
       </Card>
       
       {isMobile && (
-        <ThumbZoneActions>
-          <Button onClick={onAddPayment} className="flex-1 touch-target">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Cobrança
-          </Button>
-        </ThumbZoneActions>
+        <>
+          <ThumbZoneActions>
+            <Button onClick={handleAddPayment} className="flex-1 touch-target haptic-feedback">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Cobrança
+            </Button>
+          </ThumbZoneActions>
+          <FloatingActionButton onClick={handleAddPayment}>
+            <Plus className="w-5 h-5" />
+          </FloatingActionButton>
+        </>
       )}
     </>
   );
+
+  if (isMobile && onRefresh) {
+    return (
+      <div {...pullToRefresh.bindTouchEvents}>
+        <PullToRefreshContainer
+          onRefresh={onRefresh}
+          isRefreshing={pullToRefresh.isRefreshing}
+          pullDistance={pullToRefresh.pullDistance}
+          isTriggered={pullToRefresh.isTriggered}
+        >
+          {content}
+        </PullToRefreshContainer>
+      </div>
+    );
+  }
+
+  return content;
 };
