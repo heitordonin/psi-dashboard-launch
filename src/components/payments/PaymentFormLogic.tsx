@@ -98,25 +98,29 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentFormFields
-        patients={patients}
-        formData={formData}
-        setFormData={setFormData}
-        paymentTitular={paymentTitular}
-        setPaymentTitular={setPaymentTitular}
-        isReceived={isReceived}
-        setIsReceived={setIsReceived}
-        receivedDate={receivedDate}
-        setReceivedDate={setReceivedDate}
-        isEditing={!!payment}
-      />
+    <div className="form-step">
+      <div className="form-step-content">
+        <form onSubmit={handleSubmit} className="mobile-form-spacing">
+          <PaymentFormFields
+            patients={patients}
+            formData={formData}
+            setFormData={setFormData}
+            paymentTitular={paymentTitular}
+            setPaymentTitular={setPaymentTitular}
+            isReceived={isReceived}
+            setIsReceived={setIsReceived}
+            receivedDate={receivedDate}
+            setReceivedDate={setReceivedDate}
+            isEditing={!!payment}
+          />
+        </form>
+      </div>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-4 mt-auto">
         <Button 
-          type="submit" 
+          onClick={handleSubmit}
           disabled={isLoading}
-          className="flex-1"
+          className="flex-1 touch-target"
         >
           {isLoading 
             ? 'Salvando...' 
@@ -124,11 +128,11 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
           }
         </Button>
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} className="touch-target">
             Cancelar
           </Button>
         )}
       </div>
-    </form>
+    </div>
   );
 }

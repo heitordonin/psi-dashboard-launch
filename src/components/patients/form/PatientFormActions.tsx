@@ -9,11 +9,11 @@ interface PatientFormActionsProps {
 
 export const PatientFormActions = ({ onClose, isLoading }: PatientFormActionsProps) => {
   return (
-    <div className="flex justify-end space-x-2 pt-4">
-      <Button type="button" variant="outline" onClick={onClose}>
+    <div className="flex gap-3 pt-4">
+      <Button type="button" variant="outline" onClick={onClose} className="flex-1 touch-target">
         Cancelar
       </Button>
-      <Button type="submit" disabled={isLoading}>
+      <Button type="submit" disabled={isLoading} className="flex-1 touch-target">
         {isLoading ? 'Salvando...' : 'Salvar'}
       </Button>
     </div>

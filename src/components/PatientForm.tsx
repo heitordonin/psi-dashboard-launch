@@ -114,25 +114,29 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <PersonalInfoFields
-          formData={formData}
-          setFormData={setFormData}
-          errors={errors}
-          onPatientTypeChange={handlePatientTypeChange}
-        />
-        
-        <GuardianFields
-          formData={formData}
-          setFormData={setFormData}
-          errors={errors}
-        />
+      <div className="form-step">
+        <div className="form-step-content">
+          <form onSubmit={handleSubmit} className="mobile-form-spacing">
+            <PersonalInfoFields
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+              onPatientTypeChange={handlePatientTypeChange}
+            />
+            
+            <GuardianFields
+              formData={formData}
+              setFormData={setFormData}
+              errors={errors}
+            />
+          </form>
+        </div>
 
         <PatientFormActions
           onClose={onClose}
           isLoading={isLoading}
         />
-      </form>
+      </div>
 
       {deletedPatient && (
         <PatientReactivateModal

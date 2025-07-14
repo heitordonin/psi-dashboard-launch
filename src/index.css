@@ -148,4 +148,110 @@
   .interactive-list {
     @apply space-y-3 md:space-y-2;
   }
+
+  /* Phase 2 - Swipe Gestures */
+  .swipe-item {
+    position: relative;
+    touch-action: pan-x;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+  }
+
+  .swipe-item.swiped-right {
+    transform: translateX(80px);
+  }
+
+  .swipe-actions {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80px;
+    background: linear-gradient(135deg, hsl(var(--destructive)), hsl(var(--destructive) / 0.8));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+  }
+
+  /* Phase 2 - Progressive Disclosure */
+  .form-step {
+    min-height: 60vh;
+    padding: 1rem;
+  }
+
+  .form-step-content {
+    max-height: 50vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  @media (max-width: 768px) {
+    .form-step {
+      min-height: 70vh;
+    }
+    
+    .form-step-content {
+      max-height: 60vh;
+    }
+  }
+
+  /* Phase 2 - Thumb Zone */
+  .thumb-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(to top, hsl(var(--background)) 80%, transparent);
+    backdrop-filter: blur(8px);
+    z-index: 40;
+  }
+
+  .thumb-actions {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* Phase 2 - Enhanced Loading States */
+  .loading-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .loading-bounce {
+    animation: bounce 1s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
 }
