@@ -46,7 +46,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <WizardHeader
           currentStep={getDisplayStepNumber(currentStep, formData, isEditMode)}
           totalSteps={getDisplayTotalSteps(formData, isEditMode)}
@@ -54,7 +54,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
           title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
         />
 
-        <div className="py-6">
+        <div className="py-6 px-6 overflow-y-auto flex-1 mobile-form-spacing">
           <WizardStepRenderer
             currentStep={currentStep}
             formData={formData}
@@ -68,14 +68,16 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
           />
         </div>
 
-        <WizardNavigation
-          currentStep={currentStep}
-          totalSteps={getTotalSteps()}
-          onPrevious={prevStep}
-          onNext={nextStep}
-          isNextDisabled={isNextDisabled(currentStep, formData, patients)}
-          onClose={handleClose}
-        />
+        <div className="px-6 pb-6">
+          <WizardNavigation
+            currentStep={currentStep}
+            totalSteps={getTotalSteps()}
+            onPrevious={prevStep}
+            onNext={nextStep}
+            isNextDisabled={isNextDisabled(currentStep, formData, patients)}
+            onClose={handleClose}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

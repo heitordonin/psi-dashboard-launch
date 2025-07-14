@@ -63,31 +63,31 @@ export const PatientsList = ({
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="flex flex-col divide-y">
+        <div className="interactive-list divide-y">
           {patients.map((patient) => {
             const documentLabel = patient.patient_type === 'company' ? 'CNPJ' : 'CPF';
             const documentValue = patient.patient_type === 'company' ? patient.cnpj : patient.cpf;
             
             return (
-              <div key={patient.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-gray-900 truncate">{patient.full_name}</p>
-                  <p className="text-xs text-gray-600 mt-1">
+              <div key={patient.id} className="flex justify-between items-start p-5 md:p-4 hover:bg-gray-50 transition-colors touch-manipulation">
+                <div className="flex-1 min-w-0 pr-4">
+                  <p className="font-medium text-base md:text-sm text-gray-900 truncate">{patient.full_name}</p>
+                  <p className="text-sm md:text-xs text-gray-600 mt-2 md:mt-1">
                     {documentLabel}: {documentValue}
                   </p>
                   {patient.email && (
-                    <p className="text-xs text-gray-600">Email: {patient.email}</p>
+                    <p className="text-sm md:text-xs text-gray-600 mt-1">Email: {patient.email}</p>
                   )}
                   {patient.phone && (
-                    <p className="text-xs text-gray-600">Telefone: {patient.phone}</p>
+                    <p className="text-sm md:text-xs text-gray-600 mt-1">Telefone: {patient.phone}</p>
                   )}
                   {patient.has_financial_guardian && (
-                    <p className="text-xs text-green-600 mt-1">Possui responsável financeiro</p>
+                    <p className="text-sm md:text-xs text-green-600 mt-2 md:mt-1">Possui responsável financeiro</p>
                   )}
                   {patient.is_payment_from_abroad && (
-                    <p className="text-xs text-blue-600 mt-1">Pagamento do exterior</p>
+                    <p className="text-sm md:text-xs text-blue-600 mt-1">Pagamento do exterior</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1 capitalize">
+                  <p className="text-sm md:text-xs text-gray-500 mt-2 md:mt-1 capitalize">
                     {patient.patient_type === 'individual' ? 'Pessoa Física' : 'Empresa'}
                   </p>
                 </div>

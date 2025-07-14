@@ -16,9 +16,9 @@ export const QuickActions = () => {
       <CardHeader>
         <CardTitle>Ações Rápidas</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="mobile-spacing">
         <div className="flex justify-center">
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="interactive-grid grid-cols-2 md:flex md:gap-3 overflow-x-auto pb-2 w-full">
             <QuickTile
               icon={UserPlus}
               label="Novo Paciente"

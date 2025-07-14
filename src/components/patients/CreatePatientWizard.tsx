@@ -26,8 +26,8 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
   } = usePatientWizard({ patientToEdit, onClose });
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 keyboard-aware">
+      <Card className="w-full max-w-2xl modal-content-mobile flex flex-col">
         <WizardHeader
           isEditMode={isEditMode}
           currentStep={currentStep}
@@ -35,7 +35,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
           progress={progress}
           onClose={onClose}
         />
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto mobile-form-spacing px-6 pb-6">
           <WizardStepRenderer
             isEditMode={isEditMode}
             currentStep={currentStep}
