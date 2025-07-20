@@ -1,3 +1,4 @@
+
 import { CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,11 +48,11 @@ export const PaymentsList = ({
   };
 
   const LoadingState = () => (
-    <Card>
-      <CardContent className="p-0">
-        <div className="mobile-spacing p-6">
-          {[...Array(3)].map((_, index) => (
-            <div key={index} className="space-y-3">
+    <div className="space-y-4">
+      {[...Array(3)].map((_, index) => (
+        <Card key={index}>
+          <CardContent className="p-6">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-2 flex-1">
                   <EnhancedSkeleton variant="shimmer" className="h-4 w-3/4" />
@@ -61,30 +62,28 @@ export const PaymentsList = ({
               </div>
               <EnhancedSkeleton variant="shimmer" className="h-3 w-full" />
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 
   const EmptyState = () => (
     <Card>
-      <CardContent className="p-0">
-        <div className="text-center py-8 mobile-spacing">
-          <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">
-            {hasFilters
-              ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
-              : 'Nenhuma cobrança cadastrada'
-            }
-          </p>
-          {!isMobile && (
-            <Button onClick={handleAddPayment} variant="outline" className="touch-target haptic-feedback">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar primeira cobrança
-            </Button>
-          )}
-        </div>
+      <CardContent className="text-center py-8">
+        <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600 mb-2">
+          {hasFilters
+            ? 'Nenhuma cobrança encontrada com os filtros aplicados' 
+            : 'Nenhuma cobrança cadastrada'
+          }
+        </p>
+        {!isMobile && (
+          <Button onClick={handleAddPayment} variant="outline" className="touch-target">
+            <Plus className="w-4 h-4 mr-2" />
+            Criar primeira cobrança
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -100,7 +99,7 @@ export const PaymentsList = ({
         {isMobile && (
           <>
             <ThumbZoneActions>
-              <Button onClick={handleAddPayment} className="flex-1 touch-target haptic-feedback">
+              <Button onClick={handleAddPayment} className="flex-1 touch-target">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar primeira cobrança
               </Button>
@@ -116,25 +115,21 @@ export const PaymentsList = ({
 
   const content = (
     <>
-      <Card>
-        <CardContent className="p-0 safe-area-insets">
-          <div className="flex flex-col">
-            {payments.map((payment) => (
-              <PaymentItem
-                key={payment.id}
-                payment={payment}
-                onEdit={onEditPayment}
-                onDelete={onDeletePayment}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {payments.map((payment) => (
+          <PaymentItem
+            key={payment.id}
+            payment={payment}
+            onEdit={onEditPayment}
+            onDelete={onDeletePayment}
+          />
+        ))}
+      </div>
       
       {isMobile && (
         <>
           <ThumbZoneActions>
-            <Button onClick={handleAddPayment} className="flex-1 touch-target haptic-feedback">
+            <Button onClick={handleAddPayment} className="flex-1 touch-target">
               <Plus className="w-4 h-4 mr-2" />
               Nova Cobrança
             </Button>
