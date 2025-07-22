@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Settings, Clock, Users, ExternalLink } from "lucide-react";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import { CreateAppointmentWizard } from "@/components/agenda/CreateAppointmentWizard";
 import { AgendaHeader } from "@/components/agenda/AgendaHeader";
 import { useAppointments } from "@/hooks/useAppointments";
@@ -21,10 +23,14 @@ export default function Agenda() {
   }) || [];
 
   return (
-    <>
-      <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
-      
-      <div className="container mx-auto p-6 space-y-6">
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="min-h-screen bg-gray-50">
+            <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
+            
+            <div className="container mx-auto p-6 space-y-6">
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -212,11 +218,14 @@ export default function Agenda() {
         </Card>
       )}
 
-      <CreateAppointmentWizard
-        isOpen={showCreateWizard}
-        onClose={() => setShowCreateWizard(false)}
-      />
-    </div>
-    </>
+              <CreateAppointmentWizard
+                isOpen={showCreateWizard}
+                onClose={() => setShowCreateWizard(false)}
+              />
+            </div>
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
