@@ -1,15 +1,9 @@
 
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { EnhancedForm } from '@/components/ui/enhanced-form';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from 'sonner';
 import { validateEmail } from '@/utils/securityValidation';
@@ -24,9 +18,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   const [isLoading, setIsLoading] = useState(false);
   const { resetPassword } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!email.trim()) {
       toast.error('Por favor, digite seu email');
       return;
@@ -46,8 +38,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
         toast.error('Erro ao enviar email de recuperação: ' + error.message);
       } else {
         toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
-        onOpenChange(false);
-        setEmail('');
+        handleClose();
       }
     } catch (error) {
       toast.error('Erro inesperado ao enviar email de recuperação');
@@ -62,46 +53,33 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Recuperar Senha</DialogTitle>
-          <DialogDescription>
-            Digite seu email para receber um link de recuperação de senha
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="reset-email">Email</Label>
-            <Input
-              id="reset-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleClose}
-              className="flex-1"
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              className="flex-1" 
-              disabled={isLoading}
-            >
-              {isLoading ? 'Enviando...' : 'Enviar'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <EnhancedForm
+      isOpen={open}
+      onClose={handleClose}
+      title="Recuperar Senha"
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+      submitText="Enviar"
+      className="space-y-4"
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Digite seu email para receber um link de recuperação de senha
+        </p>
+        
+        <div className="space-y-2">
+          <Label htmlFor="reset-email">Email</Label>
+          <Input
+            id="reset-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            className="touch-target"
+            required
+          />
+        </div>
+      </div>
+    </EnhancedForm>
   );
 }

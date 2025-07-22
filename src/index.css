@@ -7,97 +7,56 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 213 100% 22%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 213 100% 22%;
-
-    --muted: 210 40% 96.1%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 213 100% 22%;
-
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 213 100% 22%;
-
+    --ring: 217 91% 60%;
     --radius: 0.5rem;
-
-    /* Success and Warning colors */
-    --success: 142 76% 36%;
-    --success-foreground: 355.7 100% 97.3%;
-    --warning: 32 95% 44%;
-    --warning-foreground: 210 40% 98%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 213 100% 22%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 213 100% 22%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 183 96% 51%;
-
-    /* Psiclo brand colors */
-    --psiclo-primary: 213 100% 22%; /* #002471 */
-    --psiclo-secondary: 214 100% 36%; /* #0033b8 */
-    --psiclo-accent: 183 96% 51%; /* #03f6f9 */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 213 100% 22%;
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
-    --card: 213 100% 22%;
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 213 100% 22%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 213 100% 22%;
-
-    --secondary: 214 100% 30%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 214 100% 30%;
+    --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 214 100% 30%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
-    /* Success and Warning colors for dark mode */
-    --success: 142 76% 36%;
-    --success-foreground: 355.7 100% 97.3%;
-    --warning: 32 95% 44%;
-    --warning-foreground: 210 40% 98%;
-
-    --border: 214 100% 30%;
-    --input: 214 100% 30%;
-    --ring: 183 96% 51%;
-    --sidebar-background: 213 100% 22%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 183 96% 51%;
-    --sidebar-primary-foreground: 213 100% 22%;
-    --sidebar-accent: 214 100% 30%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 214 100% 30%;
-    --sidebar-ring: 183 96% 51%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217 91% 60%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -105,256 +64,68 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
   }
+}
 
-  /* Mobile-first touch improvements */
+/* Mobile optimizations */
+@layer components {
   .touch-target {
-    @apply min-h-[44px] min-w-[44px] touch-manipulation;
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
   }
-
-  /* Mobile spacing improvements */
-  .mobile-spacing {
-    @apply space-y-4 md:space-y-3;
-  }
-
-  .mobile-form-spacing {
-    @apply space-y-6 md:space-y-4;
-  }
-
-  /* Modal viewport handling */
-  .modal-content {
-    @apply max-h-[calc(100vh-2rem)] md:max-h-[calc(100vh-4rem)] overflow-y-auto;
-  }
-
-  .modal-content-mobile {
-    @apply max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] overflow-y-auto;
-  }
-
-  /* Keyboard viewport handling */
-  @supports (height: 100dvh) {
-    .keyboard-aware {
-      height: 100dvh;
-    }
-  }
-
-  /* Interactive elements spacing */
-  .interactive-grid {
-    @apply grid gap-4 md:gap-3;
-  }
-
-  .interactive-list {
-    @apply space-y-3 md:space-y-2;
-  }
-
-  /* Phase 2 - Swipe Gestures */
-  .swipe-item {
-    position: relative;
-    touch-action: pan-x;
-    transform: translateX(0);
-    transition: transform 0.3s ease;
-  }
-
-  .swipe-item.swiped-right {
-    transform: translateX(80px);
-  }
-
-  .swipe-actions {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 80px;
-    background: linear-gradient(135deg, hsl(var(--destructive)), hsl(var(--destructive) / 0.8));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: -1;
-  }
-
-  /* Phase 2 - Progressive Disclosure */
-  .form-step {
-    min-height: 60vh;
-    padding: 1rem;
-  }
-
-  .form-step-content {
-    max-height: 50vh;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-  }
-
-  @media (max-width: 768px) {
-    .form-step {
-      min-height: 70vh;
-    }
-    
-    .form-step-content {
-      max-height: 60vh;
-    }
-  }
-
-  /* Phase 2 - Thumb Zone */
-  .thumb-zone {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 1rem;
-    background: linear-gradient(to top, hsl(var(--background)) 80%, transparent);
-    backdrop-filter: blur(8px);
-    z-index: 40;
-  }
-
-  .thumb-actions {
-    display: flex;
-    gap: 0.75rem;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-
-  /* Phase 2 - Enhanced Loading States */
-  .loading-shimmer {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--muted-foreground) / 0.1) 50%,
-      hsl(var(--muted)) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  /* Phase 3 - Safe Area Support */
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .safe-area-left {
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .safe-area-right {
-    padding-right: env(safe-area-inset-right);
-  }
-
-  .safe-area-insets {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Phase 3 - Landscape Optimization */
-  @media (orientation: landscape) and (max-height: 600px) {
-    .landscape-compact {
-      padding: 0.5rem;
-    }
-
-    .landscape-form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      max-height: calc(100vh - 120px);
-      overflow-y: auto;
-    }
-
-    .landscape-actions {
-      grid-column: 1 / -1;
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .modal-content-landscape {
-      max-height: calc(100vh - 60px);
-      overflow-y: auto;
-    }
-  }
-
-  /* Phase 3 - Voice Input Support */
-  .voice-input-active {
-    border: 2px solid hsl(var(--primary));
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
-    animation: pulse 2s infinite;
-  }
-
-  /* Phase 3 - Haptic Feedback Visual Cues */
+  
   .haptic-feedback {
-    transition: transform 0.1s ease;
+    @apply active:scale-95 transition-transform duration-75;
   }
-
-  .haptic-feedback:active {
-    transform: scale(0.95);
+  
+  .modal-content-mobile {
+    @apply sm:max-w-lg sm:max-h-[85vh] max-h-[90vh] mx-2 sm:mx-auto;
   }
-
-  /* Phase 3 - Enhanced Scroll Areas */
-  .infinite-scroll-trigger {
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  
+  .modal-content-landscape {
+    @apply landscape:max-h-[80vh] landscape:overflow-y-auto;
   }
-
-  /* Phase 3 - Bottom Sheet Animations */
-  @keyframes slideUp {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+  
+  .mobile-form-spacing {
+    @apply space-y-4 sm:space-y-6;
   }
-
-  @keyframes slideDown {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(100%);
-    }
+  
+  .landscape-form {
+    @apply flex flex-col h-full min-h-0;
   }
-
-  .bottom-sheet-enter {
-    animation: slideUp 0.3s ease-out;
+  
+  .landscape-actions {
+    @apply flex gap-3 mt-auto pt-4 border-t border-border sticky bottom-0 bg-background;
   }
-
-  .bottom-sheet-exit {
-    animation: slideDown 0.3s ease-in;
+  
+  .form-step {
+    @apply flex flex-col h-full min-h-0;
   }
-
-  /* Missing keyframes that were displaced */
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+  
+  .form-step-content {
+    @apply flex-1 overflow-y-auto px-1;
   }
+}
 
-  .loading-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Improved touch interactions */
+@media (pointer: coarse) {
+  .touch-target {
+    @apply min-h-[48px];
   }
-
-  .loading-bounce {
-    animation: bounce 1s infinite;
+  
+  input, textarea, select, button {
+    @apply text-base; /* Prevents zoom on iOS */
   }
+}
 
-  @keyframes bounce {
-    0%, 100% {
-      transform: translateY(-25%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: none;
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
+/* Better mobile calendar */
+@media (max-width: 768px) {
+  [data-radix-popper-content-wrapper] {
+    @apply w-full max-w-sm mx-auto;
+  }
+  
+  .calendar-mobile {
+    @apply w-full;
   }
 }
