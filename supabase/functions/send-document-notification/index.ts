@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "Psiclo <heitor@grupodeclara.com.br>",
+      from: "Psiclo <noreply@psiclo.com.br>",
       to: [userEmail],
       subject: "Novo documento DARF disponível - Psiclo",
       html: `

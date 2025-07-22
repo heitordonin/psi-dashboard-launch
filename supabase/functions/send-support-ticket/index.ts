@@ -131,8 +131,8 @@ ${message}
     
     // Send email using Resend
     const emailResponse = await resend.emails.send({
-      from: "Heitor - Suporte Psiclo <heitor@grupodeclara.com.br>",
-      to: ["heitor@grupodeclara.com.br"],
+      from: "Suporte Psiclo <suporte@psiclo.com.br>",
+      to: ["suporte@psiclo.com.br"],
       subject: emailSubject,
       html: emailContent,
     });
@@ -153,7 +153,7 @@ ${message}
       );
     }
 
-    console.log('📧 Support ticket sent successfully to:', "heitor@grupodeclara.com.br");
+    console.log('📧 Support ticket sent successfully to:', "suporte@psiclo.com.br");
     console.log('📄 Email ID:', emailResponse.data?.id);
 
     return new Response(
