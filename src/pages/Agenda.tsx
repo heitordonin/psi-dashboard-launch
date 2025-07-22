@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, Settings, Clock, Users, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Settings, Clock, Users, ExternalLink } from "lucide-react";
 import { CreateAppointmentWizard } from "@/components/agenda/CreateAppointmentWizard";
+import { AgendaHeader } from "@/components/agenda/AgendaHeader";
 import { useAppointments } from "@/hooks/useAppointments";
 import { CalendarView } from "@/types/appointment";
 import { format } from "date-fns";
@@ -20,19 +21,10 @@ export default function Agenda() {
   }) || [];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Psiclo Agenda</h1>
-          <p className="text-muted-foreground">
-            Gerencie seus agendamentos e sessões
-          </p>
-        </div>
-        <Button onClick={() => setShowCreateWizard(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Agendamento
-        </Button>
-      </div>
+    <>
+      <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
+      
+      <div className="container mx-auto p-6 space-y-6">
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -225,5 +217,6 @@ export default function Agenda() {
         onClose={() => setShowCreateWizard(false)}
       />
     </div>
+    </>
   );
 }
