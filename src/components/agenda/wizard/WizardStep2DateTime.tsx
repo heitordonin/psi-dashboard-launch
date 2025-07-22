@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,8 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
       if (formData.start_datetime) {
         newStartDate.setHours(formData.start_datetime.getHours());
         newStartDate.setMinutes(formData.start_datetime.getMinutes());
+      } else {
+        newStartDate.setHours(9, 0); // Default to 9:00 AM
       }
       
       const newEndDate = new Date(newStartDate);
@@ -52,7 +55,7 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
 
   const handleTimeSelect = (timeString: string) => {
     const [hours, minutes] = timeString.split(':').map(Number);
-    const newStartDate = new Date(formData.start_datetime);
+    const newStartDate = new Date(formData.start_datetime || new Date());
     newStartDate.setHours(hours, minutes);
     
     const newEndDate = new Date(newStartDate);
@@ -67,80 +70,111 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-lg font-semibold text-foreground">Data e Horário</h2>
-        <p className="text-sm text-muted-foreground">
-          Selecione a data e horário do agendamento
+      <div className="text-center space-y-2">
+        <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+          <CalendarIcon className="w-6 h-6 text-primary" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground">Data e Horário</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+          Escolha a data e horário mais conveniente para o agendamento
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Data *</Label>
-          <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !formData.start_datetime && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formData.start_datetime ? (
-                  format(formData.start_datetime, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                ) : (
-                  "Selecione uma data"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={formData.start_datetime}
-                onSelect={handleDateSelect}
-                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+      <div className="grid gap-4">
+        {/* Seleção de Data */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center">
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              Data do Agendamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal h-12",
+                    !formData.start_datetime && "text-muted-foreground",
+                    formData.start_datetime && "border-primary/50 bg-primary/5"
+                  )}
+                >
+                  <CalendarIcon className="mr-3 h-4 w-4" />
+                  {formData.start_datetime ? (
+                    format(formData.start_datetime, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                  ) : (
+                    "Selecione uma data"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.start_datetime}
+                  onSelect={handleDateSelect}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-2">
-          <Label>Horário de Início *</Label>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-            {timeSlots.map((time) => (
-              <Button
-                key={time}
-                variant={
-                  formData.start_datetime && 
-                  format(formData.start_datetime, "HH:mm") === time 
-                    ? "default" 
-                    : "outline"
-                }
-                size="sm"
-                onClick={() => handleTimeSelect(time)}
-                className="text-xs"
-              >
-                <Clock className="w-3 h-3 mr-1" />
-                {time}
-              </Button>
-            ))}
-          </div>
-        </div>
+        {/* Seleção de Horário */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              Horário de Início
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+              {timeSlots.map((time) => (
+                <Button
+                  key={time}
+                  variant={
+                    formData.start_datetime && 
+                    format(formData.start_datetime, "HH:mm") === time 
+                      ? "default" 
+                      : "outline"
+                  }
+                  size="sm"
+                  onClick={() => handleTimeSelect(time)}
+                  className="text-xs h-9 transition-all duration-200"
+                >
+                  {time}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Resumo do agendamento */}
         {formData.start_datetime && formData.end_datetime && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              <strong>Início:</strong> {format(formData.start_datetime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Término:</strong> {format(formData.end_datetime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Duração:</strong> {settings?.session_duration || 50} minutos
-            </p>
-          </div>
+          <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-green-600" />
+                <span className="font-medium text-green-800 dark:text-green-200">
+                  Agendamento confirmado
+                </span>
+              </div>
+              <div className="space-y-1 text-sm text-green-700 dark:text-green-300">
+                <p>
+                  <strong>Data:</strong> {format(formData.start_datetime, "dd/MM/yyyy", { locale: ptBR })}
+                </p>
+                <p>
+                  <strong>Horário:</strong> {format(formData.start_datetime, "HH:mm")} às {" "}
+                  {format(formData.end_datetime, "HH:mm")}
+                </p>
+                <p>
+                  <strong>Duração:</strong> {settings?.session_duration || 50} minutos
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
