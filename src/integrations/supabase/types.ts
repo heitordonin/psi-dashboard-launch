@@ -71,6 +71,166 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_settings: {
+        Row: {
+          created_at: string
+          email_reminder_enabled: boolean
+          email_reminder_minutes: number | null
+          end_time: string
+          google_calendar_id: string | null
+          google_calendar_integration: boolean
+          id: string
+          session_duration: number
+          start_time: string
+          timezone: string
+          updated_at: string
+          user_id: string
+          whatsapp_reminder_enabled: boolean
+          whatsapp_reminder_minutes: number | null
+          working_days: Json
+        }
+        Insert: {
+          created_at?: string
+          email_reminder_enabled?: boolean
+          email_reminder_minutes?: number | null
+          end_time?: string
+          google_calendar_id?: string | null
+          google_calendar_integration?: boolean
+          id?: string
+          session_duration?: number
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          whatsapp_reminder_enabled?: boolean
+          whatsapp_reminder_minutes?: number | null
+          working_days?: Json
+        }
+        Update: {
+          created_at?: string
+          email_reminder_enabled?: boolean
+          email_reminder_minutes?: number | null
+          end_time?: string
+          google_calendar_id?: string | null
+          google_calendar_integration?: boolean
+          id?: string
+          session_duration?: number
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_reminder_enabled?: boolean
+          whatsapp_reminder_minutes?: number | null
+          working_days?: Json
+        }
+        Relationships: []
+      }
+      appointment_reminders: {
+        Row: {
+          appointment_id: string
+          error_message: string | null
+          id: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"]
+          sent_at: string
+          status: Database["public"]["Enums"]["reminder_status"]
+        }
+        Insert: {
+          appointment_id: string
+          error_message?: string | null
+          id?: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"]
+          sent_at?: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Update: {
+          appointment_id?: string
+          error_message?: string | null
+          id?: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"]
+          sent_at?: string
+          status?: Database["public"]["Enums"]["reminder_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          created_at: string
+          email_reminder_sent_at: string | null
+          end_datetime: string
+          google_event_id: string | null
+          id: string
+          notes: string | null
+          patient_email: string | null
+          patient_id: string | null
+          patient_name: string | null
+          patient_phone: string | null
+          send_email_reminder: boolean
+          send_whatsapp_reminder: boolean
+          start_datetime: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          title: string
+          updated_at: string
+          user_id: string
+          whatsapp_reminder_sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_reminder_sent_at?: string | null
+          end_datetime: string
+          google_event_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_email?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          patient_phone?: string | null
+          send_email_reminder?: boolean
+          send_whatsapp_reminder?: boolean
+          start_datetime: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+          whatsapp_reminder_sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_reminder_sent_at?: string | null
+          end_datetime?: string
+          google_event_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_email?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          patient_phone?: string | null
+          send_email_reminder?: boolean
+          send_whatsapp_reminder?: boolean
+          start_datetime?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_reminder_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banks: {
         Row: {
           code: string
@@ -884,7 +1044,10 @@ export type Database = {
     }
     Enums: {
       admin_document_status: "pending" | "paid" | "overdue" | "draft"
+      appointment_status: "scheduled" | "completed" | "no_show" | "cancelled"
       payment_status: "draft" | "pending" | "paid" | "failed"
+      reminder_status: "sent" | "failed"
+      reminder_type: "email" | "whatsapp"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1013,7 +1176,10 @@ export const Constants = {
   public: {
     Enums: {
       admin_document_status: ["pending", "paid", "overdue", "draft"],
+      appointment_status: ["scheduled", "completed", "no_show", "cancelled"],
       payment_status: ["draft", "pending", "paid", "failed"],
+      reminder_status: ["sent", "failed"],
+      reminder_type: ["email", "whatsapp"],
     },
   },
 } as const
