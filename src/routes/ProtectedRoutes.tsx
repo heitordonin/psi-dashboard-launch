@@ -17,6 +17,10 @@ import SupportTicket from '@/pages/SupportTicket';
 import DocumentosRecebidos from '@/pages/DocumentosRecebidos';
 import DocumentoDetalhes from '@/pages/DocumentoDetalhes';
 
+import Agenda from '@/pages/Agenda';
+import AgendaConfiguracoes from '@/pages/AgendaConfiguracoes';
+import AgendaSessoesDia from '@/pages/AgendaSessoesDia';
+
 export const protectedRoutes = [
   <Route key="update-phone" path="/update-phone" element={
     <ProtectedRoute>
@@ -98,6 +102,27 @@ export const protectedRoutes = [
     <ProtectedRoute>
       <PhoneVerificationGuard>
         <DocumentosRecebidos />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="agenda" path="/agenda" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <Agenda />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="agenda-sessoes-dia" path="/agenda/sessoes-dia" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <AgendaSessoesDia />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="agenda-configuracoes" path="/agenda/configuracoes" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <AgendaConfiguracoes />
       </PhoneVerificationGuard>
     </ProtectedRoute>
   } />,

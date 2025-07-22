@@ -7,7 +7,8 @@ import {
   Receipt,
   Crown,
   Mail,
-  FolderOpen
+  FolderOpen,
+  Calendar
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
@@ -37,6 +38,11 @@ const baseItems = [
     title: "Despesas",
     url: "/expenses",
     icon: Receipt,
+  },
+  {
+    title: "Agenda",
+    url: "/agenda",
+    icon: Calendar,
   },
   {
     title: "Controle Receita Saúde",
