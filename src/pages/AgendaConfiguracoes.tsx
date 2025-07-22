@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import { ArrowLeft, Clock, MapPin, Mail, MessageCircle, Calendar as CalendarIcon } from "lucide-react";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
@@ -77,7 +79,12 @@ export default function AgendaConfiguracoes() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <a href="/agenda">
@@ -315,7 +322,11 @@ export default function AgendaConfiguracoes() {
             {isSaving ? 'Salvando...' : 'Salvar Configurações'}
           </Button>
         </div>
-      </form>
-    </div>
+              </form>
+            </div>
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
