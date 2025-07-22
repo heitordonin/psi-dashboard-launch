@@ -72,7 +72,7 @@ export const useAppointmentWizard = () => {
       case 0: // Title step
         return formData.title.trim().length > 0;
       case 1: // Date/time step
-        return formData.start_datetime && formData.end_datetime;
+        return !!(formData.start_datetime && formData.end_datetime);
       case 2: // Patient step (optional)
         return true;
       case 3: // Reminders step
