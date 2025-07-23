@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInTimeZone } from "date-fns-tz";
 import { Appointment } from "@/types/appointment";
 import { AppointmentItem } from "./AppointmentItem";
+import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 
 interface AgendaCalendarViewProps {
   appointments: Appointment[];
@@ -18,10 +20,7 @@ interface AgendaCalendarViewProps {
   onEditAppointment: (appointment: Appointment) => void;
 }
 
-const timeSlots = [
-  "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
-];
+const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
 
 export const AgendaCalendarView = ({
   appointments,
@@ -33,6 +32,46 @@ export const AgendaCalendarView = ({
   onEditAppointment
 }: AgendaCalendarViewProps) => {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(selectedDate, { weekStartsOn: 0 }));
+  const { settings } = useAgendaSettings();
+
+  // Gerar timeSlots dinâmicos baseados nas configurações
+  const generateTimeSlots = () => {
+    const slots = [];
+    const startHour = settings?.start_time ? parseInt(settings.start_time.split(':')[0]) : 7;
+    const endHour = settings?.end_time ? parseInt(settings.end_time.split(':')[0]) : 19;
+    
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) { // Slots de 10 em 10 minutos
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(timeString);
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Função para encontrar o slot mais próximo
+  const findClosestSlot = (timeString: string, slots: string[]) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const timeInMinutes = hours * 60 + minutes;
+    
+    let closestSlot = slots[0];
+    let closestDiff = Infinity;
+    
+    for (const slot of slots) {
+      const [slotHours, slotMinutes] = slot.split(':').map(Number);
+      const slotInMinutes = slotHours * 60 + slotMinutes;
+      const diff = Math.abs(timeInMinutes - slotInMinutes);
+      
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestSlot = slot;
+      }
+    }
+    
+    return closestSlot;
+  };
 
   const getWeekDays = () => {
     const days = [];
@@ -50,30 +89,28 @@ export const AgendaCalendarView = ({
       // Criar data do agendamento interpretando como UTC
       const aptDate = new Date(apt.start_datetime);
       
-      // Verificar se é o mesmo dia no timezone local
+      // Verificar se é o mesmo dia no timezone brasileiro
       const isSameDate = isSameDay(aptDate, date);
       
-      // Usar toLocaleTimeString para garantir timezone local consistente
-      const aptTime = aptDate.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      });
-      const isSameTime = aptTime === time;
+      // Converter para timezone brasileiro usando date-fns-tz
+      const aptTime = formatInTimeZone(aptDate, BRAZIL_TIMEZONE, 'HH:mm');
+      
+      // Encontrar o slot mais próximo ao invés de comparação exata
+      const closestSlot = findClosestSlot(aptTime, timeSlots);
+      const isInSlot = closestSlot === time;
       
       console.log(`📋 Appointment ${apt.id}:`);
       console.log(`  - Original UTC: ${apt.start_datetime}`);
-      console.log(`  - Local Date: ${aptDate.toLocaleDateString('pt-BR')}`);
+      console.log(`  - Local Date: ${formatInTimeZone(aptDate, BRAZIL_TIMEZONE, 'dd/MM/yyyy')}`);
       console.log(`  - Local Time: ${aptTime}`);
-      console.log(`  - Target Date: ${date.toLocaleDateString('pt-BR')}`);
+      console.log(`  - Target Date: ${format(date, 'dd/MM/yyyy')}`);
       console.log(`  - Target Time: ${time}`);
+      console.log(`  - Closest slot: ${closestSlot}`);
       console.log(`  - Same date: ${isSameDate}`);
-      console.log(`  - Same time: ${isSameTime}`);
-      console.log(`  - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
-      console.log(`  - Will show: ${isSameDate && isSameTime}`);
+      console.log(`  - Is in slot: ${isInSlot}`);
+      console.log(`  - Will show: ${isSameDate && isInSlot}`);
       
-      return isSameDate && isSameTime;
+      return isSameDate && isInSlot;
     });
     
     console.log(`✅ Filtered ${filtered.length} appointments for ${date.toDateString()} at ${time}`);

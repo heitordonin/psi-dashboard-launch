@@ -22,8 +22,8 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
     const startHour = settings?.start_time ? parseInt(settings.start_time.split(':')[0]) : 8;
     const endHour = settings?.end_time ? parseInt(settings.end_time.split(':')[0]) : 18;
     
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) { // Alterado para 15 minutos
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 10) { // Slots de 10 em 10 minutos
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         slots.push(timeString);
       }

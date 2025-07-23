@@ -3,6 +3,7 @@ import { Appointment } from "@/types/appointment";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Clock, Edit3, UserX } from "lucide-react";
+import { formatInTimeZone } from "date-fns-tz";
 
 interface AppointmentItemProps {
   appointment: Appointment;
@@ -20,6 +21,9 @@ const statusConfig = {
 export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit }: AppointmentItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const currentStatusConfig = statusConfig[appointment.status];
+  
+  // Mostrar horário exato no timezone brasileiro
+  const exactTime = formatInTimeZone(new Date(appointment.start_datetime), 'America/Sao_Paulo', 'HH:mm');
 
   const handleStatusChange = (newStatus: Appointment['status']) => {
     onUpdateStatus(appointment.id, newStatus);
@@ -35,7 +39,10 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit }: Appoint
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <div className={`${currentStatusConfig.color} rounded p-1 mb-1 text-xs cursor-pointer hover:opacity-80 transition-opacity`}>
-          <div className="font-medium truncate">{appointment.title}</div>
+          <div className="font-medium truncate flex items-center justify-between">
+            <span>{appointment.title}</span>
+            <span className="text-[10px] font-mono bg-black/10 px-1 rounded">{exactTime}</span>
+          </div>
           {appointment.patient_name && (
             <div className="text-muted-foreground truncate">
               {appointment.patient_name}
