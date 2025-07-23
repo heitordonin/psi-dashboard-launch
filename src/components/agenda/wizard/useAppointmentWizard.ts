@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppointmentWizardData, Appointment } from '@/types/appointment';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -19,11 +19,12 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmittingAppointment, setIsSubmittingAppointment] = useState(false);
   const { user } = useSecureAuth();
-  const { createAppointmentAsync, updateAppointment, isCreating } = useAppointments();
+  const { createAppointmentAsync, updateAppointmentAsync, isCreating, isUpdating } = useAppointments();
   const { settings } = useAgendaSettings();
 
   const [formData, setFormData] = useState<AppointmentWizardData>(() => {
     if (editingAppointment) {
+      console.log('🔄 Initializing wizard with editing appointment:', editingAppointment);
       return {
         title: editingAppointment.title,
         start_datetime: new Date(editingAppointment.start_datetime),
@@ -39,8 +40,34 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
       };
     }
     
+    console.log('🆕 Initializing wizard with new appointment');
     return initialData;
   });
+
+  // Reinitialize form data when editingAppointment changes
+  useEffect(() => {
+    if (editingAppointment) {
+      console.log('🔄 Reinitializing form data with editing appointment:', editingAppointment);
+      setFormData({
+        title: editingAppointment.title,
+        start_datetime: new Date(editingAppointment.start_datetime),
+        end_datetime: new Date(editingAppointment.end_datetime),
+        patient_id: editingAppointment.patient_id,
+        patient_name: editingAppointment.patient_name || '',
+        patient_email: editingAppointment.patient_email || '',
+        patient_phone: editingAppointment.patient_phone || '',
+        send_email_reminder: editingAppointment.send_email_reminder,
+        send_whatsapp_reminder: editingAppointment.send_whatsapp_reminder,
+        send_immediate_reminder: false,
+        notes: editingAppointment.notes || '',
+      });
+      setCurrentStep(0); // Reset to first step
+    } else {
+      console.log('🔄 Reinitializing form data for new appointment');
+      setFormData(initialData);
+      setCurrentStep(0);
+    }
+  }, [editingAppointment]);
 
   const updateFormData = (newData: Partial<AppointmentWizardData>) => {
     setFormData(prev => {
@@ -64,6 +91,7 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
   };
 
   const resetWizard = () => {
+    console.log('🔄 Resetting wizard');
     setCurrentStep(0);
     setFormData(initialData);
     setIsSubmittingAppointment(false);
@@ -125,10 +153,12 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
 
       if (editingAppointment) {
         // Atualizar agendamento existente
-        updateAppointment({ id: editingAppointment.id, ...appointmentData });
-        console.log('✅ Appointment updated successfully');
+        console.log('🔄 Updating existing appointment with ID:', editingAppointment.id);
+        const result = await updateAppointmentAsync({ id: editingAppointment.id, ...appointmentData });
+        console.log('✅ Appointment updated successfully:', result);
       } else {
         // Criar novo agendamento
+        console.log('🆕 Creating new appointment');
         const result = await createAppointmentAsync(appointmentData);
         console.log('✅ Appointment created successfully:', result);
       }
@@ -193,6 +223,6 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
     canProceedToNextStep,
     isLastStep,
     totalSteps,
-    isSubmitting: isCreating || isSubmittingAppointment,
+    isSubmitting: isCreating || isUpdating || isSubmittingAppointment,
   };
 };

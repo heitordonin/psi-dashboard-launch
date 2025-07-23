@@ -89,6 +89,8 @@ export const useAppointments = (filters?: CalendarFilters) => {
 
   const updateAppointmentMutation = useMutation({
     mutationFn: async ({ id, ...updatedAppointment }: Partial<Appointment> & { id: string }) => {
+      console.log('📝 Updating appointment with data:', { id, ...updatedAppointment });
+      
       const { data, error } = await supabase
         .from('appointments')
         .update(updatedAppointment)
@@ -96,16 +98,23 @@ export const useAppointments = (filters?: CalendarFilters) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error updating appointment:', error);
+        throw error;
+      }
+      
+      console.log('✅ Appointment updated successfully:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ Appointment update mutation successful:', data);
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.refetchQueries({ queryKey: ['appointments'] });
       toast.success('Agendamento atualizado com sucesso!');
     },
     onError: (error) => {
-      console.error('Error updating appointment:', error);
-      toast.error('Erro ao atualizar agendamento');
+      console.error('❌ Appointment update mutation error:', error);
+      toast.error(`Erro ao atualizar agendamento: ${error.message}`);
     },
   });
 
@@ -134,6 +143,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
     createAppointment: createAppointmentMutation.mutate,
     createAppointmentAsync: createAppointmentMutation.mutateAsync,
     updateAppointment: updateAppointmentMutation.mutate,
+    updateAppointmentAsync: updateAppointmentMutation.mutateAsync,
     deleteAppointment: deleteAppointmentMutation.mutate,
     isCreating: createAppointmentMutation.isPending,
     isUpdating: updateAppointmentMutation.isPending,
