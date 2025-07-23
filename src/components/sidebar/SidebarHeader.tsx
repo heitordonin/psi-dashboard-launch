@@ -25,7 +25,7 @@ export const SidebarHeader = () => {
               <a href="/dashboard">
                 <div className="flex h-8 w-auto items-center justify-center rounded-lg bg-white px-1 text-sidebar-primary-foreground">
                   <img 
-                    src={isCollapsed ? "/lovable-uploads/ca246aed-4587-48f0-b4e6-1afb57ec643b.png" : "/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png"}
+                    src={isCollapsed ? "/lovable-uploads/18da7efa-7d56-4b55-b243-88c9b1abe19c.png" : "/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png"}
                     alt="Psiclo" 
                     className={isCollapsed ? "h-6 w-6" : "h-6 w-auto"}
                   />
