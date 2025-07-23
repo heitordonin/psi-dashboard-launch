@@ -12,7 +12,9 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 export const SidebarHeader = () => {
   const { currentPlan } = useSubscription();
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state } = useSidebar();
+  
+  const isCollapsed = state === "collapsed";
 
   return (
     <BaseSidebarHeader>
@@ -23,17 +25,19 @@ export const SidebarHeader = () => {
               <a href="/dashboard">
                 <div className="flex h-8 w-auto items-center justify-center rounded-lg bg-white px-1 text-sidebar-primary-foreground">
                   <img 
-                    src="/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png" 
+                    src={isCollapsed ? "/lovable-uploads/ca246aed-4587-48f0-b4e6-1afb57ec643b.png" : "/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png"}
                     alt="Psiclo" 
-                    className="h-6 w-auto"
+                    className={isCollapsed ? "h-6 w-6" : "h-6 w-auto"}
                   />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Psiclo</span>
-                  <span className="truncate text-xs">
-                    {currentPlan?.name || 'Grátis'}
-                  </span>
-                </div>
+                {!isCollapsed && (
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Psiclo</span>
+                    <span className="truncate text-xs">
+                      {currentPlan?.name || 'Grátis'}
+                    </span>
+                  </div>
+                )}
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
