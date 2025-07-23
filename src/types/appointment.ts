@@ -73,6 +73,10 @@ export type CalendarView = 'month' | 'week' | 'day';
 
 export interface CalendarFilters {
   date?: Date;
+  weekRange?: {
+    startDate: Date;
+    endDate: Date;
+  };
   patient_name?: string;
   patient_email?: string;
   status?: Appointment['status'];

@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
+import { startOfWeek, endOfWeek } from "date-fns";
 
 export default function Agenda() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
@@ -24,9 +25,15 @@ export default function Agenda() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   
-  // Configurar filtros para sincronização de estado correta
+  // Configurar filtros com range semanal para carregar agendamentos da semana toda
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Domingo como início
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
+  
   const filters: CalendarFilters = {
-    date: selectedDate
+    weekRange: {
+      startDate: weekStart,
+      endDate: weekEnd
+    }
   };
   
   const { appointments, isLoading, updateAppointment } = useAppointments(filters);

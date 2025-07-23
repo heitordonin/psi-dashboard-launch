@@ -26,8 +26,18 @@ export const useAppointments = (filters?: CalendarFilters) => {
         .eq('user_id', user.id)
         .order('start_datetime', { ascending: true });
 
-      // Apply filters - expandir range para capturar appointments UTC em qualquer timezone
-      if (filters?.date) {
+      // Apply filters - usar weekRange se fornecido, senão usar date
+      if (filters?.weekRange) {
+        const { startDate, endDate } = filters.weekRange;
+        console.log('🔍 Filtering appointments for week range:', {
+          start: startDate.toLocaleDateString(),
+          end: endDate.toLocaleDateString()
+        });
+
+        query = query
+          .gte('start_datetime', startDate.toISOString())
+          .lte('start_datetime', endDate.toISOString());
+      } else if (filters?.date) {
         const targetDate = new Date(filters.date);
         console.log('🔍 Filtering appointments for date:', targetDate.toLocaleDateString());
         
