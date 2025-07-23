@@ -6,12 +6,28 @@ import { AgendaHeader } from "@/components/agenda/AgendaHeader";
 import { AgendaKPIs } from "@/components/agenda/AgendaKPIs";
 import { AgendaCalendarView } from "@/components/agenda/AgendaCalendarView";
 import { useAppointments } from "@/hooks/useAppointments";
+import { Appointment } from "@/types/appointment";
 
 export default function Agenda() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
-  const { appointments, isLoading } = useAppointments();
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const { appointments, isLoading, updateAppointment } = useAppointments();
+
+  const handleUpdateAppointmentStatus = (appointmentId: string, status: Appointment['status']) => {
+    updateAppointment({ id: appointmentId, status });
+  };
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setShowCreateWizard(true);
+  };
+
+  const handleCloseWizard = () => {
+    setShowCreateWizard(false);
+    setEditingAppointment(null);
+  };
 
   return (
     <SidebarProvider>
@@ -33,11 +49,14 @@ export default function Agenda() {
                 onDateSelect={setSelectedDate}
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
+                onUpdateAppointment={handleUpdateAppointmentStatus}
+                onEditAppointment={handleEditAppointment}
               />
 
               <CreateAppointmentWizard
                 isOpen={showCreateWizard}
-                onClose={() => setShowCreateWizard(false)}
+                onClose={handleCloseWizard}
+                editingAppointment={editingAppointment}
               />
             </div>
           </div>

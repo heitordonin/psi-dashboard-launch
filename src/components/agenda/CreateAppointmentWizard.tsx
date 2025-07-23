@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
@@ -9,10 +9,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Appointment } from "@/types/appointment";
 
 interface CreateAppointmentWizardProps {
   isOpen: boolean;
   onClose: () => void;
+  editingAppointment?: Appointment | null;
 }
 
 const STEP_TITLES = [
@@ -23,7 +25,7 @@ const STEP_TITLES = [
   "Confirmação"
 ];
 
-export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWizardProps) => {
+export const CreateAppointmentWizard = ({ isOpen, onClose, editingAppointment }: CreateAppointmentWizardProps) => {
   const isMobile = useIsMobile();
   const {
     currentStep,
@@ -37,7 +39,7 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
     isLastStep,
     totalSteps,
     isSubmitting,
-  } = useAppointmentWizard();
+  } = useAppointmentWizard(editingAppointment);
 
   const handleClose = () => {
     if (!isSubmitting) {
@@ -82,7 +84,9 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
               <Check className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Novo Agendamento</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                {editingAppointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+              </h2>
               <p className="text-sm text-muted-foreground">
                 {STEP_TITLES[currentStep]}
               </p>

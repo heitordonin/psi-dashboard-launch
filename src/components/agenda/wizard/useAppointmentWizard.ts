@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { AppointmentWizardData } from '@/types/appointment';
+import { AppointmentWizardData, Appointment } from '@/types/appointment';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useAgendaSettings } from '@/hooks/useAgendaSettings';
@@ -16,21 +15,40 @@ const initialData: AppointmentWizardData = {
   send_immediate_reminder: false,
 };
 
-export const useAppointmentWizard = () => {
+export const useAppointmentWizard = (editingAppointment?: Appointment | null) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<AppointmentWizardData>(initialData);
   const [isSubmittingAppointment, setIsSubmittingAppointment] = useState(false);
   const { user } = useSecureAuth();
-  const { createAppointmentAsync, isCreating } = useAppointments();
+  const { createAppointmentAsync, updateAppointment, isCreating } = useAppointments();
   const { settings } = useAgendaSettings();
 
-  const updateFormData = (data: Partial<AppointmentWizardData>) => {
+  const [formData, setFormData] = useState<AppointmentWizardData>(() => {
+    if (editingAppointment) {
+      return {
+        title: editingAppointment.title,
+        start_datetime: new Date(editingAppointment.start_datetime),
+        end_datetime: new Date(editingAppointment.end_datetime),
+        patient_id: editingAppointment.patient_id,
+        patient_name: editingAppointment.patient_name || '',
+        patient_email: editingAppointment.patient_email || '',
+        patient_phone: editingAppointment.patient_phone || '',
+        send_email_reminder: editingAppointment.send_email_reminder,
+        send_whatsapp_reminder: editingAppointment.send_whatsapp_reminder,
+        send_immediate_reminder: false,
+        notes: editingAppointment.notes || '',
+      };
+    }
+    
+    return initialData;
+  });
+
+  const updateFormData = (newData: Partial<AppointmentWizardData>) => {
     setFormData(prev => {
-      const updated = { ...prev, ...data };
+      const updated = { ...prev, ...newData };
       
       // Auto-calculate end time based on session duration when start time changes
-      if (data.start_datetime && settings?.session_duration) {
-        updated.end_datetime = addMinutes(data.start_datetime, settings.session_duration);
+      if (newData.start_datetime && settings?.session_duration) {
+        updated.end_datetime = addMinutes(newData.start_datetime, settings.session_duration);
       }
       
       return updated;
@@ -105,10 +123,15 @@ export const useAppointmentWizard = () => {
 
       console.log('📤 Sending appointment data to API:', appointmentData);
 
-      // Usar mutateAsync para aguardar a conclusão
-      const result = await createAppointmentAsync(appointmentData);
-      
-      console.log('✅ Appointment created successfully:', result);
+      if (editingAppointment) {
+        // Atualizar agendamento existente
+        updateAppointment({ id: editingAppointment.id, ...appointmentData });
+        console.log('✅ Appointment updated successfully');
+      } else {
+        // Criar novo agendamento
+        const result = await createAppointmentAsync(appointmentData);
+        console.log('✅ Appointment created successfully:', result);
+      }
 
       // Implementar lógica de lembrete imediato se necessário
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {

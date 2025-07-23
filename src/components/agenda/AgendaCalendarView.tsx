@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Appointment } from "@/types/appointment";
+import { AppointmentItem } from "./AppointmentItem";
 
 interface AgendaCalendarViewProps {
   appointments: Appointment[];
@@ -13,6 +14,8 @@ interface AgendaCalendarViewProps {
   onDateSelect: (date: Date) => void;
   viewMode: 'week' | 'month';
   onViewModeChange: (mode: 'week' | 'month') => void;
+  onUpdateAppointment: (appointmentId: string, status: Appointment['status']) => void;
+  onEditAppointment: (appointment: Appointment) => void;
 }
 
 const timeSlots = [
@@ -25,7 +28,9 @@ export const AgendaCalendarView = ({
   selectedDate,
   onDateSelect,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  onUpdateAppointment,
+  onEditAppointment
 }: AgendaCalendarViewProps) => {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(selectedDate, { weekStartsOn: 0 }));
 
@@ -154,17 +159,12 @@ export const AgendaCalendarView = ({
                           return (
                             <div key={`${day.toISOString()}-${time}`} className="p-1 min-h-[60px] border border-border/50 rounded">
                               {appointments.map(apt => (
-                                <div
+                                <AppointmentItem
                                   key={apt.id}
-                                  className="bg-primary/10 border border-primary/20 rounded p-1 mb-1 text-xs"
-                                >
-                                  <div className="font-medium truncate">{apt.title}</div>
-                                  {apt.patient_name && (
-                                    <div className="text-muted-foreground truncate">
-                                      {apt.patient_name}
-                                    </div>
-                                  )}
-                                </div>
+                                  appointment={apt}
+                                  onUpdateStatus={onUpdateAppointment}
+                                  onEdit={onEditAppointment}
+                                />
                               ))}
                             </div>
                           );
