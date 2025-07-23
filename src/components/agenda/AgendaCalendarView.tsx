@@ -164,7 +164,11 @@ export const AgendaCalendarView = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
+                  onClick={() => {
+                    const prevWeek = subWeeks(currentWeek, 1);
+                    setCurrentWeek(prevWeek);
+                    onDateSelect(prevWeek);
+                  }}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -174,7 +178,11 @@ export const AgendaCalendarView = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
+                  onClick={() => {
+                    const nextWeek = addWeeks(currentWeek, 1);
+                    setCurrentWeek(nextWeek);
+                    onDateSelect(nextWeek);
+                  }}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
