@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AppointmentWizardData } from '@/types/appointment';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
@@ -11,6 +12,7 @@ const initialData: AppointmentWizardData = {
   end_datetime: new Date(),
   send_email_reminder: false,
   send_whatsapp_reminder: false,
+  send_immediate_reminder: false,
 };
 
 export const useAppointmentWizard = () => {
@@ -65,6 +67,15 @@ export const useAppointmentWizard = () => {
     };
 
     createAppointment(appointmentData);
+
+    // TODO: Implementar lógica de lembrete imediato se formData.send_immediate_reminder for true
+    if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
+      // Aqui seria implementada a lógica para enviar o lembrete imediato
+      console.log('Enviando lembrete imediato para:', {
+        email: formData.patient_email,
+        phone: formData.patient_phone
+      });
+    }
   };
 
   const canProceedToNextStep = () => {

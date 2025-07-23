@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, MapPin } from "lucide-react";
+import { CalendarIcon, Clock, Edit3 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -21,7 +23,7 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
     const endHour = settings?.end_time ? parseInt(settings.end_time.split(':')[0]) : 18;
     
     for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
+      for (let minute = 0; minute < 60; minute += 15) { // Alterado para 15 minutos
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         slots.push(timeString);
       }
@@ -66,6 +68,29 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
       start_datetime: newStartDate,
       end_datetime: newEndDate
     });
+  };
+
+  const handleManualStartTimeChange = (timeValue: string) => {
+    if (!timeValue || !formData.start_datetime) return;
+    
+    const [hours, minutes] = timeValue.split(':').map(Number);
+    const newStartDate = new Date(formData.start_datetime);
+    newStartDate.setHours(hours, minutes);
+    
+    updateFormData({ start_datetime: newStartDate });
+  };
+
+  const handleManualEndTimeChange = (timeValue: string) => {
+    if (!timeValue || !formData.start_datetime) return;
+    
+    const [hours, minutes] = timeValue.split(':').map(Number);
+    const newEndDate = new Date(formData.start_datetime);
+    newEndDate.setHours(hours, minutes);
+    
+    // Validar se o horário final é após o inicial
+    if (newEndDate > formData.start_datetime) {
+      updateFormData({ end_datetime: newEndDate });
+    }
   };
 
   return (
@@ -121,16 +146,16 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
           </CardContent>
         </Card>
 
-        {/* Seleção de Horário */}
+        {/* Seleção de Horário por Botões */}
         <Card className="border-primary/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center">
               <Clock className="w-4 h-4 mr-2" />
-              Horário de Início
+              Horários Disponíveis
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
               {timeSlots.map((time) => (
                 <Button
                   key={time}
@@ -151,6 +176,46 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
           </CardContent>
         </Card>
 
+        {/* Edição Manual de Horários */}
+        {formData.start_datetime && (
+          <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center">
+                <Edit3 className="w-4 h-4 mr-2" />
+                Ajustar Horários Manualmente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start_time" className="text-sm font-medium">
+                    Horário de Início
+                  </Label>
+                  <Input
+                    id="start_time"
+                    type="time"
+                    value={formData.start_datetime ? format(formData.start_datetime, "HH:mm") : ""}
+                    onChange={(e) => handleManualStartTimeChange(e.target.value)}
+                    className="border-blue-200 focus:border-blue-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end_time" className="text-sm font-medium">
+                    Horário de Término
+                  </Label>
+                  <Input
+                    id="end_time"
+                    type="time"
+                    value={formData.end_datetime ? format(formData.end_datetime, "HH:mm") : ""}
+                    onChange={(e) => handleManualEndTimeChange(e.target.value)}
+                    className="border-blue-200 focus:border-blue-400"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Resumo do agendamento */}
         {formData.start_datetime && formData.end_datetime && (
           <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
@@ -170,7 +235,7 @@ export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWiz
                   {format(formData.end_datetime, "HH:mm")}
                 </p>
                 <p>
-                  <strong>Duração:</strong> {settings?.session_duration || 50} minutos
+                  <strong>Duração:</strong> {Math.round((formData.end_datetime.getTime() - formData.start_datetime.getTime()) / (1000 * 60))} minutos
                 </p>
               </div>
             </CardContent>

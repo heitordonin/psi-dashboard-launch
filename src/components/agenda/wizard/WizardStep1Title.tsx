@@ -1,17 +1,9 @@
+
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, FileText, Users, Clock } from "lucide-react";
+import { FileText } from "lucide-react";
 import { AppointmentWizardStepProps } from "./types";
-
-const TITLE_SUGGESTIONS = [
-  "Sessão de Terapia",
-  "Consulta Inicial", 
-  "Sessão de Acompanhamento",
-  "Avaliação Psicológica",
-  "Terapia em Grupo",
-  "Consulta de Retorno"
-];
 
 export const WizardStep1Title = ({ formData, updateFormData }: AppointmentWizardStepProps) => {
   return (
@@ -44,24 +36,6 @@ export const WizardStep1Title = ({ formData, updateFormData }: AppointmentWizard
           </div>
         </CardContent>
       </Card>
-
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Sugestões rápidas:
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {TITLE_SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => updateFormData({ title: suggestion })}
-              className="text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 text-sm"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

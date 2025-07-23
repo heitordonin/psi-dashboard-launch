@@ -1,8 +1,9 @@
+
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, MessageCircle, Bell, Settings } from "lucide-react";
+import { Mail, MessageCircle, Bell, Settings, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppointmentWizardStepProps } from "./types";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
@@ -38,6 +39,39 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
       )}
 
       <div className="space-y-4">
+        {/* Lembrete Imediato */}
+        {hasPatientContact && (
+          <Card className={cn(
+            "transition-all duration-200",
+            formData.send_immediate_reminder && hasPatientContact ? "border-purple-200 bg-purple-50 dark:bg-purple-950 dark:border-purple-800" : ""
+          )}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    formData.send_immediate_reminder && hasPatientContact 
+                      ? "bg-purple-100 text-purple-600" 
+                      : "bg-gray-100 text-gray-500"
+                  )}>
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Lembrete Imediato</CardTitle>
+                    <CardDescription>
+                      Enviado no momento da criação do agendamento
+                    </CardDescription>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.send_immediate_reminder || false}
+                  onCheckedChange={(checked) => updateFormData({ send_immediate_reminder: checked })}
+                />
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
         <Card className={cn(
           "transition-all duration-200",
           formData.send_email_reminder && hasPatientContact ? "border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800" : ""
@@ -153,7 +187,7 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
           </Card>
         )}
 
-        {(formData.send_email_reminder || formData.send_whatsapp_reminder) && hasPatientContact && (
+        {(formData.send_email_reminder || formData.send_whatsapp_reminder || formData.send_immediate_reminder) && hasPatientContact && (
           <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -162,7 +196,10 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
                   Lembretes configurados
                 </span>
               </div>
-              <div className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                {formData.send_immediate_reminder && (
+                  <p>✓ Lembrete imediato será enviado após a criação</p>
+                )}
                 {formData.send_email_reminder && formData.patient_email && (
                   <p>✓ E-mail será enviado para {formData.patient_email}</p>
                 )}

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,16 @@ import { Check, ChevronsUpDown, User, UserPlus, Users, UserX } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { AppointmentWizardStepProps } from "./types";
 import { usePatientsData } from "@/hooks/usePatientsData";
+
+// Função para formatar telefone
+const formatPhone = (value: string) => {
+  const cleaned = value.replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
+  if (match) {
+    return `(${match[1]})${match[2]}-${match[3]}`;
+  }
+  return value;
+};
 
 export const WizardStep3Patient = ({ formData, updateFormData }: AppointmentWizardStepProps) => {
   const [showPatientSelect, setShowPatientSelect] = useState(false);
@@ -56,6 +67,11 @@ export const WizardStep3Patient = ({ formData, updateFormData }: AppointmentWiza
       patient_email: '',
       patient_phone: '',
     });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    updateFormData({ patient_phone: formatted });
   };
 
   return (
@@ -259,10 +275,11 @@ export const WizardStep3Patient = ({ formData, updateFormData }: AppointmentWiza
                   <Input
                     id="patient_phone"
                     type="tel"
-                    placeholder="(00) 00000-0000"
+                    placeholder="(00)00000-0000"
                     value={formData.patient_phone || ''}
-                    onChange={(e) => updateFormData({ patient_phone: e.target.value })}
+                    onChange={handlePhoneChange}
                     className="border-orange-200 focus:border-orange-400"
+                    maxLength={13}
                   />
                 </div>
               </div>

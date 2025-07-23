@@ -15,6 +15,7 @@ export interface AppointmentWizardData {
   // Step 4: Reminder settings
   send_email_reminder: boolean;
   send_whatsapp_reminder: boolean;
+  send_immediate_reminder: boolean;
   
   // Additional fields
   notes?: string;
