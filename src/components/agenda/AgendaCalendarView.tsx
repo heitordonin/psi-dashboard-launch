@@ -145,32 +145,6 @@ export const AgendaCalendarView = ({
           </CardContent>
         </Card>
 
-        {/* View Mode Toggle */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Visualização</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'week' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onViewModeChange('week')}
-                className="flex-1"
-              >
-                Semana
-              </Button>
-              <Button
-                variant={viewMode === 'month' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onViewModeChange('month')}
-                className="flex-1"
-              >
-                Mês
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Calendar Grid */}
