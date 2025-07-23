@@ -47,24 +47,30 @@ export const AgendaCalendarView = ({
     console.log(`📅 Total appointments available:`, appointments.length);
     
     const filtered = appointments.filter(apt => {
-      // Criar data do agendamento no timezone local
+      // Criar data do agendamento interpretando como UTC
       const aptDate = new Date(apt.start_datetime);
       
-      // Verificar se é o mesmo dia (sem considerar horário ainda)
+      // Verificar se é o mesmo dia no timezone local
       const isSameDate = isSameDay(aptDate, date);
       
-      // Para comparação de horário, usar o horário local diretamente
-      // Convertendo ambos para o mesmo timezone (local)
-      const aptTime = format(aptDate, "HH:mm");
+      // Usar toLocaleTimeString para garantir timezone local consistente
+      const aptTime = aptDate.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
       const isSameTime = aptTime === time;
       
       console.log(`📋 Appointment ${apt.id}:`);
-      console.log(`  - Original datetime: ${apt.start_datetime}`);
-      console.log(`  - Local datetime: ${aptDate.toLocaleString()}`);
-      console.log(`  - Formatted time: ${aptTime}`);
-      console.log(`  - Target time: ${time}`);
+      console.log(`  - Original UTC: ${apt.start_datetime}`);
+      console.log(`  - Local Date: ${aptDate.toLocaleDateString('pt-BR')}`);
+      console.log(`  - Local Time: ${aptTime}`);
+      console.log(`  - Target Date: ${date.toLocaleDateString('pt-BR')}`);
+      console.log(`  - Target Time: ${time}`);
       console.log(`  - Same date: ${isSameDate}`);
       console.log(`  - Same time: ${isSameTime}`);
+      console.log(`  - Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
       console.log(`  - Will show: ${isSameDate && isSameTime}`);
       
       return isSameDate && isSameTime;

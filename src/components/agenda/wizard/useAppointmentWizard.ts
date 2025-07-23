@@ -5,6 +5,7 @@ import { useAppointments } from '@/hooks/useAppointments';
 import { useAgendaSettings } from '@/hooks/useAgendaSettings';
 import { addMinutes } from 'date-fns';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const initialData: AppointmentWizardData = {
   title: '',
@@ -21,6 +22,7 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
   const { user } = useSecureAuth();
   const { createAppointmentAsync, updateAppointmentAsync, isCreating, isUpdating } = useAppointments();
   const { settings } = useAgendaSettings();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<AppointmentWizardData>(() => {
     if (editingAppointment) {
@@ -162,6 +164,17 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
         const result = await createAppointmentAsync(appointmentData);
         console.log('✅ Appointment created successfully:', result);
       }
+
+      // Força invalidação e refetch do cache após sucesso
+      console.log('🔄 Forcing cache refresh after appointment operation');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.removeQueries({ queryKey: ['appointments'] });
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['appointments'] });
+      }, 50);
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['appointments'] });
+      }, 200);
 
       // Implementar lógica de lembrete imediato se necessário
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
