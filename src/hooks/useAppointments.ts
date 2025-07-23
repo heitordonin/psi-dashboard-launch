@@ -10,6 +10,9 @@ export const useAppointments = (filters?: CalendarFilters) => {
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ['appointments', filters],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       let query = supabase
         .from('appointments')
         .select(`
@@ -21,6 +24,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
             phone
           )
         `)
+        .eq('user_id', user.id)
         .order('start_datetime', { ascending: true });
 
       // Apply filters
