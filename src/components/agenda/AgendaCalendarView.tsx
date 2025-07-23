@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,11 @@ export const AgendaCalendarView = ({
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const { settings } = useAgendaSettings();
   const isMobile = useIsMobile();
+
+  // Sincronizar currentWeek quando selectedDate mudar
+  useEffect(() => {
+    setCurrentWeek(startOfWeek(selectedDate, { weekStartsOn: 0 }));
+  }, [selectedDate]);
 
   // Gerar hourSlots (grid visual de 1 hora) baseados nas configurações
   const getHourSlots = () => {
