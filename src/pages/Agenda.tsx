@@ -91,10 +91,13 @@ export default function Agenda() {
         </div>
       )}
       
-      <AgendaKPIs 
-        appointments={appointments || []} 
-        selectedDate={selectedDate}
-      />
+      {/* KPIs only on desktop - mobile has integrated KPIs */}
+      {!isMobile && (
+        <AgendaKPIs 
+          appointments={appointments || []} 
+          selectedDate={selectedDate}
+        />
+      )}
       
       <AgendaCalendarView
         appointments={appointments || []}

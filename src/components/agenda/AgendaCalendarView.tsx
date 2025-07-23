@@ -11,9 +11,9 @@ import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { generateTimeSlots } from "@/utils/time";
 import { isoToLocalHHMM, floorToStep, findHourSlot, calculatePositionInHour } from "@/utils/date";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileWeekNavigation } from "./mobile/MobileWeekNavigation";
-import { MobileDayView } from "./mobile/MobileDayView";
-import { MobileCalendarModal } from "./mobile/MobileCalendarModal";
+import { MobileKPIsVertical } from "./mobile/MobileKPIsVertical";
+import { MobileCompactCalendar } from "./mobile/MobileCompactCalendar";
+import { MobileThreeDaysView } from "./mobile/MobileThreeDaysView";
 
 interface AgendaCalendarViewProps {
   appointments: Appointment[];
@@ -100,25 +100,26 @@ export const AgendaCalendarView = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <MobileWeekNavigation
-          currentWeek={currentWeek}
-          onWeekChange={setCurrentWeek}
-          onCalendarOpen={() => setShowCalendarModal(true)}
+        {/* KPIs Verticais */}
+        <MobileKPIsVertical
+          appointments={appointments}
+          selectedDate={selectedDate}
         />
         
-        <MobileDayView
+        {/* Calendário Compacto */}
+        <MobileCompactCalendar
+          selectedDate={selectedDate}
+          onDateSelect={onDateSelect}
+          appointments={appointments}
+        />
+        
+        {/* Visualização de 3 Dias */}
+        <MobileThreeDaysView
           appointments={appointments}
           selectedDate={selectedDate}
           onDateSelect={onDateSelect}
           onUpdateAppointment={onUpdateAppointment}
           onEditAppointment={onEditAppointment}
-        />
-
-        <MobileCalendarModal
-          isOpen={showCalendarModal}
-          onClose={() => setShowCalendarModal(false)}
-          selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
         />
       </div>
     );
