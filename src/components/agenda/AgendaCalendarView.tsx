@@ -43,11 +43,27 @@ export const AgendaCalendarView = ({
   };
 
   const getAppointmentsForSlot = (date: Date, time: string) => {
-    return appointments.filter(apt => {
+    console.log(`🔍 Filtering appointments for date: ${date.toDateString()}, time: ${time}`);
+    console.log(`📅 Total appointments available:`, appointments.length);
+    
+    const filtered = appointments.filter(apt => {
+      // Criar data local para comparação correta de timezone
       const aptDate = new Date(apt.start_datetime);
-      const aptTime = format(aptDate, "HH:mm");
-      return isSameDay(aptDate, date) && aptTime === time;
+      
+      // Converter para timezone local do usuário
+      const localAptDate = new Date(aptDate.getTime() - (aptDate.getTimezoneOffset() * 60000));
+      const aptTime = format(localAptDate, "HH:mm");
+      
+      const isSameDate = isSameDay(localAptDate, date);
+      const isSameTime = aptTime === time;
+      
+      console.log(`📋 Appointment ${apt.id}: ${apt.start_datetime} -> Local: ${localAptDate.toISOString()} -> Time: ${aptTime} -> Same date: ${isSameDate}, Same time: ${isSameTime}`);
+      
+      return isSameDate && isSameTime;
     });
+    
+    console.log(`✅ Filtered ${filtered.length} appointments for ${date.toDateString()} at ${time}`);
+    return filtered;
   };
 
   const weekDays = getWeekDays();

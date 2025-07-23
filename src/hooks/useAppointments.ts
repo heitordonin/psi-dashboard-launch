@@ -78,7 +78,13 @@ export const useAppointments = (filters?: CalendarFilters) => {
     },
     onSuccess: (data) => {
       console.log('✅ Appointment mutation successful:', data);
+      // Invalidar cache com refetch forçado
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.refetchQueries({ queryKey: ['appointments'] });
+      // Forçar recarregamento após um pequeno delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['appointments'] });
+      }, 100);
       toast.success('Agendamento criado com sucesso!');
     },
     onError: (error) => {
@@ -108,8 +114,13 @@ export const useAppointments = (filters?: CalendarFilters) => {
     },
     onSuccess: (data) => {
       console.log('✅ Appointment update mutation successful:', data);
+      // Invalidar e refazer queries múltiplas vezes para garantir atualização
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.refetchQueries({ queryKey: ['appointments'] });
+      // Forçar recarregamento após delay
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['appointments'] });
+      }, 100);
       toast.success('Agendamento atualizado com sucesso!');
     },
     onError: (error) => {
@@ -128,7 +139,12 @@ export const useAppointments = (filters?: CalendarFilters) => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidar e refazer queries para garantir atualização
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.refetchQueries({ queryKey: ['appointments'] });
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['appointments'] });
+      }, 100);
       toast.success('Agendamento deletado com sucesso!');
     },
     onError: (error) => {
