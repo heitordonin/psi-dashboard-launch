@@ -6,6 +6,7 @@ import { AgendaHeader } from "@/components/agenda/AgendaHeader";
 import { AgendaKPIs } from "@/components/agenda/AgendaKPIs";
 import { AgendaCalendarView } from "@/components/agenda/AgendaCalendarView";
 import { useAppointments } from "@/hooks/useAppointments";
+import { CalendarFilters } from "@/types/appointment";
 import { Appointment } from "@/types/appointment";
 
 export default function Agenda() {
@@ -13,7 +14,17 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const { appointments, isLoading, updateAppointment } = useAppointments();
+  
+  // Configurar filtros para sincronização de estado correta
+  const filters: CalendarFilters = {
+    date: selectedDate
+  };
+  
+  const { appointments, isLoading, updateAppointment } = useAppointments(filters);
+
+  console.log('📅 Agenda page - Selected date:', selectedDate);
+  console.log('📋 Agenda page - Appointments loaded:', appointments?.length || 0);
+  console.log('🔄 Agenda page - Is loading:', isLoading);
 
   const handleUpdateAppointmentStatus = (appointmentId: string, status: Appointment['status']) => {
     updateAppointment({ id: appointmentId, status });
