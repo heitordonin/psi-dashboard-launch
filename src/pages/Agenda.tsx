@@ -63,21 +63,21 @@ export default function Agenda() {
         <AppSidebar />
         <SidebarInset>
           <div className="min-h-screen bg-background">
-            <div className="flex items-center justify-between p-4 border-b">
-              <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleManualRefresh}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-            </div>
+            <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
             
             <div className="container mx-auto p-6 space-y-6">
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleManualRefresh}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              </div>
               <AgendaKPIs 
                 appointments={appointments || []} 
                 selectedDate={selectedDate}
