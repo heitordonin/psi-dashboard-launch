@@ -10,6 +10,10 @@ import { AppointmentItem } from "./AppointmentItem";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { generateTimeSlots } from "@/utils/time";
 import { isoToLocalHHMM, floorToStep, findHourSlot, calculatePositionInHour } from "@/utils/date";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileWeekNavigation } from "./mobile/MobileWeekNavigation";
+import { MobileDayView } from "./mobile/MobileDayView";
+import { MobileCalendarModal } from "./mobile/MobileCalendarModal";
 
 interface AgendaCalendarViewProps {
   appointments: Appointment[];
@@ -31,7 +35,9 @@ export const AgendaCalendarView = ({
   onEditAppointment
 }: AgendaCalendarViewProps) => {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(selectedDate, { weekStartsOn: 0 }));
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const { settings } = useAgendaSettings();
+  const isMobile = useIsMobile();
 
   // Gerar hourSlots (grid visual de 1 hora) baseados nas configurações
   const getHourSlots = () => {
@@ -90,6 +96,35 @@ export const AgendaCalendarView = ({
 
   const weekDays = getWeekDays();
 
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        <MobileWeekNavigation
+          currentWeek={currentWeek}
+          onWeekChange={setCurrentWeek}
+          onCalendarOpen={() => setShowCalendarModal(true)}
+        />
+        
+        <MobileDayView
+          appointments={appointments}
+          selectedDate={selectedDate}
+          onDateSelect={onDateSelect}
+          onUpdateAppointment={onUpdateAppointment}
+          onEditAppointment={onEditAppointment}
+        />
+
+        <MobileCalendarModal
+          isOpen={showCalendarModal}
+          onClose={() => setShowCalendarModal(false)}
+          selectedDate={selectedDate}
+          onDateSelect={onDateSelect}
+        />
+      </div>
+    );
+  }
+
+  // Desktop View
   return (
     <div className="flex gap-6">
       {/* Mini Calendar Sidebar */}

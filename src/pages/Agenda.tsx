@@ -9,8 +9,12 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { CalendarFilters } from "@/types/appointment";
 import { Appointment } from "@/types/appointment";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
+import { FloatingActionButton } from "@/components/ui/floating-action-button";
 
 export default function Agenda() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
@@ -18,6 +22,7 @@ export default function Agenda() {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   // Configurar filtros para sincronização de estado correta
   const filters: CalendarFilters = {
@@ -25,6 +30,24 @@ export default function Agenda() {
   };
   
   const { appointments, isLoading, updateAppointment } = useAppointments(filters);
+
+  const handleManualRefresh = async () => {
+    console.log('🔄 Manual refresh triggered');
+    await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    await queryClient.refetchQueries({ queryKey: ['appointments'] });
+  };
+
+  const { 
+    containerRef, 
+    isRefreshing, 
+    pullDistance, 
+    isPulling, 
+    isTriggered, 
+    bindTouchEvents 
+  } = usePullToRefresh({
+    onRefresh: handleManualRefresh,
+    threshold: 80
+  });
 
   console.log('📅 Agenda page - Selected date:', selectedDate);
   console.log('📋 Agenda page - Appointments loaded:', appointments?.length || 0);
@@ -51,54 +74,78 @@ export default function Agenda() {
     }, 100);
   };
 
-  const handleManualRefresh = () => {
-    console.log('🔄 Manual refresh triggered');
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
-    queryClient.refetchQueries({ queryKey: ['appointments'] });
-  };
+  const agendaContent = (
+    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      {!isMobile && (
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleManualRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
+      )}
+      
+      <AgendaKPIs 
+        appointments={appointments || []} 
+        selectedDate={selectedDate}
+      />
+      
+      <AgendaCalendarView
+        appointments={appointments || []}
+        selectedDate={selectedDate}
+        onDateSelect={setSelectedDate}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onUpdateAppointment={handleUpdateAppointmentStatus}
+        onEditAppointment={handleEditAppointment}
+      />
+
+      <CreateAppointmentWizard
+        isOpen={showCreateWizard}
+        onClose={handleCloseWizard}
+        editingAppointment={editingAppointment}
+      />
+    </div>
+  );
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen bg-background" {...(isMobile ? bindTouchEvents : {})}>
             <AgendaHeader onNewAppointment={() => setShowCreateWizard(true)} />
             
-            <div className="container mx-auto p-6 space-y-6">
-              <div className="flex justify-end">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleManualRefresh}
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
-              </div>
-              <AgendaKPIs 
-                appointments={appointments || []} 
-                selectedDate={selectedDate}
-              />
-              
-              <AgendaCalendarView
-                appointments={appointments || []}
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                onUpdateAppointment={handleUpdateAppointmentStatus}
-                onEditAppointment={handleEditAppointment}
-              />
+            {isMobile ? (
+              <PullToRefreshContainer
+                onRefresh={handleManualRefresh}
+                isRefreshing={isRefreshing}
+                pullDistance={pullDistance}
+                isTriggered={isTriggered}
+              >
+                <div ref={containerRef}>
+                  {agendaContent}
+                </div>
+              </PullToRefreshContainer>
+            ) : (
+              agendaContent
+            )}
 
-              <CreateAppointmentWizard
-                isOpen={showCreateWizard}
-                onClose={handleCloseWizard}
-                editingAppointment={editingAppointment}
-              />
-            </div>
+            {/* Floating Action Button for Mobile */}
+            {isMobile && (
+              <FloatingActionButton
+                onClick={() => setShowCreateWizard(true)}
+                className="shadow-lg"
+              >
+                <Plus className="h-6 w-6" />
+              </FloatingActionButton>
+            )}
           </div>
         </SidebarInset>
       </div>

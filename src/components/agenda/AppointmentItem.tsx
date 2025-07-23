@@ -4,6 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Clock, Edit3, UserX } from "lucide-react";
 import { isoToLocalHHMM } from "@/utils/date";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 interface AppointmentItemProps {
   appointment: Appointment;
@@ -21,43 +24,83 @@ const statusConfig = {
 
 export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, style }: AppointmentItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const { triggerHaptic } = useHapticFeedback();
   const currentStatusConfig = statusConfig[appointment.status];
   
   // Mostrar horário exato no timezone brasileiro
   const startTime = isoToLocalHHMM(appointment.start_datetime);
   const endTime = isoToLocalHHMM(appointment.end_datetime);
 
+  const { elementRef } = useSwipeGesture({
+    onSwipeRight: () => {
+      triggerHaptic('light');
+      onEdit(appointment);
+    },
+    onSwipeLeft: () => {
+      triggerHaptic('light');
+      if (appointment.status === 'scheduled') {
+        handleStatusChange('completed');
+      }
+    },
+    threshold: isMobile ? 80 : 120
+  });
+
   const handleStatusChange = (newStatus: Appointment['status']) => {
+    triggerHaptic('medium');
     onUpdateStatus(appointment.id, newStatus);
     setIsOpen(false);
   };
 
   const handleEdit = () => {
+    triggerHaptic('light');
     onEdit(appointment);
     setIsOpen(false);
+  };
+
+  const handleOpen = () => {
+    triggerHaptic('light');
+    setIsOpen(true);
   };
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <div 
-          className={`${currentStatusConfig.color} rounded p-1 text-xs cursor-pointer hover:opacity-80 transition-opacity w-full overflow-hidden`}
+          ref={elementRef}
+          onClick={handleOpen}
+          className={`
+            ${currentStatusConfig.color} 
+            rounded 
+            ${isMobile ? 'p-3 text-sm min-h-[60px]' : 'p-1 text-xs'} 
+            cursor-pointer hover:opacity-80 transition-all duration-200 
+            w-full overflow-hidden
+            ${isMobile ? 'touch-target active:scale-95' : ''}
+          `}
           style={style}
         >
-          <div className="font-medium truncate flex items-center justify-between">
+          <div className={`font-medium truncate flex items-center justify-between ${isMobile ? 'text-base' : ''}`}>
             <span className="truncate">{appointment.title}</span>
-            <span className="text-[10px] font-mono bg-black/10 px-1 rounded ml-1 flex-shrink-0">
+            <span className={`
+              ${isMobile ? 'text-xs' : 'text-[10px]'} 
+              font-mono bg-black/10 px-1 rounded ml-1 flex-shrink-0
+            `}>
               {startTime}-{endTime}
             </span>
           </div>
           {appointment.patient_name && (
-            <div className="text-muted-foreground truncate text-[10px] mt-0.5">
+            <div className={`text-muted-foreground truncate mt-0.5 ${isMobile ? 'text-sm' : 'text-[10px]'}`}>
               {appointment.patient_name}
             </div>
           )}
-          <Badge variant="outline" className="mt-1 text-[9px] h-3 px-1">
+          <Badge variant="outline" className={`mt-1 ${isMobile ? 'text-xs h-5 px-2' : 'text-[9px] h-3 px-1'}`}>
             {currentStatusConfig.label}
           </Badge>
+          {isMobile && (
+            <div className="text-xs text-muted-foreground mt-2 opacity-60">
+              ← Deslize para editar • Deslize para concluir →
+            </div>
+          )}
         </div>
       </DropdownMenuTrigger>
       
