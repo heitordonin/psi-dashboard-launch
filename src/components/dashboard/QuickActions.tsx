@@ -17,32 +17,30 @@ export const QuickActions = () => {
         <CardTitle>Ações Rápidas</CardTitle>
       </CardHeader>
       <CardContent className="mobile-spacing">
-        <div className="flex justify-center">
-          <div className="interactive-grid grid-cols-2 md:flex md:gap-3 overflow-x-auto pb-2 w-full">
+        <div className="grid grid-cols-2 gap-3 md:flex md:gap-3 md:justify-center">
+          <QuickTile
+            icon={UserPlus}
+            label="Novo Paciente"
+            onClick={() => navigate("/patients")}
+          />
+          <QuickTile
+            icon={Plus}
+            label="Nova Cobrança"
+            onClick={() => navigate("/payments")}
+          />
+          <QuickTile
+            icon={DollarSign}
+            label="Nova Despesa"
+            onClick={() => navigate("/expenses")}
+          />
+          {currentPlan?.slug === 'psi_regular' && (
             <QuickTile
-              icon={UserPlus}
-              label="Novo Paciente"
-              onClick={() => navigate("/patients")}
+              icon={FolderOpen}
+              label="Documentos Recebidos"
+              onClick={() => navigate("/documentos-recebidos")}
+              showNotification={hasUnviewedDocuments}
             />
-            <QuickTile
-              icon={Plus}
-              label="Nova Cobrança"
-              onClick={() => navigate("/payments")}
-            />
-            <QuickTile
-              icon={DollarSign}
-              label="Nova Despesa"
-              onClick={() => navigate("/expenses")}
-            />
-            {currentPlan?.slug === 'psi_regular' && (
-              <QuickTile
-                icon={FolderOpen}
-                label="Documentos Recebidos"
-                onClick={() => navigate("/documentos-recebidos")}
-                showNotification={hasUnviewedDocuments}
-              />
-            )}
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
