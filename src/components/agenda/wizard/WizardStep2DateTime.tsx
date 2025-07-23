@@ -12,26 +12,21 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AppointmentWizardStepProps } from "./types";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
+import { generateTimeSlots } from "@/utils/time";
 
 export const WizardStep2DateTime = ({ formData, updateFormData }: AppointmentWizardStepProps) => {
   const [showCalendar, setShowCalendar] = useState(false);
   const { settings } = useAgendaSettings();
 
-  const generateTimeSlots = () => {
-    const slots = [];
+  // Gerar slots de tempo baseados nas configurações da agenda (10 minutos)
+  const getTimeSlots = () => {
     const startHour = settings?.start_time ? parseInt(settings.start_time.split(':')[0]) : 8;
     const endHour = settings?.end_time ? parseInt(settings.end_time.split(':')[0]) : 18;
     
-    for (let hour = startHour; hour <= endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 10) { // Slots de 10 em 10 minutos
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    return slots;
+    return generateTimeSlots(startHour, endHour, 10); // Slots de 10 minutos para o wizard
   };
 
-  const timeSlots = generateTimeSlots();
+  const timeSlots = getTimeSlots();
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {

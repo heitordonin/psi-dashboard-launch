@@ -3,12 +3,13 @@ import { Appointment } from "@/types/appointment";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Clock, Edit3, UserX } from "lucide-react";
-import { formatInTimeZone } from "date-fns-tz";
+import { isoToLocalHHMM } from "@/utils/date";
 
 interface AppointmentItemProps {
   appointment: Appointment;
   onUpdateStatus: (appointmentId: string, status: Appointment['status']) => void;
   onEdit: (appointment: Appointment) => void;
+  style?: React.CSSProperties;
 }
 
 const statusConfig = {
@@ -18,12 +19,13 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', color: 'bg-red-500/10 border-red-500/20 text-red-700' }
 };
 
-export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit }: AppointmentItemProps) => {
+export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, style }: AppointmentItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const currentStatusConfig = statusConfig[appointment.status];
   
   // Mostrar horário exato no timezone brasileiro
-  const exactTime = formatInTimeZone(new Date(appointment.start_datetime), 'America/Sao_Paulo', 'HH:mm');
+  const startTime = isoToLocalHHMM(appointment.start_datetime);
+  const endTime = isoToLocalHHMM(appointment.end_datetime);
 
   const handleStatusChange = (newStatus: Appointment['status']) => {
     onUpdateStatus(appointment.id, newStatus);
@@ -38,17 +40,22 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit }: Appoint
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <div className={`${currentStatusConfig.color} rounded p-1 mb-1 text-xs cursor-pointer hover:opacity-80 transition-opacity`}>
+        <div 
+          className={`${currentStatusConfig.color} rounded p-1 text-xs cursor-pointer hover:opacity-80 transition-opacity w-full overflow-hidden`}
+          style={style}
+        >
           <div className="font-medium truncate flex items-center justify-between">
-            <span>{appointment.title}</span>
-            <span className="text-[10px] font-mono bg-black/10 px-1 rounded">{exactTime}</span>
+            <span className="truncate">{appointment.title}</span>
+            <span className="text-[10px] font-mono bg-black/10 px-1 rounded ml-1 flex-shrink-0">
+              {startTime}-{endTime}
+            </span>
           </div>
           {appointment.patient_name && (
-            <div className="text-muted-foreground truncate">
+            <div className="text-muted-foreground truncate text-[10px] mt-0.5">
               {appointment.patient_name}
             </div>
           )}
-          <Badge variant="outline" className="mt-1 text-[10px] h-4">
+          <Badge variant="outline" className="mt-1 text-[9px] h-3 px-1">
             {currentStatusConfig.label}
           </Badge>
         </div>

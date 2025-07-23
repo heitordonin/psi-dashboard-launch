@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfWeek, addDays, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatInTimeZone } from "date-fns-tz";
 import { Appointment } from "@/types/appointment";
 import { AppointmentItem } from "./AppointmentItem";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
+import { generateTimeSlots } from "@/utils/time";
+import { isoToLocalHHMM, floorToStep, findHourSlot, calculatePositionInHour } from "@/utils/date";
 
 interface AgendaCalendarViewProps {
   appointments: Appointment[];
@@ -19,8 +20,6 @@ interface AgendaCalendarViewProps {
   onUpdateAppointment: (appointmentId: string, status: Appointment['status']) => void;
   onEditAppointment: (appointment: Appointment) => void;
 }
-
-const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
 
 export const AgendaCalendarView = ({
   appointments,
@@ -34,44 +33,16 @@ export const AgendaCalendarView = ({
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(selectedDate, { weekStartsOn: 0 }));
   const { settings } = useAgendaSettings();
 
-  // Gerar timeSlots dinâmicos baseados nas configurações
-  const generateTimeSlots = () => {
-    const slots = [];
+  // Gerar hourSlots (grid visual de 1 hora) baseados nas configurações
+  const getHourSlots = () => {
     const startHour = settings?.start_time ? parseInt(settings.start_time.split(':')[0]) : 7;
     const endHour = settings?.end_time ? parseInt(settings.end_time.split(':')[0]) : 19;
     
-    for (let hour = startHour; hour <= endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 10) { // Slots de 10 em 10 minutos
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    return slots;
+    return generateTimeSlots(startHour, endHour, 60); // Slots de 1 hora para a grade visual
   };
 
-  const timeSlots = generateTimeSlots();
+  const hourSlots = getHourSlots();
 
-  // Função para encontrar o slot mais próximo
-  const findClosestSlot = (timeString: string, slots: string[]) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const timeInMinutes = hours * 60 + minutes;
-    
-    let closestSlot = slots[0];
-    let closestDiff = Infinity;
-    
-    for (const slot of slots) {
-      const [slotHours, slotMinutes] = slot.split(':').map(Number);
-      const slotInMinutes = slotHours * 60 + slotMinutes;
-      const diff = Math.abs(timeInMinutes - slotInMinutes);
-      
-      if (diff < closestDiff) {
-        closestDiff = diff;
-        closestSlot = slot;
-      }
-    }
-    
-    return closestSlot;
-  };
 
   const getWeekDays = () => {
     const days = [];
@@ -81,31 +52,31 @@ export const AgendaCalendarView = ({
     return days;
   };
 
-  const getAppointmentsForSlot = (date: Date, time: string) => {
-    console.log(`🔍 Filtering appointments for date: ${date.toDateString()}, time: ${time}`);
+  const getAppointmentsForSlot = (date: Date, hourSlot: string) => {
+    console.log(`🔍 Filtering appointments for date: ${date.toDateString()}, hour: ${hourSlot}`);
     console.log(`📅 Total appointments available:`, appointments.length);
     
     const filtered = appointments.filter(apt => {
       // Criar data do agendamento interpretando como UTC
       const aptDate = new Date(apt.start_datetime);
       
-      // Verificar se é o mesmo dia no timezone brasileiro
+      // Verificar se é o mesmo dia
       const isSameDate = isSameDay(aptDate, date);
       
-      // Converter para timezone brasileiro usando date-fns-tz
-      const aptTime = formatInTimeZone(aptDate, BRAZIL_TIMEZONE, 'HH:mm');
+      // Converter para timezone brasileiro
+      const aptTime = isoToLocalHHMM(apt.start_datetime);
       
-      // Encontrar o slot mais próximo ao invés de comparação exata
-      const closestSlot = findClosestSlot(aptTime, timeSlots);
-      const isInSlot = closestSlot === time;
+      // Arredondar para slot de 10 minutos e encontrar a hora correspondente
+      const flooredTime = floorToStep(aptTime, 10);
+      const appointmentHourSlot = findHourSlot(flooredTime, hourSlots);
+      const isInSlot = appointmentHourSlot === hourSlot;
       
       console.log(`📋 Appointment ${apt.id}:`);
       console.log(`  - Original UTC: ${apt.start_datetime}`);
-      console.log(`  - Local Date: ${formatInTimeZone(aptDate, BRAZIL_TIMEZONE, 'dd/MM/yyyy')}`);
       console.log(`  - Local Time: ${aptTime}`);
-      console.log(`  - Target Date: ${format(date, 'dd/MM/yyyy')}`);
-      console.log(`  - Target Time: ${time}`);
-      console.log(`  - Closest slot: ${closestSlot}`);
+      console.log(`  - Floored Time: ${flooredTime}`);
+      console.log(`  - Hour Slot: ${appointmentHourSlot}`);
+      console.log(`  - Target Hour: ${hourSlot}`);
       console.log(`  - Same date: ${isSameDate}`);
       console.log(`  - Is in slot: ${isInSlot}`);
       console.log(`  - Will show: ${isSameDate && isInSlot}`);
@@ -113,7 +84,7 @@ export const AgendaCalendarView = ({
       return isSameDate && isInSlot;
     });
     
-    console.log(`✅ Filtered ${filtered.length} appointments for ${date.toDateString()} at ${time}`);
+    console.log(`✅ Filtered ${filtered.length} appointments for ${date.toDateString()} at ${hourSlot}`);
     return filtered;
   };
 
@@ -214,25 +185,43 @@ export const AgendaCalendarView = ({
                     ))}
                   </div>
 
-                  {/* Time grid */}
+                  {/* Hour grid - Google Calendar style */}
                   <div className="space-y-1">
-                    {timeSlots.map(time => (
-                      <div key={time} className="grid grid-cols-8 gap-1">
-                        <div className="p-2 text-sm text-muted-foreground border-r">
-                          {time}
+                    {hourSlots.map(hourSlot => (
+                      <div key={hourSlot} className="grid grid-cols-8 gap-1">
+                        <div className="p-2 text-sm text-muted-foreground border-r h-24 flex items-start">
+                          {hourSlot}
                         </div>
                         {weekDays.map(day => {
-                          const appointments = getAppointmentsForSlot(day, time);
+                          const appointments = getAppointmentsForSlot(day, hourSlot);
                           return (
-                            <div key={`${day.toISOString()}-${time}`} className="p-1 min-h-[60px] border border-border/50 rounded">
-                              {appointments.map(apt => (
-                                <AppointmentItem
-                                  key={apt.id}
-                                  appointment={apt}
-                                  onUpdateStatus={onUpdateAppointment}
-                                  onEdit={onEditAppointment}
-                                />
-                              ))}
+                            <div key={`${day.toISOString()}-${hourSlot}`} className="relative h-24 border border-border/50 rounded bg-card">
+                              {appointments.map((apt, index) => {
+                                const aptTime = isoToLocalHHMM(apt.start_datetime);
+                                const aptEndTime = isoToLocalHHMM(apt.end_datetime);
+                                const startDate = new Date(apt.start_datetime);
+                                const endDate = new Date(apt.end_datetime);
+                                const durationMinutes = Math.max(10, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)));
+                                
+                                const position = calculatePositionInHour(aptTime, durationMinutes);
+                                
+                                return (
+                                  <AppointmentItem
+                                    key={apt.id}
+                                    appointment={apt}
+                                    onUpdateStatus={onUpdateAppointment}
+                                    onEdit={onEditAppointment}
+                                    style={{
+                                      position: 'absolute',
+                                      top: position.top,
+                                      height: position.height,
+                                      left: `${index * 6}px`,
+                                      right: `${index * 6}px`,
+                                      zIndex: 10 + index
+                                    }}
+                                  />
+                                );
+                              })}
                             </div>
                           );
                         })}
