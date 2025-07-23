@@ -21,7 +21,7 @@ export const useAppointmentWizard = () => {
   const [formData, setFormData] = useState<AppointmentWizardData>(initialData);
   const [isSubmittingAppointment, setIsSubmittingAppointment] = useState(false);
   const { user } = useSecureAuth();
-  const { createAppointment, isCreating } = useAppointments();
+  const { createAppointmentAsync, isCreating } = useAppointments();
   const { settings } = useAgendaSettings();
 
   const updateFormData = (data: Partial<AppointmentWizardData>) => {
@@ -52,6 +52,8 @@ export const useAppointmentWizard = () => {
   };
 
   const validateFormData = (): string | null => {
+    console.log('🔍 Validating form data:', formData);
+    
     if (!user?.id) {
       return 'Usuário não autenticado';
     }
@@ -74,15 +76,17 @@ export const useAppointmentWizard = () => {
   const submitAppointment = async (): Promise<boolean> => {
     try {
       setIsSubmittingAppointment(true);
+      console.log('🚀 Starting appointment submission...');
       
       // Validar dados antes de enviar
       const validationError = validateFormData();
       if (validationError) {
+        console.error('❌ Validation error:', validationError);
         toast.error(validationError);
         return false;
       }
 
-      console.log('Submitting appointment data:', formData);
+      console.log('✅ Validation passed, preparing appointment data...');
 
       const appointmentData = {
         user_id: user!.id,
@@ -99,31 +103,16 @@ export const useAppointmentWizard = () => {
         notes: formData.notes?.trim() || null,
       };
 
-      console.log('Final appointment data to be sent:', appointmentData);
+      console.log('📤 Sending appointment data to API:', appointmentData);
 
-      // Usar Promise para aguardar a conclusão da criação
-      await new Promise<void>((resolve, reject) => {
-        const originalCreateAppointment = createAppointment;
-        
-        // Interceptar o resultado usando uma abordagem de callback
-        createAppointment(appointmentData);
-        
-        // Como o createAppointment usa mutação, vamos aguardar um pouco e verificar o estado
-        setTimeout(() => {
-          if (isCreating) {
-            // Ainda processando, aguardar mais um pouco
-            setTimeout(() => {
-              resolve();
-            }, 1000);
-          } else {
-            resolve();
-          }
-        }, 500);
-      });
+      // Usar mutateAsync para aguardar a conclusão
+      const result = await createAppointmentAsync(appointmentData);
+      
+      console.log('✅ Appointment created successfully:', result);
 
       // Implementar lógica de lembrete imediato se necessário
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
-        console.log('Enviando lembrete imediato para:', {
+        console.log('📲 Enviando lembrete imediato para:', {
           email: formData.patient_email,
           phone: formData.patient_phone
         });
@@ -132,12 +121,18 @@ export const useAppointmentWizard = () => {
         toast.info('Lembrete imediato será enviado em breve');
       }
 
-      console.log('Appointment created successfully');
       return true;
 
-    } catch (error) {
-      console.error('Error creating appointment:', error);
-      toast.error('Erro ao criar agendamento. Tente novamente.');
+    } catch (error: any) {
+      console.error('❌ Error creating appointment:', error);
+      
+      // Mostrar erro específico baseado no tipo
+      if (error.message) {
+        toast.error(`Erro ao criar agendamento: ${error.message}`);
+      } else {
+        toast.error('Erro ao criar agendamento. Tente novamente.');
+      }
+      
       return false;
     } finally {
       setIsSubmittingAppointment(false);
@@ -153,6 +148,8 @@ export const useAppointmentWizard = () => {
       case 2: // Patient step (optional)
         return true;
       case 3: // Reminders step
+        return true;
+      case 4: // Summary step - sempre permitir confirmar
         return true;
       default:
         return false;

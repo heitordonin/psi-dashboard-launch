@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,15 +48,22 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
 
   const handleNext = async () => {
     if (isLastStep) {
-      console.log('Attempting to submit appointment...');
-      const success = await submitAppointment();
+      console.log('📝 Attempting to submit appointment...');
       
-      if (success) {
-        console.log('Appointment submitted successfully, closing modal');
-        handleClose();
-      } else {
-        console.log('Failed to submit appointment, keeping modal open');
-        // Modal permanece aberto para o usuário tentar novamente
+      try {
+        const success = await submitAppointment();
+        
+        if (success) {
+          console.log('✅ Appointment submitted successfully, closing modal');
+          resetWizard();
+          onClose();
+        } else {
+          console.log('❌ Failed to submit appointment, keeping modal open');
+          // Modal permanece aberto para o usuário tentar novamente
+        }
+      } catch (error) {
+        console.error('❌ Unexpected error during submission:', error);
+        // Modal permanece aberto para retry
       }
     } else {
       nextStep();
@@ -175,7 +181,7 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
           <Button
             type="button"
             onClick={handleNext}
-            disabled={!canProceedToNextStep() || isSubmitting}
+            disabled={isSubmitting || (!canProceedToNextStep() && !isLastStep)}
             className={cn(
               "min-w-[120px] transition-all duration-200",
               isLastStep && "bg-green-600 hover:bg-green-700"

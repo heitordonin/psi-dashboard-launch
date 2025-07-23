@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment, CalendarFilters } from '@/types/appointment';
@@ -55,22 +56,30 @@ export const useAppointments = (filters?: CalendarFilters) => {
 
   const createAppointmentMutation = useMutation({
     mutationFn: async (newAppointment: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>) => {
+      console.log('📝 Creating appointment with data:', newAppointment);
+      
       const { data, error } = await supabase
         .from('appointments')
         .insert(newAppointment)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error creating appointment:', error);
+        throw error;
+      }
+      
+      console.log('✅ Appointment created successfully:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('✅ Appointment mutation successful:', data);
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       toast.success('Agendamento criado com sucesso!');
     },
     onError: (error) => {
-      console.error('Error creating appointment:', error);
-      toast.error('Erro ao criar agendamento');
+      console.error('❌ Appointment mutation error:', error);
+      toast.error(`Erro ao criar agendamento: ${error.message}`);
     },
   });
 
@@ -119,6 +128,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
     appointments,
     isLoading,
     createAppointment: createAppointmentMutation.mutate,
+    createAppointmentAsync: createAppointmentMutation.mutateAsync,
     updateAppointment: updateAppointmentMutation.mutate,
     deleteAppointment: deleteAppointmentMutation.mutate,
     isCreating: createAppointmentMutation.isPending,
