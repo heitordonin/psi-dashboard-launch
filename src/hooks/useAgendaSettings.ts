@@ -12,9 +12,11 @@ export const useAgendaSettings = () => {
       const { data, error } = await supabase
         .from('agenda_settings')
         .select('*')
-        .single();
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.error('Error fetching agenda settings:', { code: error.code, message: error.message });
         throw error;
       }
 
@@ -22,63 +24,41 @@ export const useAgendaSettings = () => {
     },
   });
 
-  const createSettingsMutation = useMutation({
-    mutationFn: async (newSettings: Omit<AgendaSettings, 'id' | 'created_at' | 'updated_at'>) => {
+  const saveSettingsMutation = useMutation({
+    mutationFn: async (settingsData: Omit<AgendaSettings, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('agenda_settings')
-        .insert(newSettings)
+        .upsert(settingsData, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving agenda settings:', { code: error.code, message: error.message, details: error.details });
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agenda-settings'] });
-      toast.success('Configurações da agenda criadas com sucesso!');
+      toast.success('Configurações da agenda salvas com sucesso!');
     },
-    onError: (error) => {
-      console.error('Error creating agenda settings:', error);
-      toast.error('Erro ao criar configurações da agenda');
-    },
-  });
-
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (updatedSettings: Partial<AgendaSettings>) => {
-      const { data, error } = await supabase
-        .from('agenda_settings')
-        .update(updatedSettings)
-        .eq('user_id', updatedSettings.user_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agenda-settings'] });
-      toast.success('Configurações da agenda atualizadas com sucesso!');
-    },
-    onError: (error) => {
-      console.error('Error updating agenda settings:', error);
-      toast.error('Erro ao atualizar configurações da agenda');
+    onError: (error: any) => {
+      console.error('Error saving agenda settings:', { code: error.code, message: error.message, details: error.details });
+      toast.error('Erro ao salvar configurações da agenda');
     },
   });
 
   const saveSettings = (settingsData: Omit<AgendaSettings, 'id' | 'created_at' | 'updated_at'>) => {
-    if (settings?.id) {
-      updateSettingsMutation.mutate(settingsData);
-    } else {
-      createSettingsMutation.mutate(settingsData);
-    }
+    saveSettingsMutation.mutate(settingsData);
   };
 
   return {
     settings,
     isLoading,
     saveSettings,
-    isCreating: createSettingsMutation.isPending,
-    isUpdating: updateSettingsMutation.isPending,
-    isSaving: createSettingsMutation.isPending || updateSettingsMutation.isPending,
+    isSaving: saveSettingsMutation.isPending,
   };
 };
