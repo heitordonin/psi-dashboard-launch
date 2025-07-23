@@ -2,9 +2,7 @@
 import * as React from "react";
 import { 
   Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent
+  SidebarContent
 } from "@/components/ui/sidebar";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -29,15 +27,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader />
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarItems />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarItems />
         {showPsicloBankSection && <PsicloBankSection />}
         {canPerformAdminAction() && <AdminSection />}
-        <SidebarFooter />
       </SidebarContent>
+      <SidebarFooter />
     </Sidebar>
   );
 }
