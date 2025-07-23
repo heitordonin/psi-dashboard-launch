@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -40,14 +41,24 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
   } = useAppointmentWizard();
 
   const handleClose = () => {
-    resetWizard();
-    onClose();
+    if (!isSubmitting) {
+      resetWizard();
+      onClose();
+    }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLastStep) {
-      submitAppointment();
-      handleClose();
+      console.log('Attempting to submit appointment...');
+      const success = await submitAppointment();
+      
+      if (success) {
+        console.log('Appointment submitted successfully, closing modal');
+        handleClose();
+      } else {
+        console.log('Failed to submit appointment, keeping modal open');
+        // Modal permanece aberto para o usuário tentar novamente
+      }
     } else {
       nextStep();
     }
@@ -77,6 +88,7 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
             size="sm" 
             onClick={handleClose}
             className="rounded-full w-8 h-8 p-0"
+            disabled={isSubmitting}
           >
             <X className="w-4 h-4" />
           </Button>
@@ -172,7 +184,7 @@ export const CreateAppointmentWizard = ({ isOpen, onClose }: CreateAppointmentWi
             {isSubmitting ? (
               <div className="flex items-center">
                 <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Criando...
+                {isLastStep ? 'Criando...' : 'Processando...'}
               </div>
             ) : isLastStep ? (
               <>
