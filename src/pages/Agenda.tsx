@@ -36,7 +36,7 @@ export default function Agenda() {
     }
   };
   
-  const { appointments, isLoading, updateAppointment } = useAppointments(filters);
+  const { appointments, isLoading, updateAppointment, deleteAppointment, isDeleting } = useAppointments(filters);
 
   const handleManualRefresh = async () => {
     console.log('🔄 Manual refresh triggered');
@@ -114,6 +114,8 @@ export default function Agenda() {
         onViewModeChange={setViewMode}
         onUpdateAppointment={handleUpdateAppointmentStatus}
         onEditAppointment={handleEditAppointment}
+        onDeleteAppointment={deleteAppointment}
+        isDeleting={isDeleting}
       />
 
       <CreateAppointmentWizard

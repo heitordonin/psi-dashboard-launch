@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Appointment } from "@/types/appointment";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Edit3, UserX } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Edit3, UserX, Trash2 } from "lucide-react";
 import { isoToLocalHHMM } from "@/utils/date";
+import { DeleteAppointmentModal } from "./DeleteAppointmentModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
@@ -12,6 +13,8 @@ interface AppointmentItemProps {
   appointment: Appointment;
   onUpdateStatus: (appointmentId: string, status: Appointment['status']) => void;
   onEdit: (appointment: Appointment) => void;
+  onDelete?: (appointmentId: string) => void;
+  isDeleting?: boolean;
   style?: React.CSSProperties;
 }
 
@@ -22,8 +25,9 @@ const statusConfig = {
   cancelled: { label: 'Cancelado', color: 'bg-red-500/10 border-red-500/20 text-red-700' }
 };
 
-export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, style }: AppointmentItemProps) => {
+export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, onDelete, isDeleting = false, style }: AppointmentItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const isMobile = useIsMobile();
   const { triggerHaptic } = useHapticFeedback();
   const currentStatusConfig = statusConfig[appointment.status];
@@ -56,6 +60,19 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, style }: 
     triggerHaptic('light');
     onEdit(appointment);
     setIsOpen(false);
+  };
+
+  const handleDeleteClick = () => {
+    triggerHaptic('light');
+    setShowDeleteModal(true);
+    setIsOpen(false);
+  };
+
+  const handleDeleteConfirm = (appointmentId: string) => {
+    if (onDelete) {
+      triggerHaptic('medium');
+      onDelete(appointmentId);
+    }
   };
 
   const handleOpen = () => {
@@ -145,7 +162,29 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, style }: 
           <Edit3 className="h-4 w-4 mr-2" />
           Editar Agendamento
         </DropdownMenuItem>
+        
+        {onDelete && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleDeleteClick} 
+              className="cursor-pointer text-destructive focus:text-destructive"
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir Agendamento
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
+
+      <DeleteAppointmentModal
+        appointment={appointment}
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirmDelete={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
     </DropdownMenu>
   );
 };

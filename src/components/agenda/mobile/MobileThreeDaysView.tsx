@@ -2,10 +2,13 @@ import { format, addDays, isSameDay, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Trash2 } from "lucide-react";
 import { Appointment } from "@/types/appointment";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { cn } from "@/lib/utils";
+import { DeleteAppointmentModal } from "../DeleteAppointmentModal";
+import { useState } from "react";
 
 interface MobileThreeDaysViewProps {
   appointments: Appointment[];
@@ -13,6 +16,8 @@ interface MobileThreeDaysViewProps {
   onDateSelect: (date: Date) => void;
   onUpdateAppointment: (appointmentId: string, status: Appointment['status']) => void;
   onEditAppointment: (appointment: Appointment) => void;
+  onDeleteAppointment?: (appointmentId: string) => void;
+  isDeleting?: boolean;
 }
 
 export const MobileThreeDaysView = ({
@@ -20,7 +25,9 @@ export const MobileThreeDaysView = ({
   selectedDate,
   onDateSelect,
   onUpdateAppointment,
-  onEditAppointment
+  onEditAppointment,
+  onDeleteAppointment,
+  isDeleting = false
 }: MobileThreeDaysViewProps) => {
   const today = new Date();
   const tomorrow = addDays(today, 1);

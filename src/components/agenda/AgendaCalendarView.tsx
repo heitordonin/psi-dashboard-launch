@@ -23,6 +23,8 @@ interface AgendaCalendarViewProps {
   onViewModeChange: (mode: 'week' | 'month') => void;
   onUpdateAppointment: (appointmentId: string, status: Appointment['status']) => void;
   onEditAppointment: (appointment: Appointment) => void;
+  onDeleteAppointment?: (appointmentId: string) => void;
+  isDeleting?: boolean;
 }
 
 export const AgendaCalendarView = ({
@@ -32,7 +34,9 @@ export const AgendaCalendarView = ({
   viewMode,
   onViewModeChange,
   onUpdateAppointment,
-  onEditAppointment
+  onEditAppointment,
+  onDeleteAppointment,
+  isDeleting = false
 }: AgendaCalendarViewProps) => {
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(selectedDate, { weekStartsOn: 0 }));
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -125,6 +129,8 @@ export const AgendaCalendarView = ({
           onDateSelect={onDateSelect}
           onUpdateAppointment={onUpdateAppointment}
           onEditAppointment={onEditAppointment}
+          onDeleteAppointment={onDeleteAppointment}
+          isDeleting={isDeleting}
         />
       </div>
     );
@@ -234,6 +240,8 @@ export const AgendaCalendarView = ({
                                     appointment={apt}
                                     onUpdateStatus={onUpdateAppointment}
                                     onEdit={onEditAppointment}
+                                    onDelete={onDeleteAppointment}
+                                    isDeleting={isDeleting}
                                     style={{
                                       position: 'absolute',
                                       top: position.top,

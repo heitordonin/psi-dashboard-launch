@@ -9,7 +9,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ArrowLeft, CalendarIcon, Search, Clock, User, Mail, Phone, Filter } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Search, Clock, User, Mail, Phone, Filter, Trash2 } from "lucide-react";
+import { DeleteAppointmentModal } from "@/components/agenda/DeleteAppointmentModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,8 @@ export default function AgendaSessoesDia() {
     date: new Date(),
   });
   const [showCalendar, setShowCalendar] = useState(false);
-  const { appointments, isLoading, updateAppointment } = useAppointments(filters);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const { appointments, isLoading, updateAppointment, deleteAppointment, isDeleting } = useAppointments(filters);
 
   const handleStatusChange = (appointmentId: string, newStatus: Appointment['status']) => {
     updateAppointment({ id: appointmentId, status: newStatus });
@@ -231,17 +233,36 @@ export default function AgendaSessoesDia() {
                         ))}
                       </SelectContent>
                     </Select>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAppointmentToDelete(appointment)}
+                      disabled={isDeleting}
+                      className="w-32 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))
         )}
-              </div>
+               </div>
             </div>
           </div>
         </SidebarInset>
       </div>
+      
+      <DeleteAppointmentModal
+        appointment={appointmentToDelete}
+        isOpen={!!appointmentToDelete}
+        onClose={() => setAppointmentToDelete(null)}
+        onConfirmDelete={deleteAppointment}
+        isDeleting={isDeleting}
+      />
     </SidebarProvider>
   );
 }
