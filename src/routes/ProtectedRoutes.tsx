@@ -8,6 +8,7 @@ import Payments from '@/pages/Payments';
 import Expenses from '@/pages/Expenses';
 import Profile from '@/pages/Profile';
 import Plans from '@/pages/Plans';
+import Subscription from '@/pages/Subscription';
 import ReceitaSaudeControl from '@/pages/ReceitaSaudeControl';
 import EmailLogs from '@/pages/EmailLogs';
 import Referral from '@/pages/Referral';
@@ -78,6 +79,13 @@ export const protectedRoutes = [
     <ProtectedRoute>
       <PhoneVerificationGuard>
         <Plans />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="subscription" path="/plans/subscription" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <Subscription />
       </PhoneVerificationGuard>
     </ProtectedRoute>
   } />,

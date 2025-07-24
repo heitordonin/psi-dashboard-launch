@@ -1,12 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
+import { Check, X, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { SubscriptionPlan } from "@/types/subscription";
 import { getPlanIcon, getFeatureLabels } from "./PlanUtils";
 import { useCancelSubscription } from "@/hooks/useCancelSubscription";
 import CancelSubscriptionModal from "./CancelSubscriptionModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthenticatedPlanCardProps {
   plan: SubscriptionPlan;
@@ -15,11 +17,40 @@ interface AuthenticatedPlanCardProps {
 
 const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardProps) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const cancelSubscription = useCancelSubscription();
+  const { toast } = useToast();
 
   const handleCancelSubscription = (immediate: boolean) => {
     cancelSubscription.mutate({ immediate });
     setShowCancelModal(false);
+  };
+
+  const handleStripeCheckout = async () => {
+    if (plan.slug === 'free') return;
+    
+    setIsCheckingOut(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+        body: { planSlug: plan.slug }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Abrir checkout do Stripe em nova aba
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast({
+        title: "Erro ao processar pagamento",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   return (
@@ -83,7 +114,7 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
             <Button className="w-full" variant="secondary" disabled>
               Plano Ativo
             </Button>
-            {plan.slug !== 'gratis' && (
+            {plan.slug !== 'free' && (
               <Button 
                 className="w-full" 
                 variant="outline" 
@@ -96,8 +127,23 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
             )}
           </div>
         ) : (
-          <Button className="w-full" variant="default">
-            Escolher Plano
+          <Button 
+            className="w-full" 
+            variant="default"
+            onClick={handleStripeCheckout}
+            disabled={isCheckingOut || plan.slug === 'free'}
+          >
+            {isCheckingOut ? (
+              <>
+                <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4 mr-2" />
+                {plan.slug === 'free' ? 'Plano Gratuito' : 'Assinar Plano'}
+              </>
+            )}
           </Button>
         )}
       </CardContent>

@@ -1,5 +1,5 @@
 
-import { Crown } from "lucide-react";
+import { Crown, CreditCard } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -15,6 +15,11 @@ const planosItems = [
     title: "Planos",
     url: "/plans",
     icon: Crown,
+  },
+  {
+    title: "Assinatura",
+    url: "/plans/subscription",
+    icon: CreditCard,
   },
 ];
 
