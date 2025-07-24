@@ -81,37 +81,69 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    // Buscar assinaturas ativas
+    // Buscar TODAS as assinaturas ativas para detectar múltiplas assinaturas
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
-      limit: 1,
+      limit: 100, // Buscar todas as assinaturas ativas
+    });
+
+    logStep("Found active subscriptions", { 
+      count: subscriptions.data.length,
+      subscriptions: subscriptions.data.map(s => ({ 
+        id: s.id, 
+        status: s.status,
+        created: s.created,
+        amount: s.items.data[0]?.price?.unit_amount
+      }))
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
     let planSlug = "free";
     let subscriptionData = null;
+    let activeSubscription = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionData = {
-        id: subscription.id,
-        status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: subscription.cancel_at_period_end
-      };
-
-      // Verificar se há múltiplas assinaturas ativas no Stripe
+      // Se há múltiplas assinaturas, cancelar as antigas e manter apenas a mais recente
       if (subscriptions.data.length > 1) {
-        logStep("Multiple active subscriptions detected in Stripe", { 
-          count: subscriptions.data.length,
-          subscriptions: subscriptions.data.map(s => ({ id: s.id, status: s.status }))
+        logStep("Multiple active subscriptions detected - cleaning up", { 
+          count: subscriptions.data.length
         });
+
+        // Ordenar por data de criação (mais recente primeiro)
+        const sortedSubscriptions = subscriptions.data.sort((a, b) => b.created - a.created);
+        activeSubscription = sortedSubscriptions[0]; // Manter a mais recente
+        
+        // Cancelar as assinaturas antigas
+        for (let i = 1; i < sortedSubscriptions.length; i++) {
+          const oldSubscription = sortedSubscriptions[i];
+          try {
+            await stripe.subscriptions.cancel(oldSubscription.id);
+            logStep("Cancelled old subscription", { 
+              subscriptionId: oldSubscription.id,
+              amount: oldSubscription.items.data[0]?.price?.unit_amount
+            });
+          } catch (cancelError) {
+            logStep("Error cancelling old subscription", { 
+              subscriptionId: oldSubscription.id,
+              error: cancelError
+            });
+          }
+        }
+      } else {
+        activeSubscription = subscriptions.data[0];
       }
 
+      subscriptionData = {
+        id: activeSubscription.id,
+        status: activeSubscription.status,
+        current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: activeSubscription.cancel_at_period_end
+      };
+
       // Determinar plano baseado no price ID
-      const priceId = subscription.items.data[0].price.id;
+      const priceId = activeSubscription.items.data[0].price.id;
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
 
@@ -123,7 +155,7 @@ serve(async (req) => {
       }
 
       logStep("Active subscription found", { 
-        subscriptionId: subscription.id, 
+        subscriptionId: activeSubscription.id, 
         planSlug,
         amount,
         priceId 

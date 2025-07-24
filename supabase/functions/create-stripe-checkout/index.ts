@@ -93,6 +93,39 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
+
+      // Verificar assinaturas ativas existentes e cancelar antes de criar nova
+      const existingSubscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 100,
+      });
+
+      if (existingSubscriptions.data.length > 0) {
+        logStep("Found existing active subscriptions, cancelling them", { 
+          count: existingSubscriptions.data.length,
+          subscriptions: existingSubscriptions.data.map(s => ({ 
+            id: s.id, 
+            amount: s.items.data[0]?.price?.unit_amount 
+          }))
+        });
+
+        // Cancelar todas as assinaturas ativas existentes
+        for (const subscription of existingSubscriptions.data) {
+          try {
+            await stripe.subscriptions.cancel(subscription.id);
+            logStep("Cancelled existing subscription", { 
+              subscriptionId: subscription.id,
+              amount: subscription.items.data[0]?.price?.unit_amount
+            });
+          } catch (cancelError) {
+            logStep("Error cancelling existing subscription", { 
+              subscriptionId: subscription.id,
+              error: cancelError
+            });
+          }
+        }
+      }
     } else {
       logStep("No existing customer found");
     }
