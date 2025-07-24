@@ -17,6 +17,7 @@ import VerifyPhone from '@/pages/VerifyPhone';
 import SupportTicket from '@/pages/SupportTicket';
 import DocumentosRecebidos from '@/pages/DocumentosRecebidos';
 import DocumentoDetalhes from '@/pages/DocumentoDetalhes';
+import CheckoutSuccess from '@/pages/CheckoutSuccess';
 
 import Agenda from '@/pages/Agenda';
 import AgendaConfiguracoes from '@/pages/AgendaConfiguracoes';
@@ -139,6 +140,11 @@ export const protectedRoutes = [
       <PhoneVerificationGuard>
         <DocumentoDetalhes />
       </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
+  <Route key="checkout-success" path="/checkout/success" element={
+    <ProtectedRoute>
+      <CheckoutSuccess />
     </ProtectedRoute>
   } />
 ];

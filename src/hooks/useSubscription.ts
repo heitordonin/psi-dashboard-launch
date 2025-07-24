@@ -1,11 +1,12 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import type { SubscriptionPlan, UserSubscription, PlanFeature } from "@/types/subscription";
 
 export const useSubscription = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: userSubscription, isLoading: subscriptionLoading } = useQuery({
     queryKey: ['user-subscription', user?.id],
@@ -72,6 +73,27 @@ export const useSubscription = () => {
     return planFeatures?.includes(feature) || false;
   };
 
+  const refreshSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-stripe-subscription');
+      
+      if (error) {
+        console.error('Erro ao verificar assinatura:', error);
+        return { success: false, error };
+      }
+      
+      // Invalida as queries para forçar re-fetch
+      queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['plan-features'] });
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('Erro ao verificar assinatura:', error);
+      return { success: false, error };
+    }
+  };
+
   const currentPlan = userSubscription?.subscription_plans;
 
   return {
@@ -80,6 +102,7 @@ export const useSubscription = () => {
     patientLimit,
     planFeatures,
     hasFeature,
+    refreshSubscription,
     isLoading: subscriptionLoading
   };
 };

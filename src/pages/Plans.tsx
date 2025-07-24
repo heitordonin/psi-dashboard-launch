@@ -6,12 +6,16 @@ import { useEffect } from "react";
 import PublicPlansView from "@/components/plans/PublicPlansView";
 import AuthenticatedPlansView from "@/components/plans/AuthenticatedPlansView";
 import PlansLoading from "@/components/plans/PlansLoading";
+import { useAutoSubscriptionCheck } from "@/hooks/useAutoSubscriptionCheck";
 
 const Plans = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const { plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { currentPlan } = useSubscription();
+  
+  // Auto-verificação da assinatura
+  useAutoSubscriptionCheck();
 
   useEffect(() => {
     if (!isLoading && !user) {
