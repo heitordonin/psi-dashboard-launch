@@ -101,17 +101,17 @@ serve(async (req) => {
     const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
     const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
     
-    if (!gestaoPrice || !psiRegularPrice) {
-      throw new Error("Stripe Price IDs not configured. Please set STRIPE_PRICE_GESTAO and STRIPE_PRICE_PSI_REGULAR environment variables.");
-    }
-    
     const planPriceMap: Record<string, string> = {
-      'gestao': gestaoPrice,
-      'psi_regular': psiRegularPrice,
+      'gestao': gestaoPrice || '',
+      'psi_regular': psiRegularPrice || '',
     };
 
+    // Check if the specific plan's price ID is configured
     const priceId = planPriceMap[planSlug];
-    if (!priceId) throw new Error(`No price configured for plan: ${planSlug}`);
+    if (!priceId) {
+      throw new Error(`Price ID not configured for plan: ${planSlug}. Please set STRIPE_PRICE_${planSlug.toUpperCase()} environment variable.`);
+    }
+
     logStep("Price ID mapped", { planSlug, priceId });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
