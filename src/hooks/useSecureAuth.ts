@@ -15,18 +15,24 @@ export const useSecureAuth = () => {
     queryFn: async () => {
       if (!user?.id) return false;
       
-      const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
-      
-      if (error) {
-        console.error('Error verifying admin status:', error);
+      try {
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        
+        if (error) {
+          console.error('Error verifying admin status:', error);
+          return false;
+        }
+        
+        return data === true;
+      } catch (error) {
+        console.error('Admin verification failed:', error);
         return false;
       }
-      
-      return data === true;
     },
-    enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    retry: 1
+    enabled: !!user?.id && contextIsAdmin, // Only verify if context suggests admin
+    staleTime: 2 * 60 * 1000, // Reduced cache time for security
+    retry: 1,
+    refetchOnWindowFocus: true // Re-verify on window focus
   });
 
   // Secure user object that doesn't expose sensitive data

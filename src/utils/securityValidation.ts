@@ -3,7 +3,7 @@
  * Security validation utilities for the Psiclo application
  */
 
-// CPF validation with security considerations
+// CPF validation with enhanced security considerations
 export const validateCPF = (cpf: string): boolean => {
   if (!cpf || typeof cpf !== 'string') return false;
   
@@ -13,8 +13,22 @@ export const validateCPF = (cpf: string): boolean => {
   // Check if CPF has exactly 11 digits
   if (cleanCPF.length !== 11) return false;
   
+  // Additional security: Check for minimum and maximum valid ranges
+  const cpfNumber = parseInt(cleanCPF);
+  if (cpfNumber < 10000000000 || cpfNumber > 99999999999) return false;
+  
   // Check for known invalid patterns (all same digits)
   if (/^(\d)\1+$/.test(cleanCPF)) return false;
+  
+  // Enhanced security: Check for sequential numbers
+  let isSequential = true;
+  for (let i = 1; i < cleanCPF.length; i++) {
+    if (parseInt(cleanCPF[i]) !== parseInt(cleanCPF[i-1]) + 1) {
+      isSequential = false;
+      break;
+    }
+  }
+  if (isSequential) return false;
   
   // Calculate first check digit
   let sum = 0;

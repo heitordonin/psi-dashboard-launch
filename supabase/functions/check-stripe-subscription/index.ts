@@ -175,9 +175,15 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-stripe-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    
+    // Return generic error message to prevent information disclosure
+    const safeErrorMessage = errorMessage.includes('Authentication') 
+      ? 'Authentication required' 
+      : 'Unable to verify subscription status';
+    
+    return new Response(JSON.stringify({ error: safeErrorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: error instanceof Error && errorMessage.includes('Authentication') ? 401 : 500,
     });
   }
 });

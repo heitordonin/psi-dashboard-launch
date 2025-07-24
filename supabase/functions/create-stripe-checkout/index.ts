@@ -7,6 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting for checkout operations
+const rateLimitStore = new Map();
+const RATE_LIMIT_MAX = 5; // Max 5 checkout attempts per hour per user
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
+const checkRateLimit = (userId: string): boolean => {
+  const now = Date.now();
+  const record = rateLimitStore.get(userId);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+};
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-STRIPE-CHECKOUT] ${step}${detailsStr}`);
@@ -41,9 +63,26 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Parse request body
-    const { planSlug } = await req.json();
-    if (!planSlug) throw new Error("Plan slug is required");
+    // Check rate limit
+    if (!checkRateLimit(user.id)) {
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
+    // Parse request body with validation
+    const body = await req.json();
+    const { planSlug } = body;
+    
+    // Validate input
+    if (!planSlug || typeof planSlug !== 'string') {
+      throw new Error("Valid plan slug is required");
+    }
+    
+    // Validate plan slug against allowed values
+    const allowedPlans = ['gestao', 'psi_regular'];
+    if (!allowedPlans.includes(planSlug)) {
+      throw new Error(`Invalid plan slug. Allowed values: ${allowedPlans.join(', ')}`);
+    }
+    
     logStep("Plan slug received", { planSlug });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -58,11 +97,17 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Mapear planos para Price IDs do Stripe
-    // Você precisa substituir pelos seus Price IDs reais do Stripe
+    // Get Price IDs from environment variables for security
+    const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
+    const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
+    
+    if (!gestaoPrice || !psiRegularPrice) {
+      throw new Error("Stripe Price IDs not configured. Please set STRIPE_PRICE_GESTAO and STRIPE_PRICE_PSI_REGULAR environment variables.");
+    }
+    
     const planPriceMap: Record<string, string> = {
-      'gestao': 'price_1234567890_gestao', // Substituir pelo Price ID real
-      'psi_regular': 'price_1234567890_psi_regular', // Substituir pelo Price ID real
+      'gestao': gestaoPrice,
+      'psi_regular': psiRegularPrice,
     };
 
     const priceId = planPriceMap[planSlug];
