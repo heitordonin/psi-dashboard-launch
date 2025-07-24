@@ -102,6 +102,14 @@ serve(async (req) => {
         cancel_at_period_end: subscription.cancel_at_period_end
       };
 
+      // Verificar se há múltiplas assinaturas ativas no Stripe
+      if (subscriptions.data.length > 1) {
+        logStep("Multiple active subscriptions detected in Stripe", { 
+          count: subscriptions.data.length,
+          subscriptions: subscriptions.data.map(s => ({ id: s.id, status: s.status }))
+        });
+      }
+
       // Determinar plano baseado no price ID
       const priceId = subscription.items.data[0].price.id;
       const price = await stripe.prices.retrieve(priceId);
@@ -121,6 +129,20 @@ serve(async (req) => {
         priceId 
       });
 
+      // Verificar se há assinaturas existentes no Supabase antes de atualizar
+      const { data: existingSubscriptions } = await supabaseClient
+        .from("user_subscriptions")
+        .select("id, plan_id, status")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (existingSubscriptions && existingSubscriptions.length > 0) {
+        logStep("Found existing active subscriptions in Supabase", { 
+          count: existingSubscriptions.length,
+          subscriptions: existingSubscriptions 
+        });
+      }
+
       // Buscar ID do plano no Supabase
       const { data: plan } = await supabaseClient
         .from("subscription_plans")
@@ -129,15 +151,23 @@ serve(async (req) => {
         .single();
 
       if (plan) {
-        // Atualizar assinatura no Supabase
-        await supabaseClient.from("user_subscriptions").upsert({
+        // Usar transação para garantir atomicidade
+        const { error: upsertError } = await supabaseClient.from("user_subscriptions").upsert({
           user_id: user.id,
           plan_id: plan.id,
           status: 'active',
           starts_at: subscriptionData.current_period_start,
           expires_at: subscriptionData.current_period_end,
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        }, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        });
+
+        if (upsertError) {
+          logStep("Error updating subscription", { error: upsertError });
+          throw new Error(`Failed to update subscription: ${upsertError.message}`);
+        }
 
         logStep("Updated subscription in Supabase", { planId: plan.id, planSlug });
       }
@@ -152,13 +182,20 @@ serve(async (req) => {
         .single();
 
       if (freePlan) {
-        await supabaseClient.from("user_subscriptions").upsert({
+        const { error: upsertError } = await supabaseClient.from("user_subscriptions").upsert({
           user_id: user.id,
           plan_id: freePlan.id,
           status: 'active',
           starts_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        }, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        });
+
+        if (upsertError) {
+          logStep("Error updating free plan subscription", { error: upsertError });
+        }
       }
     }
 

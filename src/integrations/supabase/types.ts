@@ -949,6 +949,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_duplicate_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_expired_verification_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
