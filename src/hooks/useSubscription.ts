@@ -23,8 +23,7 @@ export const useSubscription = () => {
         `)
         .eq('user_id', user.id)
         .eq('status', 'active')
-        .gte('expires_at', new Date().toISOString())
-        .or('expires_at.is.null')
+        .or(`expires_at.gte.${new Date().toISOString()},expires_at.is.null`)
         .single();
       
       if (error) {
@@ -78,6 +77,11 @@ export const useSubscription = () => {
   };
 
   const refreshSubscription = async () => {
+    // Invalidate all subscription-related queries before syncing
+    queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
+    queryClient.invalidateQueries({ queryKey: ['patient-limit'] });
+    queryClient.invalidateQueries({ queryKey: ['plan-features'] });
+    
     return syncSubscriptionMutex();
   };
 
