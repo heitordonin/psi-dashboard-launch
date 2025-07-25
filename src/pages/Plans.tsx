@@ -7,12 +7,16 @@ import PublicPlansView from "@/components/plans/PublicPlansView";
 import AuthenticatedPlansView from "@/components/plans/AuthenticatedPlansView";
 import PlansLoading from "@/components/plans/PlansLoading";
 import { useAutoSubscriptionCheck } from "@/hooks/useAutoSubscriptionCheck";
+import { useForceSyncSubscription } from "@/hooks/useForceSyncSubscription";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const Plans = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const { plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { currentPlan } = useSubscription();
+  const forceSyncMutation = useForceSyncSubscription();
   
   // Auto-verificação da assinatura
   useAutoSubscriptionCheck();
@@ -33,7 +37,22 @@ const Plans = () => {
   }
 
   // Usuário logado - interface administrativa
-  return <AuthenticatedPlansView plans={plans || []} currentPlan={currentPlan} />;
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          onClick={() => forceSyncMutation.mutate()}
+          disabled={forceSyncMutation.isPending}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${forceSyncMutation.isPending ? 'animate-spin' : ''}`} />
+          {forceSyncMutation.isPending ? 'Sincronizando...' : 'Sincronizar Plano'}
+        </Button>
+      </div>
+      <AuthenticatedPlansView plans={plans || []} currentPlan={currentPlan} />
+    </div>
+  );
 };
 
 export default Plans;
