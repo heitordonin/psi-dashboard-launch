@@ -58,14 +58,34 @@ serve(async (req) => {
         .single();
 
       if (freePlan) {
-        // Atualizar/criar assinatura gratuita
-        await supabaseClient.from("user_subscriptions").upsert({
-          user_id: user.id,
-          plan_id: freePlan.id,
-          status: 'active',
-          starts_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        // Cancelar assinaturas ativas existentes
+        const { error: cancelError } = await supabaseClient
+          .from("user_subscriptions")
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", user.id)
+          .eq("status", "active");
+
+        if (cancelError) {
+          logStep("Error cancelling existing subscriptions", { error: cancelError });
+        }
+
+        // Inserir nova assinatura gratuita
+        const { error: insertError } = await supabaseClient
+          .from("user_subscriptions")
+          .insert({
+            user_id: user.id,
+            plan_id: freePlan.id,
+            status: 'active',
+            starts_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          logStep("Error inserting free plan subscription", { error: insertError });
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -183,25 +203,38 @@ serve(async (req) => {
         .single();
 
       if (plan) {
-        // Usar transação para garantir atomicidade
-        const { error: upsertError } = await supabaseClient.from("user_subscriptions").upsert({
-          user_id: user.id,
-          plan_id: plan.id,
-          status: 'active',
-          starts_at: subscriptionData.current_period_start,
-          expires_at: subscriptionData.current_period_end,
-          updated_at: new Date().toISOString(),
-        }, { 
-          onConflict: 'user_id',
-          ignoreDuplicates: false 
-        });
+        // Primeiro cancelar todas as assinaturas ativas existentes para evitar conflitos
+        const { error: cancelError } = await supabaseClient
+          .from("user_subscriptions")
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", user.id)
+          .eq("status", "active");
 
-        if (upsertError) {
-          logStep("Error updating subscription", { error: upsertError });
-          throw new Error(`Failed to update subscription: ${upsertError.message}`);
+        if (cancelError) {
+          logStep("Error cancelling existing subscriptions", { error: cancelError });
         }
 
-        logStep("Updated subscription in Supabase", { planId: plan.id, planSlug });
+        // Agora inserir a nova assinatura ativa
+        const { error: insertError } = await supabaseClient
+          .from("user_subscriptions")
+          .insert({
+            user_id: user.id,
+            plan_id: plan.id,
+            status: 'active',
+            starts_at: subscriptionData.current_period_start,
+            expires_at: subscriptionData.current_period_end,
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          logStep("Error inserting new subscription", { error: insertError });
+          throw new Error(`Failed to create subscription: ${insertError.message}`);
+        }
+
+        logStep("Created new subscription in Supabase", { planId: plan.id, planSlug });
       }
     } else {
       logStep("No active subscription found");
@@ -214,19 +247,33 @@ serve(async (req) => {
         .single();
 
       if (freePlan) {
-        const { error: upsertError } = await supabaseClient.from("user_subscriptions").upsert({
-          user_id: user.id,
-          plan_id: freePlan.id,
-          status: 'active',
-          starts_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { 
-          onConflict: 'user_id',
-          ignoreDuplicates: false 
-        });
+        // Cancelar assinaturas ativas existentes
+        const { error: cancelError } = await supabaseClient
+          .from("user_subscriptions")
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", user.id)
+          .eq("status", "active");
 
-        if (upsertError) {
-          logStep("Error updating free plan subscription", { error: upsertError });
+        if (cancelError) {
+          logStep("Error cancelling existing subscriptions for free plan", { error: cancelError });
+        }
+
+        // Inserir nova assinatura gratuita
+        const { error: insertError } = await supabaseClient
+          .from("user_subscriptions")
+          .insert({
+            user_id: user.id,
+            plan_id: freePlan.id,
+            status: 'active',
+            starts_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          logStep("Error inserting free plan subscription", { error: insertError });
         }
       }
     }
