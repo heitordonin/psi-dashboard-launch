@@ -7,11 +7,18 @@ import { Toaster } from 'sonner';
 import { queryClient } from '@/config/queryClient';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { useAutoSubscriptionCheck } from '@/hooks/useAutoSubscriptionCheck';
+import { useAuthSubscriptionSync } from '@/hooks/useAuthSubscriptionSync';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 // Componente interno para usar hooks dentro do contexto
 const AppContent = () => {
+  const { user, isLoading } = useAuth();
+  
   // Hook global para verificação automática de assinatura
   useAutoSubscriptionCheck();
+  
+  // Integração entre auth e sincronização de assinatura
+  useAuthSubscriptionSync(user, isLoading);
 
   return (
     <Router>

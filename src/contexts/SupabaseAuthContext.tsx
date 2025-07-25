@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthSubscriptionSync } from '@/hooks/useAuthSubscriptionSync';
 
 interface AuthContextType {
   user: User | null;
@@ -34,8 +33,6 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
-  // Integrar sincronização automática de assinatura com auth
-  useAuthSubscriptionSync(user, isLoading);
 
   useEffect(() => {
     // Set up the auth state listener
