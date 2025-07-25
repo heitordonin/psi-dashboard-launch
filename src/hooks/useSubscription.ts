@@ -23,6 +23,8 @@ export const useSubscription = () => {
         `)
         .eq('user_id', user.id)
         .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .or('expires_at.is.null')
         .single();
       
       if (error) {
@@ -80,6 +82,7 @@ export const useSubscription = () => {
   };
 
   const currentPlan = userSubscription?.subscription_plans;
+  const isCancelledAtPeriodEnd = userSubscription?.cancel_at_period_end || false;
 
   return {
     userSubscription,
@@ -88,6 +91,7 @@ export const useSubscription = () => {
     planFeatures,
     hasFeature,
     refreshSubscription,
+    isCancelledAtPeriodEnd,
     isLoading: subscriptionLoading || syncState.isLoading,
     syncError: syncState.error
   };

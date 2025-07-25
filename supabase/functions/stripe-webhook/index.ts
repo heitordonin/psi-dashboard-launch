@@ -132,6 +132,25 @@ serve(async (req) => {
           });
         }
 
+        // Check if subscription was cancelled at period end
+        if (subscription.cancel_at_period_end && subscription.status === 'active') {
+          // Mark as cancelled but keep active until period end
+          const { error: updateError } = await supabaseClient
+            .from('user_subscriptions')
+            .update({ 
+              cancel_at_period_end: true, 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('user_id', user.id)
+            .eq('status', 'active');
+          
+          if (updateError) {
+            logStep("Error updating cancel_at_period_end", updateError);
+          } else {
+            logStep("Marked subscription as cancelled at period end");
+          }
+        }
+
         // Update subscription in database
         const { data: result, error: rpcError } = await supabaseClient
           .rpc('atomic_upsert_subscription', {

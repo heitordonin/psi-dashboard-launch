@@ -21,6 +21,7 @@ export interface UserSubscription {
   starts_at: string;
   expires_at: string | null;
   trial_ends_at: string | null;
+  cancel_at_period_end: boolean;
   created_at: string;
   updated_at: string;
   subscription_plans?: SubscriptionPlan;
