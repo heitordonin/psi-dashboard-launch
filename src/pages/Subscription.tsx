@@ -2,15 +2,15 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, CreditCard, ExternalLink, RefreshCw } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { SubscriptionStatusBadge } from "@/components/plans/SubscriptionStatusBadge";
 
 const Subscription = () => {
-  const { currentPlan, userSubscription, isLoading } = useSubscription();
+  const { currentPlan, userSubscription, isLoading, isCancelledAtPeriodEnd } = useSubscription();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
@@ -69,18 +69,6 @@ const Subscription = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500">Ativa</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">Cancelada</Badge>;
-      case 'expired':
-        return <Badge variant="secondary">Expirada</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
 
   const getPlanPrice = () => {
     if (!currentPlan) return 'Gratuito';
@@ -162,7 +150,11 @@ const Subscription = () => {
                         <span className="font-medium">Plano:</span>
                         <div className="flex items-center gap-2">
                           <span>{currentPlan?.name || 'Plano Gratuito'}</span>
-                          {getStatusBadge(userSubscription?.status || 'active')}
+                          <SubscriptionStatusBadge 
+                            status={userSubscription?.status || 'active'}
+                            cancelAtPeriodEnd={isCancelledAtPeriodEnd}
+                            expiresAt={userSubscription?.expires_at}
+                          />
                         </div>
                       </div>
                       
@@ -173,7 +165,9 @@ const Subscription = () => {
 
                       {userSubscription?.expires_at && (
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">Próximo pagamento:</span>
+                          <span className="font-medium">
+                            {isCancelledAtPeriodEnd ? 'Acesso até:' : 'Próximo pagamento:'}
+                          </span>
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-500" />
                             <span>{formatDate(userSubscription.expires_at)}</span>
