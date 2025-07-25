@@ -66,7 +66,7 @@ serve(async (req) => {
       
       try {
         const { data: result, error: rpcError } = await supabaseClient
-          .rpc('atomic_force_sync_subscription', {
+          .rpc('atomic_upsert_subscription', {
             p_user_id: user.id,
             p_plan_slug: 'free',
             p_stripe_customer_id: null,
@@ -196,7 +196,7 @@ serve(async (req) => {
       // Usar função atômica para atualizar assinatura
       try {
         const { data: result, error: rpcError } = await supabaseClient
-          .rpc('atomic_force_sync_subscription', {
+          .rpc('atomic_upsert_subscription', {
             p_user_id: user.id,
             p_plan_slug: planSlug,
             p_stripe_customer_id: customerId,
@@ -220,7 +220,7 @@ serve(async (req) => {
       
       try {
         const { data: result, error: rpcError } = await supabaseClient
-          .rpc('atomic_force_sync_subscription', {
+          .rpc('atomic_upsert_subscription', {
             p_user_id: user.id,
             p_plan_slug: 'free',
             p_stripe_customer_id: customerId,

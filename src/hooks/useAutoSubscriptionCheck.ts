@@ -13,43 +13,37 @@ export const useAutoSubscriptionCheck = () => {
   useEffect(() => {
     if (!user || state.isLoading) return;
 
-    // Verificar ao carregar a página se não verificou recentemente
+    // REDUZIDO: Verificar apenas se não verificou em muito tempo (1 hora)
     const lastCheck = localStorage.getItem(`subscription-last-check-${user.id}`);
     const now = Date.now();
-    const checkInterval = 5 * 60 * 1000; // 5 minutos
+    const checkInterval = 60 * 60 * 1000; // 1 HORA em vez de 5 minutos
 
+    // Só verificar se realmente não verificou por muito tempo
     if (!lastCheck || now - parseInt(lastCheck) > checkInterval) {
-      console.log('Verificando assinatura automaticamente...');
+      console.log('[AUTO-CHECK] Verificação automática necessária após 1 hora...');
       syncSubscription('AUTO_CHECK').then((result) => {
         if (result.success) {
           localStorage.setItem(`subscription-last-check-${user.id}`, now.toString());
         }
       });
+    } else {
+      console.log('[AUTO-CHECK] Verificação pulada - ainda dentro do cache de 1 hora');
     }
 
-    // Verificar quando a janela volta a ter foco (usuário retorna de outra aba)
-    const handleFocus = () => {
-      // Não verificar se já há uma sincronização em andamento
-      if (state.isLoading) return;
-      
-      const lastFocusCheck = localStorage.getItem(`subscription-focus-check-${user.id}`);
-      const focusNow = Date.now();
-      const focusInterval = 2 * 60 * 1000; // 2 minutos
+    // REMOVIDO: Verificação por foco é desnecessária e causa muitas chamadas
+    // Apenas manter uma verificação essencial no login/load inicial
+    console.log('[AUTO-CHECK] Verificação por foco removida para reduzir chamadas');
 
-      if (!lastFocusCheck || focusNow - parseInt(lastFocusCheck) > focusInterval) {
-        console.log('Verificando assinatura ao retornar o foco...');
-        syncSubscription('FOCUS_CHECK').then((result) => {
-          if (result.success) {
-            localStorage.setItem(`subscription-focus-check-${user.id}`, focusNow.toString());
-          }
-        });
-      }
+    // Função vazia para evitar verificações desnecessárias
+    const handleFocus = () => {
+      console.log('[AUTO-CHECK] Foco detectado, mas verificação desabilitada para performance');
     };
 
-    window.addEventListener('focus', handleFocus);
+    // Remover event listener de focus para evitar verificações desnecessárias
+    // window.addEventListener('focus', handleFocus);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      // window.removeEventListener('focus', handleFocus);
     };
   }, [user, syncSubscription, state.isLoading]);
 };

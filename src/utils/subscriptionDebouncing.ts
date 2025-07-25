@@ -25,9 +25,9 @@ class SubscriptionDebouncingManager {
   private cache = new Map<string, CacheEntry>();
   private lastCall = new Map<string, number>();
   
-  // Rate limiting - máximo de chamadas por minuto por usuário
+  // Rate limiting mais agressivo - máximo de chamadas por usuário
   private readonly rateLimitWindow = 60 * 1000; // 1 minuto
-  private readonly maxCallsPerWindow = 5;
+  private readonly maxCallsPerWindow = 2; // REDUZIDO: apenas 2 calls por minuto
   private userCalls = new Map<string, number[]>();
 
   /**
@@ -92,10 +92,11 @@ class SubscriptionDebouncingManager {
         timestamp: Date.now(),
         ttl: type === 'force' ? 30 * 1000 : 2 * 60 * 1000 // 30s para force, 2min para sync
       };
-      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    } catch (error) {
-      console.warn('Erro ao persistir cache de assinatura:', error);
-    }
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        console.log(`[DEBOUNCING] Cache persistido para ${type} - TTL: ${cacheData.ttl}ms`);
+      } catch (error) {
+        console.warn('Erro ao persistir cache de assinatura:', error);
+      }
   }
 
   /**
@@ -266,12 +267,12 @@ class SubscriptionDebouncingManager {
 // Instância singleton
 export const subscriptionDebouncing = new SubscriptionDebouncingManager();
 
-// Configurações de debouncing por contexto
+// Configurações de debouncing por contexto - OTIMIZADAS
 export const DEBOUNCE_CONFIGS = {
-  AUTH_LOGIN: { delay: 200, context: 'login' },
-  AUTH_USER_CHANGE: { delay: 200, context: 'user_change' },
-  AUTO_CHECK: { delay: 1000, context: 'auto_check', maxWait: 3000 },
-  FOCUS_CHECK: { delay: 500, context: 'focus_check', maxWait: 2000 },
-  MANUAL_SYNC: { delay: 100, context: 'manual_sync' },
-  FORCE_SYNC: { delay: 0, context: 'force_sync' },
+  AUTH_LOGIN: { delay: 500, context: 'login', maxWait: 2000 }, // Aumentado
+  AUTH_USER_CHANGE: { delay: 500, context: 'user_change', maxWait: 2000 }, // Aumentado
+  AUTO_CHECK: { delay: 2000, context: 'auto_check', maxWait: 5000 }, // Muito aumentado
+  FOCUS_CHECK: { delay: 2000, context: 'focus_check', maxWait: 5000 }, // Desabilitado na prática
+  MANUAL_SYNC: { delay: 300, context: 'manual_sync', maxWait: 1000 }, // Aumentado
+  FORCE_SYNC: { delay: 100, context: 'force_sync', maxWait: 500 }, // Mantido rápido
 } as const;

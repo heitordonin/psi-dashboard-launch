@@ -39,3 +39,6 @@ verify_jwt = true
 
 [functions.cleanup-duplicate-subscriptions]
 verify_jwt = true
+
+[functions.cleanup-subscriptions]
+verify_jwt = false

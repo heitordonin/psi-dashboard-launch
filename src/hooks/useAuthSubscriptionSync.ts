@@ -33,26 +33,37 @@ export const useAuthSubscriptionSync = (user: User | null, isLoading: boolean) =
       // Resetar flag de sync concluído
       loginSyncCompletedRef.current = false;
       
-      // Verificar assinatura imediatamente após login/mudança de usuário
-      // Usar setTimeout para garantir que o auth context terminou de processar
+      // OTIMIZADO: Verificar apenas se necessário e com debounce maior
       setTimeout(() => {
         if (!state.isLoading && !loginSyncCompletedRef.current) {
-          const context = isLogin ? 'AUTH_LOGIN' : 'AUTH_USER_CHANGE';
-          syncSubscription(context).then((result) => {
-            if (result.success) {
-              console.log('[AUTH-SYNC] Sincronização pós-login concluída com sucesso');
-              loginSyncCompletedRef.current = true;
-              
-              // Marcar último check para evitar verificações desnecessárias
-              if (currentUserId) {
-                localStorage.setItem(`subscription-last-check-${currentUserId}`, Date.now().toString());
+          // Verificar se já foi sincronizado recentemente para evitar duplicação
+          const lastCheck = localStorage.getItem(`subscription-last-check-${currentUserId}`);
+          const now = Date.now();
+          const minInterval = 30 * 1000; // 30 segundos mínimo entre checks
+          
+          if (!lastCheck || now - parseInt(lastCheck) > minInterval) {
+            const context = isLogin ? 'AUTH_LOGIN' : 'AUTH_USER_CHANGE';
+            console.log(`[AUTH-SYNC] ${context} - Sincronizando após debounce...`);
+            
+            syncSubscription(context).then((result) => {
+              if (result.success) {
+                console.log('[AUTH-SYNC] Sincronização pós-login concluída com sucesso');
+                loginSyncCompletedRef.current = true;
+                
+                // Marcar último check para evitar verificações desnecessárias
+                if (currentUserId) {
+                  localStorage.setItem(`subscription-last-check-${currentUserId}`, Date.now().toString());
+                }
+              } else {
+                console.error('[AUTH-SYNC] Erro na sincronização pós-login:', result.error);
               }
-            } else {
-              console.error('[AUTH-SYNC] Erro na sincronização pós-login:', result.error);
-            }
-          });
+            });
+          } else {
+            console.log('[AUTH-SYNC] Sincronização pulada - muito recente');
+            loginSyncCompletedRef.current = true;
+          }
         }
-      }, 100);
+      }, 500); // Aumentado de 100ms para 500ms
     }
 
     if (isLogout) {

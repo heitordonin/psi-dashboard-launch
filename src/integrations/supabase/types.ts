@@ -975,11 +975,26 @@ export type Database = {
         }
         Returns: Json
       }
+      atomic_upsert_subscription: {
+        Args: {
+          p_user_id: string
+          p_plan_slug: string
+          p_stripe_customer_id?: string
+          p_subscription_tier?: string
+          p_subscription_end?: string
+          p_subscribed?: boolean
+        }
+        Returns: Json
+      }
       cleanup_duplicate_subscriptions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
       cleanup_expired_verification_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_subscriptions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

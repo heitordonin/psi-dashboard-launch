@@ -18,8 +18,8 @@ const Plans = () => {
   const { currentPlan } = useSubscription();
   const forceSyncMutation = useForceSyncSubscription();
   
-  // Auto-verificação da assinatura
-  useAutoSubscriptionCheck();
+  // REMOVIDO: Auto-verificação desnecessária na página de planos
+  // useAutoSubscriptionCheck(); // Desabilitado para reduzir calls
 
   useEffect(() => {
     if (!isLoading && !user) {
