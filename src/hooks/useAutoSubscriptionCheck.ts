@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { useSubscription } from './useSubscription';
+import { useSubscriptionSync } from '@/contexts/SubscriptionSyncContext';
 
 /**
  * Hook para verificação automática da assinatura quando o usuário
@@ -8,10 +8,10 @@ import { useSubscription } from './useSubscription';
  */
 export const useAutoSubscriptionCheck = () => {
   const { user } = useAuth();
-  const { refreshSubscription } = useSubscription();
+  const { syncSubscription, state } = useSubscriptionSync();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || state.isLoading) return;
 
     // Verificar ao carregar a página se não verificou recentemente
     const lastCheck = localStorage.getItem(`subscription-last-check-${user.id}`);
@@ -20,7 +20,7 @@ export const useAutoSubscriptionCheck = () => {
 
     if (!lastCheck || now - parseInt(lastCheck) > checkInterval) {
       console.log('Verificando assinatura automaticamente...');
-      refreshSubscription().then((result) => {
+      syncSubscription().then((result) => {
         if (result.success) {
           localStorage.setItem(`subscription-last-check-${user.id}`, now.toString());
         }
@@ -29,13 +29,16 @@ export const useAutoSubscriptionCheck = () => {
 
     // Verificar quando a janela volta a ter foco (usuário retorna de outra aba)
     const handleFocus = () => {
+      // Não verificar se já há uma sincronização em andamento
+      if (state.isLoading) return;
+      
       const lastFocusCheck = localStorage.getItem(`subscription-focus-check-${user.id}`);
       const focusNow = Date.now();
       const focusInterval = 2 * 60 * 1000; // 2 minutos
 
       if (!lastFocusCheck || focusNow - parseInt(lastFocusCheck) > focusInterval) {
         console.log('Verificando assinatura ao retornar o foco...');
-        refreshSubscription().then((result) => {
+        syncSubscription().then((result) => {
           if (result.success) {
             localStorage.setItem(`subscription-focus-check-${user.id}`, focusNow.toString());
           }
@@ -48,5 +51,5 @@ export const useAutoSubscriptionCheck = () => {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [user, refreshSubscription]);
+  }, [user, syncSubscription, state.isLoading]);
 };
