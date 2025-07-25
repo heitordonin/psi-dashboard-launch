@@ -13,21 +13,31 @@ export const useAutoSubscriptionCheck = () => {
   useEffect(() => {
     if (!user || state.isLoading) return;
 
-    // REDUZIDO: Verificar apenas se não verificou em muito tempo (1 hora)
+    // Verificação otimizada: 15 minutos + sempre no login
     const lastCheck = localStorage.getItem(`subscription-last-check-${user.id}`);
     const now = Date.now();
-    const checkInterval = 60 * 60 * 1000; // 1 HORA em vez de 5 minutos
+    const checkInterval = 15 * 60 * 1000; // 15 MINUTOS
 
-    // Só verificar se realmente não verificou por muito tempo
-    if (!lastCheck || now - parseInt(lastCheck) > checkInterval) {
-      console.log('[AUTO-CHECK] Verificação automática necessária após 1 hora...');
+    // Sempre verificar no primeiro login da sessão
+    const sessionCheck = sessionStorage.getItem(`subscription-session-check-${user.id}`);
+    
+    if (!sessionCheck) {
+      console.log('[AUTO-CHECK] Primeira verificação da sessão...');
+      syncSubscription('AUTH_LOGIN').then((result) => {
+        if (result.success) {
+          localStorage.setItem(`subscription-last-check-${user.id}`, now.toString());
+          sessionStorage.setItem(`subscription-session-check-${user.id}`, 'done');
+        }
+      });
+    } else if (!lastCheck || now - parseInt(lastCheck) > checkInterval) {
+      console.log('[AUTO-CHECK] Verificação automática necessária após 15 minutos...');
       syncSubscription('AUTO_CHECK').then((result) => {
         if (result.success) {
           localStorage.setItem(`subscription-last-check-${user.id}`, now.toString());
         }
       });
     } else {
-      console.log('[AUTO-CHECK] Verificação pulada - ainda dentro do cache de 1 hora');
+      console.log('[AUTO-CHECK] Verificação pulada - ainda dentro do cache de 15 minutos');
     }
 
     // REMOVIDO: Verificação por foco é desnecessária e causa muitas chamadas

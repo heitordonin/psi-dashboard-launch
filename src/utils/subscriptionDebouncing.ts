@@ -25,9 +25,9 @@ class SubscriptionDebouncingManager {
   private cache = new Map<string, CacheEntry>();
   private lastCall = new Map<string, number>();
   
-  // Rate limiting mais agressivo - máximo de chamadas por usuário
+  // Rate limiting otimizado para sustentabilidade
   private readonly rateLimitWindow = 60 * 1000; // 1 minuto
-  private readonly maxCallsPerWindow = 2; // REDUZIDO: apenas 2 calls por minuto
+  private readonly maxCallsPerWindow = 5; // Aumentado para 5 calls por minuto
   private userCalls = new Map<string, number[]>();
 
   /**
@@ -90,7 +90,7 @@ class SubscriptionDebouncingManager {
       const cacheData = {
         data,
         timestamp: Date.now(),
-        ttl: type === 'force' ? 30 * 1000 : 2 * 60 * 1000 // 30s para force, 2min para sync
+        ttl: type === 'force' ? 30 * 1000 : 15 * 60 * 1000 // 30s para force, 15min para sync
       };
         localStorage.setItem(cacheKey, JSON.stringify(cacheData));
         console.log(`[DEBOUNCING] Cache persistido para ${type} - TTL: ${cacheData.ttl}ms`);
@@ -177,8 +177,8 @@ class SubscriptionDebouncingManager {
           
           const result = await fn();
           
-          // Salvar no cache
-          const ttl = key.includes('force') ? 30 * 1000 : 2 * 60 * 1000;
+          // Salvar no cache - TTL otimizado
+          const ttl = key.includes('force') ? 30 * 1000 : 15 * 60 * 1000;
           this.setCachedData(cacheKey, result, ttl);
           this.persistCache(userId, result, key.includes('force') ? 'force' : 'sync');
           
@@ -267,12 +267,13 @@ class SubscriptionDebouncingManager {
 // Instância singleton
 export const subscriptionDebouncing = new SubscriptionDebouncingManager();
 
-// Configurações de debouncing por contexto - OTIMIZADAS
+// Configurações de debouncing otimizadas para sustentabilidade
 export const DEBOUNCE_CONFIGS = {
-  AUTH_LOGIN: { delay: 500, context: 'login', maxWait: 2000 }, // Aumentado
-  AUTH_USER_CHANGE: { delay: 500, context: 'user_change', maxWait: 2000 }, // Aumentado
-  AUTO_CHECK: { delay: 2000, context: 'auto_check', maxWait: 5000 }, // Muito aumentado
-  FOCUS_CHECK: { delay: 2000, context: 'focus_check', maxWait: 5000 }, // Desabilitado na prática
-  MANUAL_SYNC: { delay: 300, context: 'manual_sync', maxWait: 1000 }, // Aumentado
-  FORCE_SYNC: { delay: 100, context: 'force_sync', maxWait: 500 }, // Mantido rápido
+  AUTH_LOGIN: { delay: 100, context: 'login', maxWait: 1000 }, // Rápido no login
+  AUTH_USER_CHANGE: { delay: 200, context: 'user_change', maxWait: 1500 }, // Rápido na mudança
+  AUTO_CHECK: { delay: 1000, context: 'auto_check', maxWait: 3000 }, // Background check
+  FOCUS_CHECK: { delay: 3000, context: 'focus_check', maxWait: 6000 }, // Bem lento
+  MANUAL_SYNC: { delay: 200, context: 'manual_sync', maxWait: 800 }, // Responsivo para usuário
+  FORCE_SYNC: { delay: 0, context: 'force_sync', maxWait: 200 }, // Imediato
+  CRITICAL_CHECK: { delay: 0, context: 'critical_check', maxWait: 100 }, // Para operações críticas
 } as const;

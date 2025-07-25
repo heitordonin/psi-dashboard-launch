@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, Upload } from "lucide-react";
+import { LayoutDashboard, Users, Upload, Activity } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -25,6 +25,11 @@ const adminItems = [
     title: "Enviar Documentos",
     url: "/admin/enviar-documentos",
     icon: Upload,
+  },
+  {
+    title: "Monitoramento",
+    url: "/admin/subscription-monitoring",
+    icon: Activity,
   },
 ];
 

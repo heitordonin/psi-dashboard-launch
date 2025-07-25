@@ -9,6 +9,7 @@ import AdminFinancials from '@/pages/AdminFinancials';
 import PaymentConfig from '@/pages/PaymentConfig';
 import AdminEnviarDocumentos from '@/pages/AdminEnviarDocumentos';
 import AdminEditarDocumento from '@/pages/AdminEditarDocumento';
+import SubscriptionMonitoring from '@/pages/SubscriptionMonitoring';
 import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
 import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
@@ -79,6 +80,11 @@ export const adminRoutes = [
           <PsicloBankExtrato />
         </PhoneVerificationGuard>
       </ProtectedRoute>
+    </AdminRoute>
+  } />,
+  <Route key="subscription-monitoring" path="/admin/subscription-monitoring" element={
+    <AdminRoute>
+      <SubscriptionMonitoring />
     </AdminRoute>
   } />
 ];
