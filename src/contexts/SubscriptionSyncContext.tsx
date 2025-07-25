@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { subscriptionDebouncing, DEBOUNCE_CONFIGS } from '@/utils/subscriptionDebouncing';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface SubscriptionSyncState {
   isLoading: boolean;
@@ -10,7 +12,7 @@ interface SubscriptionSyncState {
 
 interface SubscriptionSyncContextType {
   state: SubscriptionSyncState;
-  syncSubscription: (force?: boolean) => Promise<{ success: boolean; data?: any; error?: any }>;
+  syncSubscription: (context?: keyof typeof DEBOUNCE_CONFIGS) => Promise<{ success: boolean; data?: any; error?: any }>;
   forceSync: () => Promise<{ success: boolean; data?: any; error?: any }>;
 }
 
@@ -36,9 +38,7 @@ export const SubscriptionSyncProvider: React.FC<SubscriptionSyncProviderProps> =
   });
   
   const queryClient = useQueryClient();
-  const syncMutexRef = useRef<boolean>(false);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const cacheRef = useRef<{ data: any; timestamp: number } | null>(null);
+  const { user } = useAuth();
 
   const invalidateQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
@@ -46,106 +46,108 @@ export const SubscriptionSyncProvider: React.FC<SubscriptionSyncProviderProps> =
     queryClient.invalidateQueries({ queryKey: ['plan-features'] });
   }, [queryClient]);
 
-  const performSync = useCallback(async (isForced = false): Promise<{ success: boolean; data?: any; error?: any }> => {
-    // Verificar se já há uma sincronização em andamento
-    if (syncMutexRef.current) {
-      console.log('[SYNC-MUTEX] Sincronização já em andamento, aguardando...');
-      return { success: false, error: 'Sync already in progress' };
+  // Função principal que executa a sincronização
+  const executeSync = useCallback(async (isForced = false) => {
+    if (!user?.id) {
+      throw new Error('Usuário não autenticado');
     }
 
-    // Verificar cache se não for forçado
-    if (!isForced && cacheRef.current) {
-      const cacheAge = Date.now() - cacheRef.current.timestamp;
-      const cacheValidityTime = 30 * 1000; // 30 segundos
-      
-      if (cacheAge < cacheValidityTime) {
-        console.log('[SYNC-MUTEX] Retornando dados do cache');
-        return { success: true, data: cacheRef.current.data };
-      }
-    }
-
-    // Adquirir mutex
-    syncMutexRef.current = true;
-    
-    setState(prev => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      console.log(`[SYNC-MUTEX] Iniciando sincronização ${isForced ? '(forçada)' : '(normal)'}`);
-      
       const functionName = isForced ? 'force-subscription-sync' : 'check-stripe-subscription';
       const body = isForced ? { userId: 'current' } : undefined;
       
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body
-      });
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
 
-      if (error) {
-        throw error;
-      }
-
-      // Atualizar cache
-      cacheRef.current = {
-        data,
-        timestamp: Date.now()
-      };
+      if (error) throw error;
 
       // Invalidar queries
       invalidateQueries();
 
-      const now = Date.now();
       setState(prev => ({
         ...prev,
         isLoading: false,
-        lastSyncTime: now,
+        lastSyncTime: Date.now(),
         error: null,
       }));
 
-      console.log('[SYNC-MUTEX] Sincronização concluída com sucesso');
       return { success: true, data };
-
     } catch (error) {
-      console.error('[SYNC-MUTEX] Erro na sincronização:', error);
-      
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        error: errorMessage,
       }));
-
-      return { success: false, error };
-    } finally {
-      // Liberar mutex
-      syncMutexRef.current = false;
+      throw error;
     }
-  }, [invalidateQueries]);
+  }, [user?.id, invalidateQueries]);
 
-  const syncSubscription = useCallback(async (force = false) => {
-    // Limpar timeout anterior se existir
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
+  // Sincronização normal com debouncing contextual
+  const syncSubscription = useCallback(async (context: keyof typeof DEBOUNCE_CONFIGS = 'MANUAL_SYNC') => {
+    if (!user?.id) {
+      return { success: false, error: 'Usuário não autenticado' };
     }
 
-    // Se for forçado, executar imediatamente
-    if (force) {
-      return performSync(false);
+    try {
+      const config = DEBOUNCE_CONFIGS[context];
+      const key = `sync-${user.id}`;
+      
+      const data = await subscriptionDebouncing.debouncedCall(
+        key,
+        user.id,
+        () => executeSync(false),
+        config
+      );
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('[SUBSCRIPTION-SYNC] Erro na sincronização:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      };
     }
+  }, [user?.id, executeSync]);
 
-    // Caso contrário, aplicar debounce
-    return new Promise<{ success: boolean; data?: any; error?: any }>((resolve) => {
-      debounceTimeoutRef.current = setTimeout(async () => {
-        const result = await performSync(false);
-        resolve(result);
-      }, 500); // 500ms de debounce
-    });
-  }, [performSync]);
-
+  // Sincronização forçada
   const forceSync = useCallback(async () => {
-    return performSync(true);
-  }, [performSync]);
+    if (!user?.id) {
+      return { success: false, error: 'Usuário não autenticado' };
+    }
+
+    try {
+      // Limpar cache antes do force sync
+      subscriptionDebouncing.invalidateCache(user.id);
+      
+      const config = DEBOUNCE_CONFIGS.FORCE_SYNC;
+      const key = `force-${user.id}`;
+      
+      const data = await subscriptionDebouncing.debouncedCall(
+        key,
+        user.id,
+        () => executeSync(true),
+        config
+      );
+      
+      return { success: true, data };
+    } catch (error) {
+      console.error('[SUBSCRIPTION-SYNC] Erro na sincronização forçada:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      };
+    }
+  }, [user?.id, executeSync]);
+
+  // Limpar dados do usuário no logout
+  useEffect(() => {
+    if (!user?.id) {
+      // Limpar dados do sistema de debouncing
+      subscriptionDebouncing.clearUserData('current-user');
+    }
+  }, [user?.id]);
 
   const value: SubscriptionSyncContextType = {
     state,

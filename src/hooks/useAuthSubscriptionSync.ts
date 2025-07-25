@@ -37,7 +37,8 @@ export const useAuthSubscriptionSync = (user: User | null, isLoading: boolean) =
       // Usar setTimeout para garantir que o auth context terminou de processar
       setTimeout(() => {
         if (!state.isLoading && !loginSyncCompletedRef.current) {
-          syncSubscription(true).then((result) => {
+          const context = isLogin ? 'AUTH_LOGIN' : 'AUTH_USER_CHANGE';
+          syncSubscription(context).then((result) => {
             if (result.success) {
               console.log('[AUTH-SYNC] Sincronização pós-login concluída com sucesso');
               loginSyncCompletedRef.current = true;

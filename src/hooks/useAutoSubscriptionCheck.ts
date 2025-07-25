@@ -20,7 +20,7 @@ export const useAutoSubscriptionCheck = () => {
 
     if (!lastCheck || now - parseInt(lastCheck) > checkInterval) {
       console.log('Verificando assinatura automaticamente...');
-      syncSubscription().then((result) => {
+      syncSubscription('AUTO_CHECK').then((result) => {
         if (result.success) {
           localStorage.setItem(`subscription-last-check-${user.id}`, now.toString());
         }
@@ -38,7 +38,7 @@ export const useAutoSubscriptionCheck = () => {
 
       if (!lastFocusCheck || focusNow - parseInt(lastFocusCheck) > focusInterval) {
         console.log('Verificando assinatura ao retornar o foco...');
-        syncSubscription().then((result) => {
+        syncSubscription('FOCUS_CHECK').then((result) => {
           if (result.success) {
             localStorage.setItem(`subscription-focus-check-${user.id}`, focusNow.toString());
           }
