@@ -51,42 +51,38 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No Stripe customer found - setting free plan");
+      logStep("No Stripe customer found, using atomic function for free plan");
       
-      // Cancelar todas as assinaturas
-      await supabaseClient
-        .from("user_subscriptions")
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .eq("status", "active");
-
-      // Buscar plano grátis
-      const { data: freePlan } = await supabaseClient
-        .from("subscription_plans")
-        .select("id")
-        .eq("slug", "free")
-        .single();
-
-      if (freePlan) {
-        await supabaseClient
-          .from("user_subscriptions")
-          .insert({
-            user_id: userId,
-            plan_id: freePlan.id,
-            status: 'active',
-            starts_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+      try {
+        const { data: result, error: rpcError } = await supabaseClient
+          .rpc('atomic_force_sync_subscription', {
+            p_user_id: userId,
+            p_plan_slug: 'free',
+            p_stripe_customer_id: null,
+            p_subscription_tier: null,
+            p_subscription_end: null,
+            p_subscribed: false
           });
+        
+        if (rpcError) {
+          logStep("RPC Error in atomic free plan assignment", { error: rpcError });
+          throw new Error(`Atomic operation failed: ${rpcError.message}`);
+        }
+        
+        logStep("Free plan assigned atomically", { result });
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          plan: "free",
+          message: "User set to free plan - no Stripe customer found"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } catch (error) {
+        logStep("ERROR in atomic free plan assignment", { error });
+        throw error;
       }
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        plan: "free",
-        message: "User set to free plan - no Stripe customer found"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
     }
 
     const customerId = customers.data[0].id;
@@ -108,41 +104,39 @@ serve(async (req) => {
       }))
     });
 
-    // Cancelar todas as assinaturas antigas no Supabase primeiro
-    await supabaseClient
-      .from("user_subscriptions")
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("status", "active");
-
     if (subscriptions.data.length === 0) {
-      // Nenhuma assinatura ativa - definir plano grátis
-      const { data: freePlan } = await supabaseClient
-        .from("subscription_plans")
-        .select("id")
-        .eq("slug", "free")
-        .single();
-
-      if (freePlan) {
-        await supabaseClient
-          .from("user_subscriptions")
-          .insert({
-            user_id: userId,
-            plan_id: freePlan.id,
-            status: 'active',
-            starts_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+      logStep("No active Stripe subscriptions found, using atomic function for free plan");
+      
+      try {
+        const { data: result, error: rpcError } = await supabaseClient
+          .rpc('atomic_force_sync_subscription', {
+            p_user_id: userId,
+            p_plan_slug: 'free',
+            p_stripe_customer_id: customerId,
+            p_subscription_tier: null,
+            p_subscription_end: null,
+            p_subscribed: false
           });
+        
+        if (rpcError) {
+          logStep("RPC Error in atomic free plan assignment", { error: rpcError });
+          throw new Error(`Atomic operation failed: ${rpcError.message}`);
+        }
+        
+        logStep("Free plan assigned atomically", { result });
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          plan: "free",
+          message: "No active Stripe subscriptions found"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } catch (error) {
+        logStep("ERROR in atomic free plan assignment", { error });
+        throw error;
       }
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        plan: "free",
-        message: "No active Stripe subscriptions found"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
     }
 
     // Pegar a assinatura mais recente
@@ -161,32 +155,26 @@ serve(async (req) => {
 
     logStep("Determined plan", { planSlug, amount, priceId });
 
-    // Buscar ID do plano no Supabase
-    const { data: plan } = await supabaseClient
-      .from("subscription_plans")
-      .select("id")
-      .eq("slug", planSlug)
-      .single();
-
-    if (plan) {
-      // Inserir nova assinatura
-      const { error: insertError } = await supabaseClient
-        .from("user_subscriptions")
-        .insert({
-          user_id: userId,
-          plan_id: plan.id,
-          status: 'active',
-          starts_at: new Date(activeSubscription.current_period_start * 1000).toISOString(),
-          expires_at: new Date(activeSubscription.current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString(),
+    try {
+      const { data: result, error: rpcError } = await supabaseClient
+        .rpc('atomic_force_sync_subscription', {
+          p_user_id: userId,
+          p_plan_slug: planSlug,
+          p_stripe_customer_id: customerId,
+          p_subscription_tier: planSlug,
+          p_subscription_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+          p_subscribed: true
         });
-
-      if (insertError) {
-        logStep("Error inserting subscription", { error: insertError });
-        throw insertError;
+      
+      if (rpcError) {
+        logStep("RPC Error in atomic subscription sync", { error: rpcError });
+        throw new Error(`Atomic operation failed: ${rpcError.message}`);
       }
-
-      logStep("Successfully synced subscription", { planSlug, subscriptionId: activeSubscription.id });
+      
+      logStep("Subscription synced atomically", { result, planSlug });
+    } catch (error) {
+      logStep("ERROR in atomic subscription sync", { error });
+      throw error;
     }
 
     return new Response(JSON.stringify({ 

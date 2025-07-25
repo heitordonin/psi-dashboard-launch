@@ -31,75 +31,39 @@ serve(async (req) => {
 
     console.log(`[CANCEL-SUBSCRIPTION] Processing cancellation for user ${user.id}, immediate: ${immediate}`);
 
-    // Buscar assinatura ativa do usuário
-    const { data: subscription, error: subError } = await supabaseClient
-      .from('user_subscriptions')
-      .select('*, subscription_plans(*)')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
-
-    if (subError || !subscription) {
-      throw new Error('No active subscription found');
-    }
-
-    // Se cancelamento imediato, cancelar agora
-    // Se não, definir para cancelar no final do período
-    const updateData = immediate 
-      ? {
-          status: 'cancelled',
-          expires_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+    try {
+      const { data: result, error: rpcError } = await supabaseClient
+        .rpc('atomic_cancel_subscription', {
+          p_user_id: user.id,
+          p_immediate: immediate
+        });
+      
+      if (rpcError) {
+        console.log(`[CANCEL-SUBSCRIPTION] RPC Error: ${rpcError.message}`);
+        throw new Error(`Atomic operation failed: ${rpcError.message}`);
+      }
+      
+      console.log(`[CANCEL-SUBSCRIPTION] Successfully cancelled subscription atomically for user ${user.id}`, { result });
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: result.message
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
         }
-      : {
-          status: 'cancelled',
-          // Manter expires_at atual para continuar até o fim do período pago
-          updated_at: new Date().toISOString()
-        };
-
-    const { error: updateError } = await supabaseClient
-      .from('user_subscriptions')
-      .update(updateData)
-      .eq('id', subscription.id);
-
-    if (updateError) {
-      throw new Error(`Failed to cancel subscription: ${updateError.message}`);
-    }
-
-    // Se cancelamento imediato, atribuir plano grátis
-    if (immediate) {
-      const { data: freePlan } = await supabaseClient
-        .from('subscription_plans')
-        .select('id')
-        .eq('slug', 'gratis')
-        .single();
-
-      if (freePlan) {
-        await supabaseClient
-          .from('user_subscriptions')
-          .insert({
-            user_id: user.id,
-            plan_id: freePlan.id,
-            status: 'active',
-            starts_at: new Date().toISOString()
-          });
+      );
+    } catch (error) {
+      console.log(`[CANCEL-SUBSCRIPTION] ERROR in atomic cancellation: ${error.message}`);
+      
+      if (error.message.includes('Free plan not found')) {
+        throw new Error('Plano gratuito não encontrado no sistema.');
       }
+      
+      throw error;
     }
-
-    console.log(`[CANCEL-SUBSCRIPTION] Successfully cancelled subscription for user ${user.id}`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: immediate 
-          ? 'Plano cancelado imediatamente' 
-          : 'Plano será cancelado no final do período atual'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
 
   } catch (error) {
     console.error('[CANCEL-SUBSCRIPTION] Error:', error);

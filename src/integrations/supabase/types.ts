@@ -949,6 +949,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atomic_cancel_and_insert_subscription: {
+        Args: {
+          p_user_id: string
+          p_new_plan_id: string
+          p_stripe_customer_id?: string
+          p_subscription_tier?: string
+          p_subscription_end?: string
+          p_subscribed?: boolean
+        }
+        Returns: Json
+      }
+      atomic_cancel_subscription: {
+        Args: { p_user_id: string; p_immediate?: boolean }
+        Returns: Json
+      }
+      atomic_force_sync_subscription: {
+        Args: {
+          p_user_id: string
+          p_plan_slug: string
+          p_stripe_customer_id?: string
+          p_subscription_tier?: string
+          p_subscription_end?: string
+          p_subscribed?: boolean
+        }
+        Returns: Json
+      }
       cleanup_duplicate_subscriptions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
