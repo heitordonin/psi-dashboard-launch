@@ -61,35 +61,20 @@ const CancelSubscriptionModal = ({
               </ul>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-600">
-                <strong>Opção 1:</strong> Cancelar no final do período atual (recomendado)
-              </p>
-              <p className="text-sm text-gray-600">
-                <strong>Opção 2:</strong> Cancelar imediatamente e retornar ao plano Grátis
-              </p>
-            </div>
+            <p className="text-sm text-gray-600">
+              Seu plano será cancelado no final do período atual. Você continuará tendo acesso a todas as funcionalidades até o vencimento.
+            </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex-col space-y-2">
-          <div className="flex space-x-2 w-full">
-            <Button
-              variant="outline"
-              onClick={() => onConfirm(false)}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              Cancelar no Final do Período
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => onConfirm(true)}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              Cancelar Imediatamente
-            </Button>
-          </div>
+        <AlertDialogFooter className="flex flex-col space-y-3">
+          <Button
+            variant="destructive"
+            onClick={() => onConfirm(false)}
+            disabled={isLoading}
+            className="w-full"
+          >
+            Confirmar Cancelamento
+          </Button>
           <AlertDialogCancel className="w-full">Manter Plano</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
