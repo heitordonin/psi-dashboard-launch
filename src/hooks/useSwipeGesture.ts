@@ -34,7 +34,10 @@ export const useSwipeGesture = ({
       const deltaX = currentX.current - startX.current;
       
       if (Math.abs(deltaX) > 10) {
-        e.preventDefault();
+        // Only prevent default if the event is cancelable
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         
         if (deltaX > 0) {
           element.style.transform = `translateX(${Math.min(deltaX, 80)}px)`;
@@ -110,8 +113,8 @@ export const useSwipeGesture = ({
     };
 
     // Touch events
-    element.addEventListener('touchstart', handleTouchStart, { passive: false });
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+    element.addEventListener('touchstart', handleTouchStart);
+    element.addEventListener('touchmove', handleTouchMove);
     element.addEventListener('touchend', handleTouchEnd);
 
     // Mouse events for desktop testing
