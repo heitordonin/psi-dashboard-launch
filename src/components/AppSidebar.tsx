@@ -1,8 +1,8 @@
 
-import * as React from "react";
 import { 
   Sidebar,
-  SidebarContent
+  SidebarContent,
+  SidebarSeparator
 } from "@/components/ui/sidebar";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -31,6 +31,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {showPsicloBankSection && <PsicloBankSection />}
         {canPerformAdminAction() && <AdminSection />}
       </SidebarContent>
+      <SidebarSeparator />
       <SidebarFooter />
     </Sidebar>
   );
