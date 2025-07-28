@@ -18,14 +18,14 @@ export function FloatingActionButton({
   size = 'default'
 }: FloatingActionButtonProps) {
   const positionClasses = {
-    'bottom-right': 'bottom-6 right-6',
-    'bottom-left': 'bottom-6 left-6', 
-    'bottom-center': 'bottom-6 left-1/2 transform -translate-x-1/2'
+    'bottom-right': 'bottom-4 right-4',
+    'bottom-left': 'bottom-4 left-4', 
+    'bottom-center': 'bottom-4 left-1/2 transform -translate-x-1/2'
   };
 
   const sizeClasses = {
-    'default': 'w-14 h-14',
-    'lg': 'w-16 h-16'
+    'default': 'w-14 h-14 text-base',
+    'lg': 'w-16 h-16 text-lg'
   };
 
   return (
@@ -35,8 +35,9 @@ export function FloatingActionButton({
         "fixed z-40 rounded-full shadow-lg",
         "bg-primary hover:bg-primary/90 text-primary-foreground",
         "transition-all duration-200 hover:scale-110 active:scale-95",
-        // Safe area support
-        "mb-[env(safe-area-inset-bottom)]",
+        "touch-target-enhanced",
+        // Enhanced safe area support
+        "safe-area-bottom",
         positionClasses[position],
         sizeClasses[size],
         className

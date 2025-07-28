@@ -105,33 +105,11 @@ export const AgendaCalendarView = ({
 
   const weekDays = getWeekDays();
 
-  // Mobile View
+  // No mobile view here - it's handled by MobileAgendaLayout
   if (isMobile) {
     return (
-      <div className="space-y-4">
-        {/* KPIs Verticais */}
-        <MobileKPIsVertical
-          appointments={appointments}
-          selectedDate={selectedDate}
-        />
-        
-        {/* Calendário Compacto */}
-        <MobileCompactCalendar
-          selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
-          appointments={appointments}
-        />
-        
-        {/* Visualização de 3 Dias */}
-        <MobileThreeDaysView
-          appointments={appointments}
-          selectedDate={selectedDate}
-          onDateSelect={onDateSelect}
-          onUpdateAppointment={onUpdateAppointment}
-          onEditAppointment={onEditAppointment}
-          onDeleteAppointment={onDeleteAppointment}
-          isDeleting={isDeleting}
-        />
+      <div className="p-4 text-center text-muted-foreground">
+        <p>Mobile view is handled by MobileAgendaLayout</p>
       </div>
     );
   }
@@ -197,7 +175,7 @@ export const AgendaCalendarView = ({
           </CardHeader>
           <CardContent>
             {viewMode === 'week' ? (
-              <div className="overflow-x-auto">
+              <div className="desktop-only overflow-x-auto">
                 <div className="min-w-[800px]">
                   {/* Header with weekdays */}
                   <div className="grid grid-cols-8 gap-1 mb-2">

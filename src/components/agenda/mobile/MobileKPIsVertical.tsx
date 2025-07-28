@@ -26,10 +26,11 @@ export const MobileKPIsVertical = ({ appointments, selectedDate }: MobileKPIsVer
   }) || [];
 
   return (
-    <div className="space-y-3 mb-4">
-      {/* Hoje */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="p-3">
+    <div className="mobile-spacing">
+      <div className="space-y-3">
+        {/* Hoje */}
+        <Card className="mobile-card hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
@@ -45,9 +46,9 @@ export const MobileKPIsVertical = ({ appointments, selectedDate }: MobileKPIsVer
         </CardContent>
       </Card>
 
-      {/* Total do Mês */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="p-3">
+        {/* Total do Mês */}
+        <Card className="mobile-card hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
@@ -61,9 +62,9 @@ export const MobileKPIsVertical = ({ appointments, selectedDate }: MobileKPIsVer
         </CardContent>
       </Card>
 
-      {/* Próxima Sessão */}
-      <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="p-3">
+        {/* Próxima Sessão */}
+        <Card className="mobile-card hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
@@ -87,8 +88,9 @@ export const MobileKPIsVertical = ({ appointments, selectedDate }: MobileKPIsVer
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

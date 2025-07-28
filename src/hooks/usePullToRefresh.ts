@@ -19,14 +19,20 @@ export const usePullToRefresh = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    // Only trigger if we're at the top of the page
-    if (window.scrollY === 0) {
+    // Check both window scroll and container scroll
+    const container = containerRef.current;
+    const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
+    
+    if (isAtTop && !isRefreshing) {
       startY.current = e.touches[0].clientY;
     }
-  }, []);
+  }, [isRefreshing]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (window.scrollY !== 0) return;
+    const container = containerRef.current;
+    const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
+    
+    if (!isAtTop || isRefreshing) return;
     
     currentY.current = e.touches[0].clientY;
     const deltaY = currentY.current - startY.current;
@@ -35,12 +41,8 @@ export const usePullToRefresh = ({
       e.preventDefault();
       const distance = Math.min(deltaY / resistance, threshold * 1.5);
       setPullDistance(distance);
-      
-      if (containerRef.current) {
-        containerRef.current.style.transform = `translateY(${distance}px)`;
-      }
     }
-  }, [resistance, threshold]);
+  }, [resistance, threshold, isRefreshing]);
 
   const handleTouchEnd = useCallback(async () => {
     if (pullDistance > threshold && !isRefreshing) {
@@ -49,14 +51,19 @@ export const usePullToRefresh = ({
       try {
         await onRefresh();
       } finally {
-        setIsRefreshing(false);
+        // Smooth transition out
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }, 300);
       }
+    } else {
+      setPullDistance(0);
     }
     
-    setPullDistance(0);
-    if (containerRef.current) {
-      containerRef.current.style.transform = 'translateY(0)';
-    }
+    // Reset refs
+    startY.current = 0;
+    currentY.current = 0;
   }, [pullDistance, threshold, isRefreshing, onRefresh]);
 
   return {

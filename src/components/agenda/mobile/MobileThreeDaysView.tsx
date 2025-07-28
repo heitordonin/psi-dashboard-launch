@@ -70,10 +70,10 @@ export const MobileThreeDaysView = ({
   };
 
   return (
-    <div ref={elementRef} className="space-y-2">
+    <div ref={elementRef} className="mobile-spacing">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Próximos Dias</h3>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="swipe-indicator">
           Deslize para navegar
         </Badge>
       </div>
@@ -87,7 +87,7 @@ export const MobileThreeDaysView = ({
             <Card 
               key={day.toISOString()}
               className={cn(
-                "cursor-pointer transition-colors hover:bg-accent",
+                "mobile-card cursor-pointer transition-colors hover:bg-accent touch-target-enhanced",
                 isSelected && "ring-2 ring-primary"
               )}
               onClick={() => onDateSelect(day)}
@@ -116,7 +116,7 @@ export const MobileThreeDaysView = ({
                           e.stopPropagation();
                           handleAppointmentClick(apt);
                         }}
-                        className="bg-card border rounded-md p-2 hover:bg-accent transition-colors cursor-pointer"
+                        className="bg-card border rounded-md p-2 hover:bg-accent transition-colors cursor-pointer touch-target"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <Clock className="h-3 w-3 text-primary" />

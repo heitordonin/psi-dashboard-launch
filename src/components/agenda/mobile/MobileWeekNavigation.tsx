@@ -24,13 +24,13 @@ export const MobileWeekNavigation = ({
   return (
     <div 
       ref={elementRef}
-      className="flex items-center justify-between p-4 bg-card border-b touch-target"
+      className="flex items-center justify-between p-4 bg-card border-b"
     >
       <Button
         variant="ghost"
         size="icon"
         onClick={() => onWeekChange(subWeeks(currentWeek, 1))}
-        className="touch-target h-10 w-10"
+        className="touch-target-enhanced h-10 w-10"
       >
         <ChevronLeft className="h-5 w-5" />
       </Button>
@@ -38,7 +38,7 @@ export const MobileWeekNavigation = ({
       <Button
         variant="ghost"
         onClick={onCalendarOpen}
-        className="flex items-center gap-2 text-lg font-medium touch-target"
+        className="flex items-center gap-2 text-lg font-medium touch-target-enhanced"
       >
         <Calendar className="h-5 w-5" />
         {format(currentWeek, "MMMM yyyy", { locale: ptBR })}
@@ -48,7 +48,7 @@ export const MobileWeekNavigation = ({
         variant="ghost"
         size="icon"
         onClick={() => onWeekChange(addWeeks(currentWeek, 1))}
-        className="touch-target h-10 w-10"
+        className="touch-target-enhanced h-10 w-10"
       >
         <ChevronRight className="h-5 w-5" />
       </Button>

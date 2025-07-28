@@ -48,15 +48,16 @@ export const MobileCompactCalendar = ({
   };
 
   return (
-    <Card className="mb-4">
-      <CardContent className="p-3">
+    <div className="mobile-spacing">
+      <Card className="mobile-card">
+        <CardContent className="p-3">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handlePreviousMonth}
-            className="h-8 w-8 p-0"
+            className="touch-target h-8 w-8 p-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -65,14 +66,14 @@ export const MobileCompactCalendar = ({
             {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
           </h3>
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleNextMonth}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNextMonth}
+              className="touch-target h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
         </div>
 
         {/* Weekdays */}
@@ -85,7 +86,7 @@ export const MobileCompactCalendar = ({
         </div>
 
         {/* Days */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="mobile-calendar-grid grid-cols-7">
           {calendarDays.map(day => {
             const isSelected = isSameDay(day, selectedDate);
             const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -96,8 +97,8 @@ export const MobileCompactCalendar = ({
                 key={day.toISOString()}
                 onClick={() => handleDateClick(day)}
                 className={cn(
-                  "relative h-8 w-8 text-xs rounded-md transition-colors",
-                  "hover:bg-accent hover:text-accent-foreground",
+                  "relative h-8 w-8 text-xs rounded-md transition-colors touch-target",
+                  "hover:bg-accent hover:text-accent-foreground active:scale-95",
                   isSelected && "bg-primary text-primary-foreground",
                   !isCurrentMonth && "text-muted-foreground opacity-50",
                   !isSelected && isCurrentMonth && "text-foreground"
@@ -114,7 +115,8 @@ export const MobileCompactCalendar = ({
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

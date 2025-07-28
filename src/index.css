@@ -3,6 +3,71 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-first CSS classes for Agenda */
+@layer components {
+  /* Mobile container with proper padding and safe areas */
+  .mobile-container {
+    @apply px-4 pb-20; /* Extra bottom padding for FAB */
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Desktop container with standard spacing */
+  .desktop-container {
+    @apply container mx-auto p-4 md:p-6 space-y-4 md:space-y-6;
+  }
+  
+  /* Consistent mobile spacing between sections */
+  .mobile-spacing {
+    @apply mb-4;
+  }
+  
+  /* Touch targets for mobile - minimum 44px */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  /* Enhanced touch targets with feedback */
+  .touch-target-enhanced {
+    @apply touch-target active:scale-95 transition-transform duration-100;
+  }
+  
+  /* Safe area support for FAB */
+  .safe-area-bottom {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Prevent desktop styles leaking to mobile */
+  .mobile-only {
+    @apply block md:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden md:block;
+  }
+  
+  /* Gesture-friendly scroll areas */
+  .mobile-scroll {
+    @apply overflow-y-auto overscroll-y-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Enhanced calendar styles for mobile */
+  .mobile-calendar-grid {
+    @apply grid gap-1 touch-manipulation;
+  }
+  
+  /* Mobile card styles with better touch targets */
+  .mobile-card {
+    @apply bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow;
+    min-height: 44px;
+  }
+  
+  /* Swipe indicator */
+  .swipe-indicator {
+    @apply text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
