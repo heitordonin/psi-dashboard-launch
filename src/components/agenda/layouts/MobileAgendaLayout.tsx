@@ -47,8 +47,7 @@ export const MobileAgendaLayout = ({
     isRefreshing, 
     pullDistance, 
     isPulling, 
-    isTriggered, 
-    bindTouchEvents 
+    isTriggered
   } = usePullToRefresh({
     onRefresh: handleManualRefresh,
     threshold: 80
@@ -68,7 +67,7 @@ export const MobileAgendaLayout = ({
   };
 
   return (
-    <div className="min-h-screen bg-background" {...bindTouchEvents}>
+    <div className="min-h-screen bg-background">
       <MobileHeader 
         title="Agenda" 
         subtitle="Gerencie seus agendamentos e sessões"

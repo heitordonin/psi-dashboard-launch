@@ -144,7 +144,7 @@ export const PaymentsList = ({
 
   if (isMobile && onRefresh) {
     return (
-      <div {...pullToRefresh.bindTouchEvents}>
+      <div ref={pullToRefresh.containerRef}>
         <PullToRefreshContainer
           onRefresh={onRefresh}
           isRefreshing={pullToRefresh.isRefreshing}

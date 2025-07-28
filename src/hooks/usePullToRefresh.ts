@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface UsePullToRefreshProps {
   onRefresh: () => Promise<void> | void;
@@ -18,7 +18,7 @@ export const usePullToRefresh = ({
   const currentY = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     // Check both window scroll and container scroll
     const container = containerRef.current;
     const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
@@ -28,7 +28,7 @@ export const usePullToRefresh = ({
     }
   }, [isRefreshing]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     const container = containerRef.current;
     const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
     
@@ -38,7 +38,10 @@ export const usePullToRefresh = ({
     const deltaY = currentY.current - startY.current;
     
     if (deltaY > 0) {
-      e.preventDefault();
+      // Only prevent default if the event is cancelable
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       const distance = Math.min(deltaY / resistance, threshold * 1.5);
       setPullDistance(distance);
     }
@@ -66,16 +69,27 @@ export const usePullToRefresh = ({
     currentY.current = 0;
   }, [pullDistance, threshold, isRefreshing, onRefresh]);
 
+  // Use native DOM events with passive: false for proper preventDefault control
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    element.addEventListener('touchstart', handleTouchStart);
+    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+    element.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart);
+      element.removeEventListener('touchmove', handleTouchMove);
+      element.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+
   return {
     containerRef,
     isRefreshing,
     pullDistance,
     isPulling: pullDistance > 0,
     isTriggered: pullDistance > threshold,
-    bindTouchEvents: {
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
-    }
   };
 };
