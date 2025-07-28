@@ -2,13 +2,9 @@ import { format, addDays, isSameDay, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Clock, Trash2 } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Appointment } from "@/types/appointment";
-import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { cn } from "@/lib/utils";
-import { DeleteAppointmentModal } from "../DeleteAppointmentModal";
-import { useState } from "react";
 
 interface MobileThreeDaysViewProps {
   appointments: Appointment[];
@@ -29,25 +25,11 @@ export const MobileThreeDaysView = ({
   onDeleteAppointment,
   isDeleting = false
 }: MobileThreeDaysViewProps) => {
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  const dayAfterTomorrow = addDays(today, 2);
+  const previousDay = addDays(selectedDate, -1);
+  const currentDay = selectedDate;
+  const nextDay = addDays(selectedDate, 1);
   
-  const threeDays = [today, tomorrow, dayAfterTomorrow];
-
-  const { elementRef } = useSwipeGesture({
-    onSwipeLeft: () => {
-      // Avançar 3 dias
-      const newDate = addDays(threeDays[0], 3);
-      onDateSelect(newDate);
-    },
-    onSwipeRight: () => {
-      // Voltar 3 dias
-      const newDate = addDays(threeDays[0], -3);
-      onDateSelect(newDate);
-    },
-    threshold: 100
-  });
+  const threeDays = [previousDay, currentDay, nextDay];
 
   const getAppointmentsForDay = (date: Date) => {
     return appointments
@@ -70,12 +52,9 @@ export const MobileThreeDaysView = ({
   };
 
   return (
-    <div ref={elementRef} className="mobile-spacing">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mobile-spacing">
+      <div className="mb-3">
         <h3 className="text-lg font-semibold">Próximos Dias</h3>
-        <Badge variant="outline" className="swipe-indicator">
-          Deslize para navegar
-        </Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
