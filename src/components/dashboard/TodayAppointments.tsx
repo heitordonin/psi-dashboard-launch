@@ -124,36 +124,6 @@ export const TodayAppointments = () => {
                 </p>
               </div>
             </div>
-
-            {/* Indicador de próximo agendamento */}
-            {upcomingCount > 0 && (
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">
-                    Próximo agendamento hoje
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/agenda")}
-                  className="text-xs"
-                >
-                  Ver detalhes
-                </Button>
-              </div>
-            )}
-
-            {/* Botão para ver agenda completa */}
-            <Button
-              variant="outline"
-              onClick={() => navigate("/agenda")}
-              className="w-full flex items-center gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              Ver Agenda Completa
-            </Button>
           </div>
         )}
       </CardContent>
