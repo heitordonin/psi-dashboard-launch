@@ -165,17 +165,22 @@ export const DescriptionManager = ({ isOpen, onClose }: DescriptionManagerProps)
     return (
       <>
         <Sheet open={isOpen} onOpenChange={onClose}>
-          <SheetContent side="bottom" className="h-[85vh] flex flex-col">
+          <SheetContent side="bottom" className="h-[60vh] m-4 rounded-t-xl flex flex-col">
             <SheetHeader className="flex-shrink-0 border-b pb-4">
               <div className="flex items-center justify-between">
                 <SheetTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5 text-primary" />
                   Gerenciar Descrições
                 </SheetTitle>
-                <Button onClick={openCreateForm} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nova
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={openCreateForm} size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Descrição
+                  </Button>
+                  <Button onClick={onClose} variant="ghost" size="sm">
+                    Fechar
+                  </Button>
+                </div>
               </div>
             </SheetHeader>
 
@@ -208,7 +213,7 @@ export const DescriptionManager = ({ isOpen, onClose }: DescriptionManagerProps)
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-lg max-h-[70vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">

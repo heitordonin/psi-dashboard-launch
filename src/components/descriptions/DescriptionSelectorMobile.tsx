@@ -42,21 +42,30 @@ export const DescriptionSelectorMobile = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[80vh] flex flex-col">
+      <SheetContent side="bottom" className="h-[60vh] m-4 rounded-t-xl flex flex-col">
         <SheetHeader className="flex-shrink-0 border-b pb-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
               Selecionar Descrição
             </SheetTitle>
-            <Button 
-              onClick={handleManageDescriptions} 
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Nova
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={handleManageDescriptions} 
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Nova Descrição
+              </Button>
+              <Button 
+                onClick={onClose}
+                variant="ghost" 
+                size="sm"
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
           
           {descriptions.length > 0 && (
