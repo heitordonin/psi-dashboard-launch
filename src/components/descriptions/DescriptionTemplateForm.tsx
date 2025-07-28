@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -41,9 +41,9 @@ export function DescriptionTemplateForm({
       setSubject('');
       setText('');
     }
-  }, [editingDescription, isOpen]);
+  }, [editingDescription]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
 
@@ -51,22 +51,30 @@ export function DescriptionTemplateForm({
       subject: subject.trim() || undefined,
       text: text.trim()
     });
-  };
+  }, [text, subject, onSubmit]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSubject('');
     setText('');
     onClose();
-  };
+  }, [onClose]);
 
-  const FormContent = () => (
+  const handleSubjectChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSubject(e.target.value);
+  }, []);
+
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+  }, []);
+
+  const FormContent = memo(() => (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="subject">Título (opcional)</Label>
         <Input
           id="subject"
           value={subject}
-          onChange={(e) => setSubject(e.target.value)}
+          onChange={handleSubjectChange}
           placeholder="Ex: Consulta de Psicologia"
           className="w-full"
         />
@@ -77,7 +85,7 @@ export function DescriptionTemplateForm({
         <Textarea
           id="text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           placeholder="Digite a descrição da cobrança..."
           rows={4}
           className="w-full resize-none"
@@ -94,7 +102,7 @@ export function DescriptionTemplateForm({
         </Button>
       </div>
     </form>
-  );
+  ));
 
   if (isMobile) {
     return (
@@ -118,6 +126,9 @@ export function DescriptionTemplateForm({
           <DialogTitle>
             {editingDescription ? 'Editar Descrição' : 'Nova Descrição'}
           </DialogTitle>
+          <DialogDescription>
+            {editingDescription ? 'Edite sua descrição existente' : 'Crie uma nova descrição para suas cobranças'}
+          </DialogDescription>
         </DialogHeader>
         <FormContent />
       </DialogContent>
