@@ -165,16 +165,9 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
         console.log('✅ Appointment created successfully:', result);
       }
 
-      // Força invalidação e refetch do cache após sucesso
-      console.log('🔄 Forcing cache refresh after appointment operation');
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.removeQueries({ queryKey: ['appointments'] });
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 50);
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 200);
+      // As mutações já fazem invalidação automática, força refresh adicional
+      console.log('🔄 Invalidating appointments cache after operation');
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
 
       // Implementar lógica de lembrete imediato se necessário
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
