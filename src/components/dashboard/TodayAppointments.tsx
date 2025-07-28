@@ -1,4 +1,5 @@
 import { Calendar, Clock, User, ArrowRight, Plus } from "lucide-react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,13 @@ const statusConfig = {
 
 export const TodayAppointments = () => {
   const navigate = useNavigate();
-  const today = new Date();
+  
+  // Estabilizar a data para evitar loops infinitos
+  const today = useMemo(() => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0); // Normalizar para início do dia
+    return date;
+  }, []);
   
   const { appointments, isLoading } = useAppointments({
     date: today

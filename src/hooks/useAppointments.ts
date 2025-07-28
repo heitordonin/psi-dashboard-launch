@@ -7,7 +7,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
   const queryClient = useQueryClient();
 
   const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ['appointments', filters],
+    queryKey: ['appointments', filters?.date?.toDateString(), filters?.weekRange, filters?.patient_name, filters?.patient_email, filters?.status],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -39,27 +39,17 @@ export const useAppointments = (filters?: CalendarFilters) => {
           .lte('start_datetime', endDate.toISOString());
       } else if (filters?.date) {
         const targetDate = new Date(filters.date);
-        console.log('🔍 Filtering appointments for date:', targetDate.toLocaleDateString());
         
-        // Expandir range: 24h antes e 24h depois para capturar todos os appointments UTC
-        // que podem aparecer no dia local devido a diferenças de timezone
-        const startRange = new Date(targetDate);
-        startRange.setDate(startRange.getDate() - 1);
-        startRange.setHours(0, 0, 0, 0);
+        // Simplicar filtragem para o dia específico
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
         
-        const endRange = new Date(targetDate);
-        endRange.setDate(endRange.getDate() + 1);
-        endRange.setHours(23, 59, 59, 999);
-
-        console.log('📅 Date filter range:', {
-          target: targetDate.toLocaleDateString(),
-          start: startRange.toISOString(),
-          end: endRange.toISOString()
-        });
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
 
         query = query
-          .gte('start_datetime', startRange.toISOString())
-          .lte('start_datetime', endRange.toISOString());
+          .gte('start_datetime', startOfDay.toISOString())
+          .lte('start_datetime', endOfDay.toISOString());
       }
 
       if (filters?.patient_name) {
@@ -78,15 +68,10 @@ export const useAppointments = (filters?: CalendarFilters) => {
 
       if (error) throw error;
       
-      console.log('📊 Appointments fetched from DB:', data?.length || 0);
-      data?.forEach(apt => {
-        console.log(`📋 Appointment: ${apt.title} at ${apt.start_datetime} (UTC)`);
-      });
-      
       return data as Appointment[];
     },
-    staleTime: 30 * 1000, // 30 segundos - mais agressivo para debugging
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos para reduzir requisições
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 
   const createAppointmentMutation = useMutation({
@@ -108,19 +93,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Appointment mutation successful:', data);
-      // Invalidação mais agressiva do cache
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.removeQueries({ queryKey: ['appointments'] });
-      
-      // Múltiplos refetch para garantir sincronização
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 50);
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 200);
-      
       toast.success('Agendamento criado com sucesso!');
     },
     onError: (error) => {
@@ -149,19 +122,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
       return data;
     },
     onSuccess: (data) => {
-      console.log('✅ Appointment update mutation successful:', data);
-      // Invalidação mais agressiva para updates
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.removeQueries({ queryKey: ['appointments'] });
-      
-      // Múltiplos refetch para garantir sincronização
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 50);
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 200);
-      
       toast.success('Agendamento atualizado com sucesso!');
     },
     onError: (error) => {
@@ -180,12 +141,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Invalidar e refazer queries para garantir atualização
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.refetchQueries({ queryKey: ['appointments'] });
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['appointments'] });
-      }, 100);
       toast.success('Agendamento deletado com sucesso!');
     },
     onError: (error) => {
