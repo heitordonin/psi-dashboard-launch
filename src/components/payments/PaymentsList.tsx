@@ -127,17 +127,9 @@ export const PaymentsList = ({
       </div>
       
       {isMobile && (
-        <>
-          <ThumbZoneActions>
-            <Button onClick={handleAddPayment} className="flex-1 touch-target">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Cobrança
-            </Button>
-          </ThumbZoneActions>
-          <FloatingActionButton onClick={handleAddPayment}>
-            <Plus className="w-5 h-5" />
-          </FloatingActionButton>
-        </>
+        <FloatingActionButton onClick={handleAddPayment}>
+          <Plus className="w-5 h-5" />
+        </FloatingActionButton>
       )}
     </>
   );
