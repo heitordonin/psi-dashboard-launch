@@ -1,7 +1,8 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
+import { User, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface MobileHeaderProps {
   title: string;
@@ -11,6 +12,14 @@ interface MobileHeaderProps {
 
 export const MobileHeader = ({ title, subtitle, className = "" }: MobileHeaderProps) => {
   const navigate = useNavigate();
+  
+  // Safe sidebar usage - check if sidebar context is available
+  let hasSidebarContext = true;
+  try {
+    useSidebar();
+  } catch {
+    hasSidebarContext = false;
+  }
 
   return (
     <div 
@@ -19,7 +28,18 @@ export const MobileHeader = ({ title, subtitle, className = "" }: MobileHeaderPr
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="text-white hover:text-gray-200" />
+          {hasSidebarContext ? (
+            <SidebarTrigger className="text-white hover:text-gray-200" />
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard")}
+              className="text-white hover:text-gray-200 hover:bg-white/10"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
           <div>
             <h1 className="text-lg font-semibold text-white">{title}</h1>
             {subtitle && (
