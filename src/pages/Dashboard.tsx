@@ -10,6 +10,7 @@ import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ModulesGrid } from "@/components/dashboard/ModulesGrid";
+import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
@@ -51,6 +52,8 @@ const Dashboard = () => {
 
             <div className="container mx-auto px-4 py-6 space-y-6">
               <QuickActions />
+
+              <TodayAppointments />
 
               <PeriodFilter
                 startDate={startDate}
