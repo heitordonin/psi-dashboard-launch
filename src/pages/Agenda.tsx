@@ -36,40 +36,37 @@ export default function Agenda() {
     updateAppointment({ id: appointmentId, status });
   };
 
-  // Mobile Layout - sem sidebar e com layout otimizado
-  if (isMobile) {
-    return (
-      <MobileAgendaLayout
-        appointments={appointments || []}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        onUpdateAppointment={handleUpdateAppointmentStatus}
-        onEditAppointment={(appointment) => console.log('Edit appointment:', appointment)}
-        onDeleteAppointment={deleteAppointment}
-        isDeleting={isDeleting}
-      />
-    );
-  }
-
-  // Desktop Layout - com sidebar
+  // Unified Layout - com sidebar para mobile e desktop
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset>
-          <DesktopAgendaLayout
+        {isMobile ? (
+          <MobileAgendaLayout
             appointments={appointments || []}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
             onUpdateAppointment={handleUpdateAppointmentStatus}
             onEditAppointment={(appointment) => console.log('Edit appointment:', appointment)}
             onDeleteAppointment={deleteAppointment}
             isDeleting={isDeleting}
-            isLoading={isLoading}
           />
-        </SidebarInset>
+        ) : (
+          <SidebarInset>
+            <DesktopAgendaLayout
+              appointments={appointments || []}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              onUpdateAppointment={handleUpdateAppointmentStatus}
+              onEditAppointment={(appointment) => console.log('Edit appointment:', appointment)}
+              onDeleteAppointment={deleteAppointment}
+              isDeleting={isDeleting}
+              isLoading={isLoading}
+            />
+          </SidebarInset>
+        )}
       </div>
     </SidebarProvider>
   );

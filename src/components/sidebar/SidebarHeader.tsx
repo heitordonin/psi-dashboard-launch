@@ -9,10 +9,12 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useNavigate } from "react-router-dom";
 
 export const SidebarHeader = () => {
   const { currentPlan } = useSubscription();
   const { toggleSidebar, state } = useSidebar();
+  const navigate = useNavigate();
   
   const isCollapsed = state === "collapsed";
 
@@ -21,24 +23,22 @@ export const SidebarHeader = () => {
       <div className="flex items-center justify-between">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="/dashboard">
-                <div className="flex h-8 w-auto items-center justify-center rounded-lg bg-white px-1 text-sidebar-primary-foreground">
-                  <img 
-                    src={isCollapsed ? "/lovable-uploads/18da7efa-7d56-4b55-b243-88c9b1abe19c.png" : "/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png"}
-                    alt="Psiclo" 
-                    className={isCollapsed ? "h-6 w-6" : "h-6 w-auto"}
-                  />
+            <SidebarMenuButton size="lg" onClick={() => navigate("/dashboard")}>
+              <div className="flex h-8 w-auto items-center justify-center rounded-lg bg-white px-1 text-sidebar-primary-foreground">
+                <img 
+                  src={isCollapsed ? "/lovable-uploads/18da7efa-7d56-4b55-b243-88c9b1abe19c.png" : "/lovable-uploads/e6f9033c-f43e-415a-8567-d1a99319fb47.png"}
+                  alt="Psiclo" 
+                  className={isCollapsed ? "h-6 w-6" : "h-6 w-auto"}
+                />
+              </div>
+              {!isCollapsed && (
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Psiclo</span>
+                  <span className="truncate text-xs">
+                    {currentPlan?.name || 'Grátis'}
+                  </span>
                 </div>
-                {!isCollapsed && (
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Psiclo</span>
-                    <span className="truncate text-xs">
-                      {currentPlan?.name || 'Grátis'}
-                    </span>
-                  </div>
-                )}
-              </a>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
