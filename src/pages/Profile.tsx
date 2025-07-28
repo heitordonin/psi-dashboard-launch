@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
 import { AddressCard } from "@/components/profile/AddressCard";
-import { EmailSettingsCard } from "@/components/profile/EmailSettingsCard";
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ const Profile = () => {
           cpf: profile.cpf,
           birth_date: profile.birth_date,
           crp_number: profile.crp_number,
-          nit_nis_pis: profile.nit_nis_pis,
+          
           phone: cleanedPhone,
           phone_country_code: profile.phone_country_code || '+55',
           email_reminders_enabled: profile.email_reminders_enabled,
@@ -128,10 +128,6 @@ const Profile = () => {
                   setProfile={setProfile}
                 />
 
-                <EmailSettingsCard
-                  profile={profile}
-                  setProfile={setProfile}
-                />
               </div>
             </div>
           </div>
