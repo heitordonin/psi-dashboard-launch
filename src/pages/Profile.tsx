@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
 import { AddressCard } from "@/components/profile/AddressCard";
+import { Button } from "@/components/ui/button";
 
 
 const Profile = () => {
@@ -119,14 +120,23 @@ const Profile = () => {
                   profile={profile}
                   setProfile={setProfile}
                   currentPlan={currentPlan}
-                  saving={saving}
-                  onSave={handleSave}
                 />
 
                 <AddressCard
                   profile={profile}
                   setProfile={setProfile}
                 />
+
+                <div className="flex justify-center pt-6">
+                  <Button 
+                    onClick={handleSave}
+                    disabled={saving}
+                    size="lg"
+                    className="w-full max-w-xs"
+                  >
+                    {saving ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
 
               </div>
             </div>

@@ -11,16 +11,12 @@ interface PersonalInfoCardProps {
   profile: any;
   setProfile: (profile: any) => void;
   currentPlan: any;
-  saving: boolean;
-  onSave: (e: React.FormEvent) => Promise<void>;
 }
 
 export const PersonalInfoCard = ({ 
   profile, 
   setProfile, 
-  currentPlan, 
-  saving, 
-  onSave 
+  currentPlan
 }: PersonalInfoCardProps) => {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value);
@@ -49,7 +45,7 @@ export const PersonalInfoCard = ({
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={onSave} className="space-y-4">
+        <div className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="full_name">Nome Completo</Label>
@@ -125,12 +121,7 @@ export const PersonalInfoCard = ({
           </div>
 
 
-          <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );
