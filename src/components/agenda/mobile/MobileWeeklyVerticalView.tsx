@@ -4,7 +4,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "da
 import { ptBR } from "date-fns/locale";
 import { Clock } from "lucide-react";
 import { Appointment } from "@/types/appointment";
-import { AppointmentItem } from "../AppointmentItem";
+import { CompactAppointmentItem } from "./CompactAppointmentItem";
 
 interface MobileWeeklyVerticalViewProps {
   appointments: Appointment[];
@@ -89,12 +89,10 @@ export const MobileWeeklyVerticalView = ({
               ) : (
                 <div className="space-y-2">
                   {dayAppointments.map((appointment) => (
-                    <AppointmentItem
+                    <CompactAppointmentItem
                       key={appointment.id}
                       appointment={appointment}
-                      onUpdateStatus={onUpdateAppointment}
                       onEdit={onEditAppointment}
-                      onDelete={onDeleteAppointment}
                     />
                   ))}
                 </div>
