@@ -26,9 +26,14 @@ export const usePaymentFilters = () => {
     return useMemo(() => {
       return payments.filter(payment => {
         const patientName = payment.patients?.full_name || '';
+        const dueDateFormatted = new Date(payment.due_date).toLocaleDateString('pt-BR');
+        const amountFormatted = payment.amount.toString();
+        
         const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              payment.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             payment.patients?.cpf?.includes(searchTerm);
+                             payment.patients?.cpf?.includes(searchTerm) ||
+                             dueDateFormatted.includes(searchTerm) ||
+                             amountFormatted.includes(searchTerm);
         
         const matchesPatientId = !filters.patientId || payment.patient_id === filters.patientId;
         const matchesStatus = !filters.status || payment.status === filters.status;
