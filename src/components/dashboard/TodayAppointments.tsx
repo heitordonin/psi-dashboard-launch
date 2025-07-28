@@ -9,31 +9,41 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isoToLocalHHMM } from "@/utils/date";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
 const statusConfig = {
-  scheduled: { label: 'Agendado', variant: 'default' as const },
-  completed: { label: 'Realizado', variant: 'default' as const },
-  no_show: { label: 'Faltou', variant: 'destructive' as const },
-  cancelled: { label: 'Cancelado', variant: 'secondary' as const }
+  scheduled: {
+    label: 'Agendado',
+    variant: 'default' as const
+  },
+  completed: {
+    label: 'Realizado',
+    variant: 'default' as const
+  },
+  no_show: {
+    label: 'Faltou',
+    variant: 'destructive' as const
+  },
+  cancelled: {
+    label: 'Cancelado',
+    variant: 'secondary' as const
+  }
 };
-
 export const TodayAppointments = () => {
   const navigate = useNavigate();
-  
+
   // Estabilizar a data para evitar loops infinitos
   const today = useMemo(() => {
     const date = new Date();
     date.setHours(0, 0, 0, 0); // Normalizar para início do dia
     return date;
   }, []);
-  
-  const { appointments, isLoading } = useAppointments({
+  const {
+    appointments,
+    isLoading
+  } = useAppointments({
     date: today
   });
-
   if (isLoading) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -45,48 +55,35 @@ export const TodayAppointments = () => {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   const todaysAppointments = appointments.filter(appointment => {
     const appointmentDate = new Date(appointment.start_datetime);
     return appointmentDate.toDateString() === today.toDateString();
   });
-
   const upcomingCount = todaysAppointments.filter(apt => apt.status === 'scheduled').length;
   const completedCount = todaysAppointments.filter(apt => apt.status === 'completed').length;
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Agendamentos de Hoje
-            {todaysAppointments.length > 0 && (
-              <Badge variant="outline" className="ml-2">
-                {todaysAppointments.length}
-              </Badge>
-            )}
+            {todaysAppointments.length > 0}
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/agenda")}
-            className="flex items-center gap-1"
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate("/agenda")} className="flex items-center gap-1">
             Ver Agenda
             <ArrowRight className="h-3 w-3" />
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          {format(today, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+          {format(today, "EEEE, dd 'de' MMMM", {
+          locale: ptBR
+        })}
         </p>
       </CardHeader>
       <CardContent className="mobile-spacing">
-        {todaysAppointments.length === 0 ? (
-          <div className="text-center py-8">
+        {todaysAppointments.length === 0 ? <div className="text-center py-8">
             <div className="rounded-full bg-muted w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -94,17 +91,11 @@ export const TodayAppointments = () => {
             <p className="text-muted-foreground mb-4">
               Aproveite o dia livre ou crie um novo agendamento
             </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/agenda")}
-              className="flex items-center gap-2"
-            >
+            <Button variant="outline" onClick={() => navigate("/agenda")} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Criar Agendamento
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-6">
+          </div> : <div className="space-y-6">
             {/* Resumo visual do dia */}
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
@@ -124,9 +115,7 @@ export const TodayAppointments = () => {
                 </p>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
