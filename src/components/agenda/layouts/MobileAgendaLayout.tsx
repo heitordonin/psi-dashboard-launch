@@ -3,9 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/ui/mobile-header";
 import { AgendaKPIs } from "../AgendaKPIs";
 import { MobileKPIsVertical } from "../mobile/MobileKPIsVertical";
-import { MobileWeekNavigation } from "../mobile/MobileWeekNavigation";
+import { MobileCompactCalendar } from "../mobile/MobileCompactCalendar";
 import { MobileWeeklyVerticalView } from "../mobile/MobileWeeklyVerticalView";
-import { MobileCalendarModal } from "../mobile/MobileCalendarModal";
 import { CreateAppointmentWizard } from "../CreateAppointmentWizard";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
@@ -34,7 +33,7 @@ export const MobileAgendaLayout = ({
 }: MobileAgendaLayoutProps) => {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  
   const queryClient = useQueryClient();
 
   const handleManualRefresh = async () => {
@@ -88,10 +87,10 @@ export const MobileAgendaLayout = ({
               selectedDate={selectedDate}
             />
             
-            <MobileWeekNavigation
-              currentWeek={selectedDate}
-              onWeekChange={setSelectedDate}
-              onCalendarOpen={() => setShowCalendarModal(true)}
+            <MobileCompactCalendar
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              appointments={appointments}
             />
             
             <MobileWeeklyVerticalView
@@ -122,15 +121,6 @@ export const MobileAgendaLayout = ({
         editingAppointment={editingAppointment}
       />
 
-      <MobileCalendarModal
-        isOpen={showCalendarModal}
-        onClose={() => setShowCalendarModal(false)}
-        selectedDate={selectedDate}
-        onDateSelect={(date) => {
-          setSelectedDate(date);
-          setShowCalendarModal(false);
-        }}
-      />
     </div>
   );
 };
