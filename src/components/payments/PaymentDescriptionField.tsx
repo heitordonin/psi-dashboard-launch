@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DescriptionSelector } from '@/components/descriptions/DescriptionSelector';
-import { DescriptionManager } from '@/components/descriptions/DescriptionManager';
+import { DescriptionTemplateSelector } from '@/components/descriptions/DescriptionTemplateSelector';
 import { FileText } from 'lucide-react';
 
 interface PaymentDescriptionFieldProps {
@@ -14,16 +13,10 @@ interface PaymentDescriptionFieldProps {
 
 export function PaymentDescriptionField({ value, onChange }: PaymentDescriptionFieldProps) {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [showDescriptionManager, setShowDescriptionManager] = useState(false);
 
   const handleSelectDescription = (description: string) => {
     onChange(description);
     setShowDescriptionModal(false);
-  };
-
-  const handleManageDescriptions = () => {
-    setShowDescriptionModal(false);
-    setShowDescriptionManager(true);
   };
 
   return (
@@ -39,7 +32,7 @@ export function PaymentDescriptionField({ value, onChange }: PaymentDescriptionF
             className="text-sm"
           >
             <FileText className="w-4 h-4 mr-2" />
-            Usar Descrição Padrão
+            Usar Template
           </Button>
         </div>
         <Textarea
@@ -51,16 +44,10 @@ export function PaymentDescriptionField({ value, onChange }: PaymentDescriptionF
         />
       </div>
 
-      <DescriptionSelector
+      <DescriptionTemplateSelector
         isOpen={showDescriptionModal}
         onClose={() => setShowDescriptionModal(false)}
         onSelectDescription={handleSelectDescription}
-        onManageDescriptions={handleManageDescriptions}
-      />
-
-      <DescriptionManager
-        isOpen={showDescriptionManager}
-        onClose={() => setShowDescriptionManager(false)}
       />
     </>
   );
