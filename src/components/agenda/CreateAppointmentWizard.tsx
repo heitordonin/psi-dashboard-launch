@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 import { WizardStepRenderer } from "./wizard/WizardStepRenderer";
 import { useAppointmentWizard } from "./wizard/useAppointmentWizard";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Appointment } from "@/types/appointment";
@@ -110,19 +110,21 @@ export const CreateAppointmentWizard = ({ isOpen, onClose, editingAppointment }:
             <div key={title} className="flex items-center">
               <div className="text-center">
                 <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200",
+                  "rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200",
+                  isMobile ? "w-6 h-6" : "w-8 h-8",
                   index <= currentStep 
                     ? "bg-primary text-primary-foreground" 
                     : "bg-muted text-muted-foreground"
                 )}>
                   {index < currentStep ? (
-                    <Check className="w-4 h-4" />
+                    <Check className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
                   ) : (
                     index + 1
                   )}
                 </div>
                 <p className={cn(
-                  "text-xs mt-1 transition-colors duration-200 hidden sm:block",
+                  "text-xs mt-1 transition-colors duration-200",
+                  isMobile ? "hidden" : "hidden sm:block",
                   index <= currentStep ? "text-foreground font-medium" : "text-muted-foreground"
                 )}>
                   {title}
@@ -130,7 +132,8 @@ export const CreateAppointmentWizard = ({ isOpen, onClose, editingAppointment }:
               </div>
               {index < STEP_TITLES.length - 1 && (
                 <div className={cn(
-                  "flex-1 h-0.5 mx-2 transition-colors duration-300",
+                  "flex-1 h-0.5 transition-colors duration-300",
+                  isMobile ? "mx-1" : "mx-2",
                   index < currentStep ? "bg-primary" : "bg-muted"
                 )} />
               )}
@@ -146,7 +149,7 @@ export const CreateAppointmentWizard = ({ isOpen, onClose, editingAppointment }:
       </div>
 
       {/* Conteúdo do step com animação */}
-      <div className="min-h-[300px] mb-6">
+      <div className={cn("mb-6", isMobile ? "min-h-[200px]" : "min-h-[300px]")}>
         <div className="animate-in fade-in-50 slide-in-from-right-2 duration-200">
           <WizardStepRenderer
             currentStep={currentStep}
@@ -215,9 +218,18 @@ export const CreateAppointmentWizard = ({ isOpen, onClose, editingAppointment }:
 
   if (isMobile) {
     return (
-      <BottomSheet isOpen={isOpen} onClose={handleClose}>
-        <div className="p-6">{content}</div>
-      </BottomSheet>
+      <Drawer open={isOpen} onOpenChange={handleClose}>
+        <DrawerContent className="max-h-[85vh] px-4 pb-4">
+          <DrawerHeader className="text-left p-0 mb-4">
+            <DrawerTitle className="sr-only">
+              {editingAppointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto flex-1">
+            {content}
+          </div>
+        </DrawerContent>
+      </Drawer>
     );
   }
 
