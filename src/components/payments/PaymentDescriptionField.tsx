@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DefaultDescriptionModal } from '@/components/DefaultDescriptionModal';
-import { InvoiceDescriptionsManager } from '@/components/InvoiceDescriptionsManager';
+import { DescriptionSelector } from '@/components/descriptions/DescriptionSelector';
+import { DescriptionManager } from '@/components/descriptions/DescriptionManager';
 import { FileText } from 'lucide-react';
 
 interface PaymentDescriptionFieldProps {
@@ -51,14 +51,14 @@ export function PaymentDescriptionField({ value, onChange }: PaymentDescriptionF
         />
       </div>
 
-      <DefaultDescriptionModal
+      <DescriptionSelector
         isOpen={showDescriptionModal}
         onClose={() => setShowDescriptionModal(false)}
         onSelectDescription={handleSelectDescription}
         onManageDescriptions={handleManageDescriptions}
       />
 
-      <InvoiceDescriptionsManager
+      <DescriptionManager
         isOpen={showDescriptionManager}
         onClose={() => setShowDescriptionManager(false)}
       />
