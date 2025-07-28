@@ -105,13 +105,15 @@ export const MobileAgendaLayout = ({
         </div>
       </PullToRefreshContainer>
 
-      {/* Floating Action Button */}
-      <FloatingActionButton
-        onClick={() => setShowCreateWizard(true)}
-        className="safe-area-bottom shadow-lg"
-      >
-        <Plus className="h-6 w-6" />
-      </FloatingActionButton>
+      {/* Floating Action Button - esconder quando wizard está aberto */}
+      {!showCreateWizard && (
+        <FloatingActionButton
+          onClick={() => setShowCreateWizard(true)}
+          className="safe-area-bottom shadow-lg"
+        >
+          <Plus className="h-6 w-6" />
+        </FloatingActionButton>
+      )}
 
       {/* Modal do Wizard */}
       <CreateAppointmentWizard
