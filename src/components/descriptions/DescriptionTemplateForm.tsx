@@ -113,8 +113,8 @@ export function DescriptionTemplateForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-lg mx-4 p-6">
+        <DialogHeader className="pb-4">
           <DialogTitle>
             {editingDescription ? 'Editar Descrição' : 'Nova Descrição'}
           </DialogTitle>
