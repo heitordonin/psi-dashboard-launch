@@ -3,8 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MobileHeader } from "@/components/ui/mobile-header";
 import { AgendaKPIs } from "../AgendaKPIs";
 import { MobileKPIsVertical } from "../mobile/MobileKPIsVertical";
-import { MobileCompactCalendar } from "../mobile/MobileCompactCalendar";
-import { MobileThreeDaysView } from "../mobile/MobileThreeDaysView";
+import { MobileWeekNavigation } from "../mobile/MobileWeekNavigation";
+import { MobileWeeklyVerticalView } from "../mobile/MobileWeeklyVerticalView";
+import { MobileCalendarModal } from "../mobile/MobileCalendarModal";
 import { CreateAppointmentWizard } from "../CreateAppointmentWizard";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
@@ -33,6 +34,7 @@ export const MobileAgendaLayout = ({
 }: MobileAgendaLayoutProps) => {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const queryClient = useQueryClient();
 
   const handleManualRefresh = async () => {
@@ -80,26 +82,19 @@ export const MobileAgendaLayout = ({
         isTriggered={isTriggered}
       >
         <div ref={containerRef} className="mobile-container">
-          {/* KPIs integrados no mobile */}
-          <div className="mobile-spacing">
-            <MobileKPIsVertical
-              appointments={appointments}
+          <div className="space-y-6">
+            <MobileKPIsVertical 
+              appointments={appointments} 
               selectedDate={selectedDate}
             />
-          </div>
-
-          {/* Calendário compacto */}
-          <div className="mobile-spacing">
-            <MobileCompactCalendar
-              selectedDate={selectedDate}
-              onDateSelect={setSelectedDate}
-              appointments={appointments}
+            
+            <MobileWeekNavigation
+              currentWeek={selectedDate}
+              onWeekChange={setSelectedDate}
+              onCalendarOpen={() => setShowCalendarModal(true)}
             />
-          </div>
-          
-          {/* Visualização de 3 dias */}
-          <div className="mobile-spacing">
-            <MobileThreeDaysView
+            
+            <MobileWeeklyVerticalView
               appointments={appointments}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -125,6 +120,16 @@ export const MobileAgendaLayout = ({
         isOpen={showCreateWizard}
         onClose={handleCloseWizard}
         editingAppointment={editingAppointment}
+      />
+
+      <MobileCalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        selectedDate={selectedDate}
+        onDateSelect={(date) => {
+          setSelectedDate(date);
+          setShowCalendarModal(false);
+        }}
       />
     </div>
   );
