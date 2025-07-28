@@ -86,16 +86,16 @@ export const TodayAppointments = () => {
       </CardHeader>
       <CardContent className="mobile-spacing">
         {todaysAppointments.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="rounded-full bg-muted w-12 h-12 flex items-center justify-center mx-auto mb-3">
-              <Calendar className="h-6 w-6 text-muted-foreground" />
+          <div className="text-center py-8">
+            <div className="rounded-full bg-muted w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground mb-3">
-              Nenhum agendamento para hoje
+            <h3 className="font-semibold text-lg mb-2">Nenhum agendamento hoje</h3>
+            <p className="text-muted-foreground mb-4">
+              Aproveite o dia livre ou crie um novo agendamento
             </p>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => navigate("/agenda")}
               className="flex items-center gap-2"
             >
@@ -104,58 +104,56 @@ export const TodayAppointments = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Resumo do dia */}
-            <div className="flex gap-4 text-sm text-muted-foreground border-b pb-3">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {upcomingCount} pendentes
-              </span>
-              <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                {completedCount} realizados
-              </span>
+          <div className="space-y-6">
+            {/* Resumo visual do dia */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {upcomingCount}
+                </div>
+                <p className="text-sm text-blue-600/80 dark:text-blue-400/80">
+                  Agendados
+                </p>
+              </div>
+              <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {completedCount}
+                </div>
+                <p className="text-sm text-green-600/80 dark:text-green-400/80">
+                  Realizados
+                </p>
+              </div>
             </div>
 
-            {/* Lista de agendamentos */}
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {todaysAppointments
-                .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-                .map((appointment) => {
-                  const startTime = isoToLocalHHMM(appointment.start_datetime);
-                  const endTime = isoToLocalHHMM(appointment.end_datetime);
-                  const statusInfo = statusConfig[appointment.status];
+            {/* Indicador de próximo agendamento */}
+            {upcomingCount > 0 && (
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">
+                    Próximo agendamento hoje
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/agenda")}
+                  className="text-xs"
+                >
+                  Ver detalhes
+                </Button>
+              </div>
+            )}
 
-                  return (
-                    <div
-                      key={appointment.id}
-                      onClick={() => navigate("/agenda")}
-                      className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                              {startTime} - {endTime}
-                            </span>
-                            <Badge variant={statusInfo.variant} className="text-xs">
-                              {statusInfo.label}
-                            </Badge>
-                          </div>
-                          <p className="font-medium truncate text-sm">
-                            {appointment.title}
-                          </p>
-                          {appointment.patient_name && (
-                            <p className="text-sm text-muted-foreground truncate">
-                              {appointment.patient_name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+            {/* Botão para ver agenda completa */}
+            <Button
+              variant="outline"
+              onClick={() => navigate("/agenda")}
+              className="w-full flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Ver Agenda Completa
+            </Button>
           </div>
         )}
       </CardContent>
