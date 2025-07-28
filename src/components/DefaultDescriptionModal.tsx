@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Edit } from "lucide-react";
+import { Edit, Plus, FileText, Calendar } from "lucide-react";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 interface InvoiceDescription {
@@ -59,75 +59,84 @@ export const DefaultDescriptionModal = ({
     onClose();
   };
 
-  const truncateText = (text: string, maxLength: number = 50) => {
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Selecionar Descrição Padrão</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Selecionar Descrição Padrão
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              Escolha uma descrição ou crie uma nova
+            </p>
             <Button onClick={onManageDescriptions} variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-2" />
-              Gerenciar Descrições
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Descrição
             </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            {isLoading ? (
-              <div className="p-8 text-center">Carregando...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Assunto</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Data de Criação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {descriptions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                        Nenhuma descrição cadastrada. 
-                        <br />
-                        <Button 
-                          variant="link" 
-                          onClick={onManageDescriptions}
-                          className="mt-2"
-                        >
-                          Clique aqui para criar uma descrição
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    descriptions.map((description) => (
-                      <TableRow 
-                        key={description.id}
-                        className="cursor-pointer hover:bg-gray-50"
-                        onClick={() => handleSelectDescription(description)}
-                      >
-                        <TableCell className="font-medium">
-                          {description.subject}
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          {truncateText(description.text, 60)}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(description.created_at).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando descrições...</p>
+              </div>
+            </div>
+          ) : descriptions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                <FileText className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium mb-2">Nenhuma descrição cadastrada</h3>
+              <p className="text-muted-foreground mb-4">
+                Crie sua primeira descrição padrão para agilizar o processo
+              </p>
+              <Button onClick={onManageDescriptions}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Descrição
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {descriptions.map((description) => (
+                <Card 
+                  key={description.id}
+                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30 group"
+                  onClick={() => handleSelectDescription(description)}
+                >
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+                          {description.subject || "Sem assunto"}
+                        </h4>
+                        <div className="flex items-center text-xs text-muted-foreground ml-2">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {new Date(description.created_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                        {description.text}
+                      </p>
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                          Clique para selecionar
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
