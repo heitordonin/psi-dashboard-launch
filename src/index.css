@@ -77,7 +77,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 218 100% 36%;
-    --primary-foreground: 222.2 84% 4.9%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
     --muted: 210 40% 96%;
@@ -115,7 +115,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     --primary: 218 100% 36%;
-    --primary-foreground: 222.2 84% 4.9%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -137,7 +137,7 @@
     --sidebar-background: 217.2 32.6% 17.5%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 218 100% 36%;
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217.2 32.6% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 20%;
