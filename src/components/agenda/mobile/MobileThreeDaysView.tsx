@@ -92,9 +92,9 @@ export const MobileThreeDaysView = ({
               )}
               onClick={() => onDateSelect(day)}
             >
-              <CardContent className="p-3">
+              <CardContent className="p-2 h-32 flex flex-col">
                 {/* Day Header */}
-                <div className="text-center mb-3">
+                <div className="text-center mb-2 flex-shrink-0">
                   <p className="text-sm font-medium text-primary">
                     {getDayLabel(day)}
                   </p>
@@ -107,35 +107,37 @@ export const MobileThreeDaysView = ({
                 </div>
 
                 {/* Appointments */}
-                <div className="space-y-2">
+                <div className="flex-1 overflow-hidden">
                   {dayAppointments.length > 0 ? (
-                    dayAppointments.map(apt => (
-                      <div
-                        key={apt.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAppointmentClick(apt);
-                        }}
-                        className="bg-card border rounded-md p-2 hover:bg-accent transition-colors cursor-pointer touch-target"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Clock className="h-3 w-3 text-primary" />
-                          <span className="text-xs font-medium">
-                            {format(new Date(apt.start_datetime), "HH:mm")}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {apt.title}
-                        </p>
-                        {apt.patient_name && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {apt.patient_name}
+                    <div className="space-y-1 max-h-full overflow-y-auto">
+                      {dayAppointments.map(apt => (
+                        <div
+                          key={apt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAppointmentClick(apt);
+                          }}
+                          className="bg-muted/50 rounded p-1.5 hover:bg-accent transition-colors cursor-pointer text-xs"
+                        >
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Clock className="h-2.5 w-2.5 text-primary flex-shrink-0" />
+                            <span className="font-medium text-xs">
+                              {format(new Date(apt.start_datetime), "HH:mm")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate leading-tight">
+                            {apt.title}
                           </p>
-                        )}
-                      </div>
-                    ))
+                          {apt.patient_name && (
+                            <p className="text-xs text-muted-foreground truncate leading-tight">
+                              {apt.patient_name}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-center py-4">
+                    <div className="flex items-center justify-center h-full">
                       <p className="text-xs text-muted-foreground">Livre</p>
                     </div>
                   )}
