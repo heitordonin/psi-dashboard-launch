@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,69 @@ interface InvoiceDescription {
   text: string;
   created_at: string;
 }
+
+interface FormContentProps {
+  subject: string;
+  text: string;
+  onSubjectChange: (value: string) => void;
+  onTextChange: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onClose: () => void;
+  isLoading: boolean;
+  editingDescription?: InvoiceDescription;
+  formId: string;
+}
+
+const FormContent = memo(({ 
+  subject, 
+  text, 
+  onSubjectChange, 
+  onTextChange, 
+  onSubmit, 
+  onClose, 
+  isLoading, 
+  editingDescription,
+  formId 
+}: FormContentProps) => {
+  console.log('FormContent render');
+  
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor={`${formId}-subject`}>Título (opcional)</Label>
+        <Input
+          id={`${formId}-subject`}
+          value={subject}
+          onChange={(e) => onSubjectChange(e.target.value)}
+          placeholder="Ex: Consulta de Psicologia"
+          className="w-full"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor={`${formId}-text`}>Descrição</Label>
+        <Textarea
+          id={`${formId}-text`}
+          value={text}
+          onChange={(e) => onTextChange(e.target.value)}
+          placeholder="Digite a descrição da cobrança..."
+          rows={4}
+          className="w-full resize-none"
+          required
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={!text.trim() || isLoading}>
+          {isLoading ? 'Salvando...' : editingDescription ? 'Atualizar' : 'Criar'}
+        </Button>
+      </div>
+    </form>
+  );
+});
 
 interface DescriptionTemplateFormProps {
   isOpen: boolean;
@@ -31,7 +94,10 @@ export function DescriptionTemplateForm({
 }: DescriptionTemplateFormProps) {
   const [subject, setSubject] = useState('');
   const [text, setText] = useState('');
+  const formId = useId();
   const isMobile = useIsMobile();
+
+  console.log('DescriptionTemplateForm render', { subject, text });
 
   useEffect(() => {
     if (editingDescription) {
@@ -59,50 +125,15 @@ export function DescriptionTemplateForm({
     onClose();
   }, [onClose]);
 
-  const handleSubjectChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSubject(e.target.value);
+  const handleSubjectChange = useCallback((value: string) => {
+    console.log('handleSubjectChange', value);
+    setSubject(value);
   }, []);
 
-  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+  const handleTextChange = useCallback((value: string) => {
+    console.log('handleTextChange', value);
+    setText(value);
   }, []);
-
-  const FormContent = memo(() => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="subject">Título (opcional)</Label>
-        <Input
-          id="subject"
-          value={subject}
-          onChange={handleSubjectChange}
-          placeholder="Ex: Consulta de Psicologia"
-          className="w-full"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="text">Descrição</Label>
-        <Textarea
-          id="text"
-          value={text}
-          onChange={handleTextChange}
-          placeholder="Digite a descrição da cobrança..."
-          rows={4}
-          className="w-full resize-none"
-          required
-        />
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={handleClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={!text.trim() || isLoading}>
-          {isLoading ? 'Salvando...' : editingDescription ? 'Atualizar' : 'Criar'}
-        </Button>
-      </div>
-    </form>
-  ));
 
   if (isMobile) {
     return (
@@ -113,7 +144,17 @@ export function DescriptionTemplateForm({
               {editingDescription ? 'Editar Descrição' : 'Nova Descrição'}
             </SheetTitle>
           </SheetHeader>
-          <FormContent />
+          <FormContent
+            subject={subject}
+            text={text}
+            onSubjectChange={handleSubjectChange}
+            onTextChange={handleTextChange}
+            onSubmit={handleSubmit}
+            onClose={handleClose}
+            isLoading={isLoading}
+            editingDescription={editingDescription}
+            formId={formId}
+          />
         </SheetContent>
       </Sheet>
     );
@@ -130,7 +171,17 @@ export function DescriptionTemplateForm({
             {editingDescription ? 'Edite sua descrição existente' : 'Crie uma nova descrição para suas cobranças'}
           </DialogDescription>
         </DialogHeader>
-        <FormContent />
+        <FormContent
+          subject={subject}
+          text={text}
+          onSubjectChange={handleSubjectChange}
+          onTextChange={handleTextChange}
+          onSubmit={handleSubmit}
+          onClose={handleClose}
+          isLoading={isLoading}
+          editingDescription={editingDescription}
+          formId={formId}
+        />
       </DialogContent>
     </Dialog>
   );
