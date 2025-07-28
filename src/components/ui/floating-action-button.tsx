@@ -32,12 +32,10 @@ export function FloatingActionButton({
     <Button
       onClick={onClick}
       className={cn(
-        "fixed z-50 rounded-full shadow-lg",
+        "fixed z-[9999] rounded-full shadow-lg",
         "bg-primary hover:bg-primary/90 text-primary-foreground",
         "transition-all duration-200 hover:scale-110 active:scale-95",
-        "touch-target-enhanced",
-        // Enhanced safe area support for mobile
-        "pb-safe-area-inset-bottom pr-safe-area-inset-right",
+        "touch-target-enhanced safe-area-bottom",
         positionClasses[position],
         sizeClasses[size],
         className
