@@ -93,6 +93,10 @@ export function DescriptionTemplatesList({ onSelectDescription }: DescriptionTem
             <FileText className="w-5 h-5 text-primary" />
             Descrições Padrão
           </h2>
+        </div>
+
+        {/* Action Button */}
+        <div className="flex justify-start">
           <Button onClick={openCreateForm} size="sm">
             <Plus className="w-4 h-4 mr-2" />
             Nova Descrição
