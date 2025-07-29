@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,12 +11,19 @@ import { validateEmail } from '@/utils/securityValidation';
 interface ForgotPasswordModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialEmail?: string;
 }
 
-export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalProps) {
+export function ForgotPasswordModal({ open, onOpenChange, initialEmail }: ForgotPasswordModalProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { resetPassword } = useAuth();
+
+  useEffect(() => {
+    if (initialEmail && open) {
+      setEmail(initialEmail);
+    }
+  }, [initialEmail, open]);
 
   const handleSubmit = async () => {
     if (!email.trim()) {
