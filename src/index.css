@@ -247,6 +247,18 @@
 
   /* Advanced filter modal styling */
   .advanced-filter-modal {
-    @apply mx-4 my-4 sm:mx-6 sm:my-6;
+    margin-left: 1rem !important;
+    margin-right: 1rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  @media (min-width: 640px) {
+    .advanced-filter-modal {
+      margin-left: 1.5rem !important;
+      margin-right: 1.5rem !important;
+      margin-top: 1.5rem !important;
+      margin-bottom: 1.5rem !important;
+    }
   }
 }
