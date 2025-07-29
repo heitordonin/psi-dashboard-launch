@@ -244,21 +244,4 @@
   .swipe-hint {
     @apply text-xs text-muted-foreground opacity-60 select-none;
   }
-
-  /* Advanced filter modal styling */
-  .advanced-filter-modal {
-    margin: 1rem !important;
-    max-width: 32rem !important;
-    max-height: 90vh !important;
-    overflow-y: auto !important;
-    width: calc(100vw - 2rem) !important;
-  }
-
-  @media (min-width: 640px) {
-    .advanced-filter-modal {
-      margin: 1.5rem !important;
-      max-height: 85vh !important;
-      width: auto !important;
-    }
-  }
 }
