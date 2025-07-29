@@ -681,6 +681,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          agenda_module_enabled: boolean
           birth_date: string | null
           city: string | null
           complement: string | null
@@ -707,6 +708,7 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
+          agenda_module_enabled?: boolean
           birth_date?: string | null
           city?: string | null
           complement?: string | null
@@ -733,6 +735,7 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
+          agenda_module_enabled?: boolean
           birth_date?: string | null
           city?: string | null
           complement?: string | null
@@ -1065,6 +1068,7 @@ export type Database = {
       get_decrypted_profile: {
         Args: Record<PropertyKey, never>
         Returns: {
+          agenda_module_enabled: boolean
           birth_date: string | null
           city: string | null
           complement: string | null
