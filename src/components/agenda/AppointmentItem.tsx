@@ -97,10 +97,9 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, onDelete,
           style={style}
         >
           <div className={`font-medium truncate flex items-center justify-between ${isMobile ? 'text-base' : ''}`}>
-            <span className="truncate">{appointment.title}</span>
             <span className={`
               ${isMobile ? 'text-xs' : 'text-[10px]'} 
-              font-mono bg-black/10 px-1 rounded ml-1 flex-shrink-0
+              font-mono bg-black/10 px-1 rounded flex-shrink-0
             `}>
               {startTime}-{endTime}
             </span>
@@ -113,11 +112,6 @@ export const AppointmentItem = ({ appointment, onUpdateStatus, onEdit, onDelete,
           <Badge variant="outline" className={`mt-1 ${isMobile ? 'text-xs h-5 px-2' : 'text-[9px] h-3 px-1'}`}>
             {currentStatusConfig.label}
           </Badge>
-          {isMobile && (
-            <div className="text-xs text-muted-foreground mt-2 opacity-60">
-              ← Deslize para editar • Deslize para concluir →
-            </div>
-          )}
         </div>
       </DropdownMenuTrigger>
       
