@@ -1,5 +1,4 @@
-
-import { LayoutDashboard, Upload, Activity, BarChart3 } from "lucide-react";
+import { Users } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -10,38 +9,23 @@ import {
   SidebarMenuButton
 } from "@/components/ui/sidebar";
 
-const adminItems = [
+const adminPsiRegularItems = [
   {
-    title: "Painel Movimento",
-    url: "/admin/movimento",
-    icon: BarChart3,
-  },
-  {
-    title: "Dashboard Estratégico",
-    url: "/admin/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Enviar Documentos",
-    url: "/admin/enviar-documentos",
-    icon: Upload,
-  },
-  {
-    title: "Monitoramento",
-    url: "/admin/subscription-monitoring",
-    icon: Activity,
+    title: "Painel Psi Regular",
+    url: "/admin",
+    icon: Users,
   },
 ];
 
-export const AdminSection = () => {
+export const AdminPsiRegularSection = () => {
   const location = useLocation();
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Admin</SidebarGroupLabel>
+      <SidebarGroupLabel>Admin Psi Regular</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {adminItems.map((item) => {
+          {adminPsiRegularItems.map((item) => {
             const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>
