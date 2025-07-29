@@ -1,5 +1,5 @@
 
-import { Home, Users, Mail } from "lucide-react";
+import { Home, Users, Mail, FolderOpen } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -9,8 +9,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton
 } from "@/components/ui/sidebar";
+import { useSubscription } from "@/hooks/useSubscription";
 
-const gestaoItems = [
+const baseGestaoItems = [
   {
     title: "Dashboard Inicial",
     url: "/dashboard",
@@ -28,15 +29,28 @@ const gestaoItems = [
   },
 ];
 
+const psiRegularItem = {
+  title: "Documentos Recebidos",
+  url: "/documentos-recebidos",
+  icon: FolderOpen,
+};
+
 export const GestaoSection = () => {
   const location = useLocation();
+  const { currentPlan } = useSubscription();
+
+  // Add Documentos Recebidos if user has Psi Regular plan
+  const items = [...baseGestaoItems];
+  if (currentPlan?.slug === 'psi_regular') {
+    items.push(psiRegularItem);
+  }
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Gestão</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {gestaoItems.map((item) => {
+          {items.map((item) => {
             const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>

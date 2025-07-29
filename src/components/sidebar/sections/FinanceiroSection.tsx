@@ -1,5 +1,5 @@
 
-import { CreditCard, Receipt, FileText, FolderOpen } from "lucide-react";
+import { CreditCard, Receipt, FileText } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -9,9 +9,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton
 } from "@/components/ui/sidebar";
-import { useSubscription } from "@/hooks/useSubscription";
 
-const baseFinanceiroItems = [
+const financeiroItems = [
   {
     title: "Cobranças",
     url: "/payments",
@@ -29,28 +28,15 @@ const baseFinanceiroItems = [
   },
 ];
 
-const psiRegularItem = {
-  title: "Documentos Recebidos",
-  url: "/documentos-recebidos",
-  icon: FolderOpen,
-};
-
 export const FinanceiroSection = () => {
   const location = useLocation();
-  const { currentPlan } = useSubscription();
-
-  // Add Documentos Recebidos if user has Psi Regular plan
-  const items = [...baseFinanceiroItems];
-  if (currentPlan?.slug === 'psi_regular') {
-    items.push(psiRegularItem);
-  }
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Financeiro</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
+          {financeiroItems.map((item) => {
             const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>
