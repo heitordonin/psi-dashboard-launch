@@ -249,13 +249,16 @@ const Expenses = () => {
                               {expense.description && (
                                 <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
                               )}
-                              <p className="text-xs text-gray-500 mt-1">
+                               <div className="text-xs text-gray-500 mt-1 space-y-1">
                                 {expense.competency ? (
-                                  `Competência: ${expense.competency}`
+                                  <>
+                                    <p>Competência: {expense.competency}</p>
+                                    <p>Data Pagamento: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
+                                  </>
                                 ) : (
-                                  `Data: ${new Date(expense.payment_date).toLocaleDateString('pt-BR')}`
+                                  <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
                                 )}
-                              </p>
+                               </div>
                               {expense.is_residential && (
                                 <div className="mt-1">
                                   <p className="text-xs text-green-600">Residencial (20% aplicado)</p>
