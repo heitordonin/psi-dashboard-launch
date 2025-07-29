@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
 import { AddressCard } from "@/components/profile/AddressCard";
+import { ModuleSettingsCard } from "@/components/profile/ModuleSettingsCard";
 import { Button } from "@/components/ui/button";
 
 
@@ -68,6 +69,7 @@ const Profile = () => {
           phone: cleanedPhone,
           phone_country_code: profile.phone_country_code || '+55',
           email_reminders_enabled: profile.email_reminders_enabled,
+          agenda_module_enabled: profile.agenda_module_enabled,
           // Address fields
           zip_code: profile.zip_code,
           street: profile.street,
@@ -123,6 +125,11 @@ const Profile = () => {
                 />
 
                 <AddressCard
+                  profile={profile}
+                  setProfile={setProfile}
+                />
+
+                <ModuleSettingsCard
                   profile={profile}
                   setProfile={setProfile}
                 />
