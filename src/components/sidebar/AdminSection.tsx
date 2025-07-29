@@ -22,11 +22,6 @@ const adminItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Enviar Documentos",
-    url: "/admin/enviar-documentos",
-    icon: Upload,
-  },
-  {
     title: "Monitoramento",
     url: "/admin/subscription-monitoring",
     icon: Activity,
