@@ -1119,7 +1119,9 @@ export type Database = {
         Returns: string
       }
       get_ltv_metrics: {
-        Args: Record<PropertyKey, never>
+        Args:
+          | Record<PropertyKey, never>
+          | { start_date?: string; end_date?: string }
         Returns: {
           avg_ltv_gestao: number
           avg_ltv_psi_regular: number
