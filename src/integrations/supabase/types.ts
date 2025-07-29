@@ -1124,6 +1124,14 @@ export type Database = {
           avg_subscription_duration_days: number
         }[]
       }
+      get_monthly_revenue_evolution: {
+        Args: { months_back?: number }
+        Returns: {
+          month_year: string
+          mrr: number
+          mrr_growth_rate: number
+        }[]
+      }
       get_mrr_metrics: {
         Args: Record<PropertyKey, never>
         Returns: {
