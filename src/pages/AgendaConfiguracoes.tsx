@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ArrowLeft, Clock, MapPin, Mail, MessageCircle, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Calendar as CalendarIcon } from "lucide-react";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { AgendaSettings } from "@/types/appointment";
@@ -44,10 +44,6 @@ export default function AgendaConfiguracoes() {
     timezone: 'America/Sao_Paulo',
     google_calendar_integration: false,
     google_calendar_id: '',
-    email_reminder_enabled: false,
-    email_reminder_minutes: 60,
-    whatsapp_reminder_enabled: false,
-    whatsapp_reminder_minutes: 60,
   });
 
   useEffect(() => {
@@ -223,99 +219,6 @@ export default function AgendaConfiguracoes() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Mail className="mr-2 h-5 w-5" />
-              Lembretes por E-mail
-            </CardTitle>
-            <CardDescription>
-              Configure lembretes automáticos por e-mail
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Ativar Lembretes por E-mail</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enviar lembretes automáticos para pacientes
-                </p>
-              </div>
-              <Switch
-                checked={formData.email_reminder_enabled}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_enabled: checked }))}
-              />
-            </div>
-
-            {formData.email_reminder_enabled && (
-              <div className="space-y-2">
-                <Label htmlFor="email_reminder_minutes">Minutos antes do agendamento</Label>
-                <Select
-                  value={formData.email_reminder_minutes?.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_minutes: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutos</SelectItem>
-                    <SelectItem value="30">30 minutos</SelectItem>
-                    <SelectItem value="60">1 hora</SelectItem>
-                    <SelectItem value="120">2 horas</SelectItem>
-                    <SelectItem value="1440">1 dia</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MessageCircle className="mr-2 h-5 w-5" />
-              Lembretes por WhatsApp
-            </CardTitle>
-            <CardDescription>
-              Configure lembretes automáticos por WhatsApp
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Ativar Lembretes por WhatsApp</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enviar lembretes automáticos para pacientes
-                </p>
-              </div>
-              <Switch
-                checked={formData.whatsapp_reminder_enabled}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_enabled: checked }))}
-              />
-            </div>
-
-            {formData.whatsapp_reminder_enabled && (
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp_reminder_minutes">Minutos antes do agendamento</Label>
-                <Select
-                  value={formData.whatsapp_reminder_minutes?.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_minutes: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutos</SelectItem>
-                    <SelectItem value="30">30 minutos</SelectItem>
-                    <SelectItem value="60">1 hora</SelectItem>
-                    <SelectItem value="120">2 horas</SelectItem>
-                    <SelectItem value="1440">1 dia</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSaving}>
