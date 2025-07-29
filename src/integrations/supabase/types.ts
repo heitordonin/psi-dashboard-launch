@@ -261,6 +261,45 @@ export type Database = {
           },
         ]
       }
+      backup_status: {
+        Row: {
+          backup_type: string
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          file_size: number | null
+          filename: string | null
+          id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          file_size?: number | null
+          filename?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          file_size?: number | null
+          filename?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       banks: {
         Row: {
           code: string
