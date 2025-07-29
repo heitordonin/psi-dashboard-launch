@@ -244,4 +244,9 @@
   .swipe-hint {
     @apply text-xs text-muted-foreground opacity-60 select-none;
   }
+
+  /* Advanced filter modal styling */
+  .advanced-filter-modal {
+    @apply mx-4 my-4 sm:mx-6 sm:my-6;
+  }
 }
