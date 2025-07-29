@@ -82,7 +82,7 @@ export const AdvancedExpenseFilter = ({ onFilterChange, currentFilters }: Advanc
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto m-4 sm:m-6">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-lg font-semibold">Filtros Avançados</DialogTitle>
         </DialogHeader>
