@@ -100,25 +100,38 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     }
   }, [expense, categories]);
 
+  // Helper function for safe value parsing
+  const parseValue = (value: string | number): number => {
+    if (typeof value === 'number') {
+      return value; // Already a number, return as is
+    }
+    
+    // If it's a string, try to parse it
+    const stringValue = String(value);
+    if (stringValue.includes(',') || stringValue.includes('.')) {
+      // Only do replacement parsing if it contains formatting
+      return Number(stringValue.replace(/\./g, "").replace(",", "."));
+    }
+    
+    return Number(stringValue);
+  };
+
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       console.log('Salvando despesa com valores:', values);
+      console.log('Tipo do amount:', typeof values.amount, 'Valor:', values.amount);
+      console.log('Tipo do penalty_interest:', typeof values.penalty_interest, 'Valor:', values.penalty_interest);
+      console.log('Tipo do residential_adjusted_amount:', typeof values.residential_adjusted_amount, 'Valor:', values.residential_adjusted_amount);
       
       if (!user?.id) {
         throw new Error('Usuário não autenticado');
       }
       
-      const parsedAmount = Number(
-        String(values.amount).replace(/\./g, "").replace(",", ".")
-      );
-      
-      const parsedPenaltyInterest = Number(
-        String(values.penalty_interest ?? 0).replace(/\./g, "").replace(",", ".")
-      );
-      
-      const parsedResidentialAmount = Number(
-        String(values.residential_adjusted_amount ?? 0).replace(/\./g, "").replace(",", ".")
-      );
+      const parsedAmount = parseValue(values.amount);
+      const parsedPenaltyInterest = parseValue(values.penalty_interest ?? 0);
+      const parsedResidentialAmount = parseValue(values.residential_adjusted_amount ?? 0);
+
+      console.log('Valores parseados - Amount:', parsedAmount, 'Penalty:', parsedPenaltyInterest, 'Residential:', parsedResidentialAmount);
 
       const expenseData = {
         category_id: values.category_id,
