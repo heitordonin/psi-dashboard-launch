@@ -34,7 +34,7 @@ export const AdvancedFilterDialog = ({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="advanced-filter-modal max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="advanced-filter-modal">
         <DialogHeader className="pb-4">
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         </DialogHeader>

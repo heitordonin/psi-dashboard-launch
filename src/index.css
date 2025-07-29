@@ -247,18 +247,18 @@
 
   /* Advanced filter modal styling */
   .advanced-filter-modal {
-    margin-left: 1rem !important;
-    margin-right: 1rem !important;
-    margin-top: 1rem !important;
-    margin-bottom: 1rem !important;
+    margin: 1rem !important;
+    max-width: 32rem !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    width: calc(100vw - 2rem) !important;
   }
 
   @media (min-width: 640px) {
     .advanced-filter-modal {
-      margin-left: 1.5rem !important;
-      margin-right: 1.5rem !important;
-      margin-top: 1.5rem !important;
-      margin-bottom: 1.5rem !important;
+      margin: 1.5rem !important;
+      max-height: 85vh !important;
+      width: auto !important;
     }
   }
 }
