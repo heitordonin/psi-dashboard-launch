@@ -144,13 +144,18 @@ export const sanitizeTextInput = (input: string, maxLength: number = 255): strin
 
 // Validate monetary amounts
 export const validateAmount = (amount: number | string): boolean => {
-  if (typeof amount === 'string') {
-    amount = parseFloat(amount.replace(/[^\d.-]/g, ''));
+  let numericAmount: number;
+  
+  if (typeof amount === 'number') {
+    numericAmount = amount;
+  } else {
+    // Only parse if it's a string with formatting
+    numericAmount = parseFloat(amount.replace(/[^\d.-]/g, ''));
   }
   
-  if (isNaN(amount) || !isFinite(amount)) return false;
-  if (amount < 0) return false;
-  if (amount > 999999999.99) return false; // Reasonable upper limit
+  if (isNaN(numericAmount) || !isFinite(numericAmount)) return false;
+  if (numericAmount < 0) return false;
+  if (numericAmount > 999999999.99) return false; // Reasonable upper limit
   
   return true;
 };

@@ -15,16 +15,17 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { ExpenseDateField } from "@/components/ExpenseDateField";
+import { safeParseCurrency } from "@/utils/valueParser";
 
 const formSchema = z.object({
   category_id: z.string().min(1, "Categoria é obrigatória"),
   amount: z.union([z.string(), z.number()]).refine(val => {
-    const num = typeof val === 'string' ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : val;
+    const num = safeParseCurrency(val);
     return num > 0;
   }, "Valor deve ser maior que zero"),
   payment_date: z.string().min(1, "Data de pagamento é obrigatória"),
   penalty_interest: z.union([z.string(), z.number()]).refine(val => {
-    const num = typeof val === 'string' ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : val;
+    const num = safeParseCurrency(val);
     return num >= 0;
   }, "Multa/Juros deve ser maior ou igual a zero"),
   description: z.string().optional(),
@@ -100,21 +101,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
     }
   }, [expense, categories]);
 
-  // Helper function for safe value parsing
-  const parseValue = (value: string | number): number => {
-    if (typeof value === 'number') {
-      return value; // Already a number, return as is
-    }
-    
-    // If it's a string, try to parse it
-    const stringValue = String(value);
-    if (stringValue.includes(',') || stringValue.includes('.')) {
-      // Only do replacement parsing if it contains formatting
-      return Number(stringValue.replace(/\./g, "").replace(",", "."));
-    }
-    
-    return Number(stringValue);
-  };
+  // Use centralized value parser
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
@@ -127,9 +114,9 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
         throw new Error('Usuário não autenticado');
       }
       
-      const parsedAmount = parseValue(values.amount);
-      const parsedPenaltyInterest = parseValue(values.penalty_interest ?? 0);
-      const parsedResidentialAmount = parseValue(values.residential_adjusted_amount ?? 0);
+      const parsedAmount = safeParseCurrency(values.amount);
+      const parsedPenaltyInterest = safeParseCurrency(values.penalty_interest ?? 0);
+      const parsedResidentialAmount = safeParseCurrency(values.residential_adjusted_amount ?? 0);
 
       console.log('Valores parseados - Amount:', parsedAmount, 'Penalty:', parsedPenaltyInterest, 'Residential:', parsedResidentialAmount);
 

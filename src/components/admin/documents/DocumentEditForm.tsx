@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,7 @@ export const DocumentEditForm = ({
     user_id: document.user_id || "",
     competency: document.competency || "",
     due_date: document.due_date || "",
-    amount: document.amount ? document.amount.toString() : "",
+    amount: document.amount || 0,
     observations: document.observations || ""
   });
 
@@ -80,11 +81,8 @@ export const DocumentEditForm = ({
     }
   };
 
-  const handleAmountChange = (value: string) => {
-    // Remove non-numeric characters except dots and commas
-    const numericValue = value.replace(/[^\d.,]/g, '');
-    const normalizedValue = numericValue.replace(',', '.');
-    handleInputChange("amount", normalizedValue);
+  const handleAmountChange = (value: number) => {
+    handleInputChange("amount", value);
   };
 
   const handleSubmit = () => {
@@ -92,7 +90,7 @@ export const DocumentEditForm = ({
       user_id: formData.user_id,
       competency: formData.competency,
       due_date: formData.due_date,
-      amount: parseFloat(formData.amount) || 0
+      amount: typeof formData.amount === 'number' ? formData.amount : parseFloat(formData.amount) || 0
       // Nota: observations não é salvo no banco ainda
     };
     onSave(submitData);
@@ -104,7 +102,7 @@ export const DocumentEditForm = ({
       formData.competency &&
       formData.due_date &&
       formData.amount &&
-      parseFloat(formData.amount) > 0
+      (typeof formData.amount === 'number' ? formData.amount : parseFloat(formData.amount)) > 0
     );
   };
 
@@ -204,18 +202,12 @@ export const DocumentEditForm = ({
       {/* Amount */}
       <div className="space-y-2">
         <Label htmlFor="amount">Valor *</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-            R$
-          </span>
-          <Input
-            id="amount"
-            placeholder="0,00"
-            value={formData.amount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <CurrencyInput
+          value={formData.amount}
+          onChange={handleAmountChange}
+          placeholder="R$ 0,00"
+          className="w-full"
+        />
       </div>
 
       {/* Observations */}
