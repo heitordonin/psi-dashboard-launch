@@ -279,6 +279,21 @@ export const useDataExport = () => {
     }
 
     try {
+      // Buscar nome do usuário se um usuário específico for filtrado
+      let userName = 'todos_usuarios';
+      if (options.userId) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, display_name')
+          .eq('id', options.userId)
+          .single();
+        
+        if (profileData) {
+          const rawName = profileData.full_name || profileData.display_name || 'usuario_sem_nome';
+          userName = removeAccents(rawName.toLowerCase().replace(/\s+/g, '_'));
+        }
+      }
+
       let query = supabase
         .from('expenses')
         .select(`
@@ -308,11 +323,18 @@ export const useDataExport = () => {
 
       const csvContent = convertToCarneLeaoCSV(data || []);
       const timestamp = new Date().toISOString().split('T')[0];
-      const userSuffix = options.userId ? '_usuario_filtrado' : '_todos_usuarios';
+      
+      // Construir o período filtrado
+      let periodSuffix = 'sem_filtro_periodo';
+      if (options.dateRange) {
+        periodSuffix = `${options.dateRange.start}_${options.dateRange.end}`;
+      }
+      
+      const filename = `${userName}_exportado_${timestamp}_periodo_${periodSuffix}.csv`;
       
       downloadFile(
         csvContent, 
-        `despesas_carne_leao_${timestamp}${userSuffix}.csv`, 
+        filename, 
         'text/csv;charset=utf-8;'
       );
 
