@@ -1,4 +1,4 @@
-import { Users, Upload, FileCheck } from "lucide-react";
+import { Users, Upload, FileCheck, Receipt } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -24,6 +24,11 @@ const adminPsiRegularItems = [
     title: "Enviar Documentos",
     url: "/admin/enviar-documentos",
     icon: Upload,
+  },
+  {
+    title: "Controle Receita Saúde",
+    url: "/admin/receita-saude-control",
+    icon: Receipt,
   },
 ];
 

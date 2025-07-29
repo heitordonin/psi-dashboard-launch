@@ -11,6 +11,7 @@ import PaymentConfig from '@/pages/PaymentConfig';
 import AdminEnviarDocumentos from '@/pages/AdminEnviarDocumentos';
 import AdminEditarDocumento from '@/pages/AdminEditarDocumento';
 import AdminControleObrigacoes from '@/pages/AdminControleObrigacoes';
+import AdminReceitaSaudeControl from '@/pages/AdminReceitaSaudeControl';
 import SubscriptionMonitoring from '@/pages/SubscriptionMonitoring';
 import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
@@ -56,6 +57,11 @@ export const adminRoutes = [
   <Route key="admin-editar-documento" path="/admin/documento/:id/editar" element={
     <AdminRoute>
       <AdminEditarDocumento />
+    </AdminRoute>
+  } />,
+  <Route key="admin-receita-saude-control" path="/admin/receita-saude-control" element={
+    <AdminRoute>
+      <AdminReceitaSaudeControl />
     </AdminRoute>
   } />,
   <Route key="psiclo-bank-config" path="/psiclo-bank/configuracao" element={
