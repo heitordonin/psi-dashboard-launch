@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, Upload, Activity } from "lucide-react";
+import { LayoutDashboard, Users, Upload, Activity, BarChart3 } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -12,9 +12,14 @@ import {
 
 const adminItems = [
   {
-    title: "Painel Administrativo",
+    title: "Painel Psi Regular",
     url: "/admin",
     icon: Users,
+  },
+  {
+    title: "Painel Movimento",
+    url: "/admin/movimento",
+    icon: BarChart3,
   },
   {
     title: "Dashboard Estratégico",

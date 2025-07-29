@@ -14,7 +14,7 @@ import { AdminStatsCards } from '@/components/admin/AdminStatsCards';
 import { AdminExportSection } from '@/components/admin/AdminExportSection';
 import { AdminDataTabs } from '@/components/admin/AdminDataTabs';
 
-const Admin = () => {
+const PainelMovimento = () => {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [filteredUserId, setFilteredUserId] = useState<string | null>(null);
@@ -27,7 +27,7 @@ const Admin = () => {
 
   // Estatísticas gerais com filtro de usuário
   const { data: stats } = useQuery({
-    queryKey: ['admin-stats', filteredUserId, showAllUsers],
+    queryKey: ['movimento-stats', filteredUserId, showAllUsers],
     queryFn: async () => {
       const userFilter = showAllUsers ? {} : { owner_id: filteredUserId };
 
@@ -58,7 +58,7 @@ const Admin = () => {
 
   // Dados de pacientes com filtro
   const { data: patients = [] } = useQuery({
-    queryKey: ['admin-patients', filteredUserId, showAllUsers],
+    queryKey: ['movimento-patients', filteredUserId, showAllUsers],
     queryFn: async () => {
       let query = supabase
         .from('patients')
@@ -79,7 +79,7 @@ const Admin = () => {
 
   // Dados de pagamentos com filtro
   const { data: payments = [] } = useQuery({
-    queryKey: ['admin-payments', filteredUserId, showAllUsers],
+    queryKey: ['movimento-payments', filteredUserId, showAllUsers],
     queryFn: async () => {
       let query = supabase
         .from('payments')
@@ -103,7 +103,7 @@ const Admin = () => {
 
   // Dados de despesas com filtro
   const { data: expenses = [] } = useQuery({
-    queryKey: ['admin-expenses', filteredUserId, showAllUsers],
+    queryKey: ['movimento-expenses', filteredUserId, showAllUsers],
     queryFn: async () => {
       let query = supabase
         .from('expenses')
@@ -152,8 +152,8 @@ const Admin = () => {
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="text-white hover:text-gray-200" />
                 <div>
-                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Painel Administrativo</h1>
-                  <p className="text-sm" style={{ color: '#03f6f9' }}>Controle total do sistema</p>
+                  <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>Painel Movimento</h1>
+                  <p className="text-sm" style={{ color: '#03f6f9' }}>Controle de movimentações financeiras</p>
                 </div>
               </div>
               <Button
@@ -170,7 +170,7 @@ const Admin = () => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <Badge variant="secondary" className="text-sm">
-                Modo Administrador
+                Modo Administrador - Movimento
               </Badge>
             </div>
 
@@ -201,4 +201,4 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+export default PainelMovimento;

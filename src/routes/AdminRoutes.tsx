@@ -3,7 +3,8 @@ import { Route } from 'react-router-dom';
 import AdminRoute from '@/components/AdminRoute';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PhoneVerificationGuard from '@/components/PhoneVerificationGuard';
-import Admin from '@/pages/Admin';
+import PainelPsiRegular from '@/pages/PainelPsiRegular';
+import PainelMovimento from '@/pages/PainelMovimento';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminFinancials from '@/pages/AdminFinancials';
 import PaymentConfig from '@/pages/PaymentConfig';
@@ -16,9 +17,14 @@ import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
 import PsicloBankExtrato from '@/pages/PsicloBankExtrato';
 
 export const adminRoutes = [
-  <Route key="admin" path="/admin" element={
+  <Route key="painel-psi-regular" path="/admin" element={
     <AdminRoute>
-      <Admin />
+      <PainelPsiRegular />
+    </AdminRoute>
+  } />,
+  <Route key="painel-movimento" path="/admin/movimento" element={
+    <AdminRoute>
+      <PainelMovimento />
     </AdminRoute>
   } />,
   <Route key="admin-dashboard" path="/admin/dashboard" element={
