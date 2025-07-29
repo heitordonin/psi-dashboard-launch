@@ -12,12 +12,10 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ModulesGrid } from "@/components/dashboard/ModulesGrid";
 import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { useSecureProfile } from "@/hooks/useSecureProfile";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const { profile } = useSecureProfile();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -55,7 +53,7 @@ const Dashboard = () => {
             <div className="container mx-auto px-4 py-6 space-y-6">
               <QuickActions />
 
-              {profile?.agenda_module_enabled && <TodayAppointments />}
+              <TodayAppointments />
 
               <PeriodFilter
                 startDate={startDate}
