@@ -1039,6 +1039,23 @@ export type Database = {
           new_users_psi_regular_30_days: number
         }[]
       }
+      get_churn_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          monthly_churn_rate: number
+          total_cancellations_30_days: number
+          retention_rate: number
+          active_subscribers: number
+        }[]
+      }
+      get_conversion_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          free_to_paid_rate: number
+          gestao_to_psi_regular_rate: number
+          total_conversions_30_days: number
+        }[]
+      }
       get_daily_user_growth: {
         Args: { start_date: string; end_date: string }
         Returns: {
@@ -1098,6 +1115,24 @@ export type Database = {
       get_encryption_key: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_ltv_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avg_ltv_gestao: number
+          avg_ltv_psi_regular: number
+          avg_subscription_duration_days: number
+        }[]
+      }
+      get_mrr_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_mrr: number
+          mrr_free: number
+          mrr_gestao: number
+          mrr_psi_regular: number
+          mrr_growth_rate: number
+        }[]
       }
       get_top_earning_users: {
         Args: { limit_count: number }

@@ -71,12 +71,54 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
     }
   });
 
+  // New financial metrics queries
+  const { data: mrrMetrics, isLoading: mrrMetricsLoading } = useQuery({
+    queryKey: ['admin-mrr-metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_mrr_metrics');
+      if (error) throw error;
+      return data[0] || { total_mrr: 0, mrr_free: 0, mrr_gestao: 0, mrr_psi_regular: 0, mrr_growth_rate: 0 };
+    }
+  });
+
+  const { data: churnMetrics, isLoading: churnMetricsLoading } = useQuery({
+    queryKey: ['admin-churn-metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_churn_metrics');
+      if (error) throw error;
+      return data[0] || { monthly_churn_rate: 0, total_cancellations_30_days: 0, retention_rate: 0, active_subscribers: 0 };
+    }
+  });
+
+  const { data: ltvMetrics, isLoading: ltvMetricsLoading } = useQuery({
+    queryKey: ['admin-ltv-metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_ltv_metrics');
+      if (error) throw error;
+      return data[0] || { avg_ltv_gestao: 0, avg_ltv_psi_regular: 0, avg_subscription_duration_days: 0 };
+    }
+  });
+
+  const { data: conversionMetrics, isLoading: conversionMetricsLoading } = useQuery({
+    queryKey: ['admin-conversion-metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_conversion_metrics');
+      if (error) throw error;
+      return data[0] || { free_to_paid_rate: 0, gestao_to_psi_regular_rate: 0, total_conversions_30_days: 0 };
+    }
+  });
+
   return {
     userKpis,
     userKpisByPlan,
     userGrowth,
     userGrowthByPlan,
     topEarners,
-    isLoading: userKpisLoading || userKpisByPlanLoading || userGrowthLoading || userGrowthByPlanLoading || topEarnersLoading
+    mrrMetrics,
+    churnMetrics,
+    ltvMetrics,
+    conversionMetrics,
+    isLoading: userKpisLoading || userKpisByPlanLoading || userGrowthLoading || userGrowthByPlanLoading || 
+               topEarnersLoading || mrrMetricsLoading || churnMetricsLoading || ltvMetricsLoading || conversionMetricsLoading
   };
 };

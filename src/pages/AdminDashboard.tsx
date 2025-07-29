@@ -10,12 +10,14 @@ import { AdminKPICards } from "@/components/admin/AdminKPICards";
 import { AdminUserGrowthChart } from "@/components/admin/AdminUserGrowthChart";
 import { AdminTopEarnersTable } from "@/components/admin/AdminTopEarnersTable";
 import { AdminDarfControlBox } from "@/components/admin/AdminDarfControlBox";
+import { AdminFinancialKPIs } from "@/components/admin/AdminFinancialKPIs";
+import { AdminChurnMetrics } from "@/components/admin/AdminChurnMetrics";
 
 const AdminDashboard = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  const { userKpis, userKpisByPlan, userGrowth, userGrowthByPlan, topEarners, isLoading } = useAdminDashboardData(startDate, endDate);
+  const { userKpis, userKpisByPlan, userGrowth, userGrowthByPlan, topEarners, mrrMetrics, churnMetrics, ltvMetrics, conversionMetrics, isLoading } = useAdminDashboardData(startDate, endDate);
 
   if (isLoading) {
     return <AdminDashboardLoading />;
@@ -29,6 +31,17 @@ const AdminDashboard = () => {
           <AdminDashboardHeader />
           <div className="container mx-auto p-6 space-y-6">
             <AdminKPICards userKpis={userKpis} userKpisByPlan={userKpisByPlan} />
+            
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Métricas Financeiras</h2>
+              <AdminFinancialKPIs mrrMetrics={mrrMetrics} ltvMetrics={ltvMetrics} />
+            </div>
+
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Churn e Retenção</h2>
+              <AdminChurnMetrics churnMetrics={churnMetrics} conversionMetrics={conversionMetrics} />
+            </div>
+
             <AdminUserGrowthChart 
               userGrowthByPlan={userGrowthByPlan}
               startDate={startDate}
