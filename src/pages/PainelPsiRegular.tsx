@@ -25,16 +25,64 @@ const PainelPsiRegular = () => {
     setShowAllUsers(showAll);
   };
 
-  // Estatísticas gerais com filtro de usuário
+  // Estatísticas gerais com filtro de usuário (apenas Psi Regular)
   const { data: stats } = useQuery({
-    queryKey: ['admin-stats', filteredUserId, showAllUsers],
+    queryKey: ['admin-psi-regular-stats', filteredUserId, showAllUsers],
     queryFn: async () => {
-      const userFilter = showAllUsers ? {} : { owner_id: filteredUserId };
+      // Get Psi Regular plan ID
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'psi_regular')
+        .single();
+
+      if (!planData) {
+        return {
+          totalPatients: 0,
+          totalPayments: 0,
+          totalExpenses: 0,
+          totalRevenue: 0,
+          totalExpenseAmount: 0,
+        };
+      }
+
+      // Get all Psi Regular user IDs
+      const { data: psiRegularUserIds } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .eq('status', 'active')
+        .eq('plan_id', planData.id);
+
+      const psiRegularIds = psiRegularUserIds?.map(sub => sub.user_id) || [];
+      
+      if (psiRegularIds.length === 0) {
+        return {
+          totalPatients: 0,
+          totalPayments: 0,
+          totalExpenses: 0,
+          totalRevenue: 0,
+          totalExpenseAmount: 0,
+        };
+      }
+
+      // Apply user filter within Psi Regular users only
+      const targetUserIds = showAllUsers ? psiRegularIds : 
+        (filteredUserId && psiRegularIds.includes(filteredUserId) ? [filteredUserId] : []);
+
+      if (targetUserIds.length === 0) {
+        return {
+          totalPatients: 0,
+          totalPayments: 0,
+          totalExpenses: 0,
+          totalRevenue: 0,
+          totalExpenseAmount: 0,
+        };
+      }
 
       const [patientsResult, paymentsResult, expensesResult] = await Promise.all([
-        supabase.from('patients').select('id', { count: 'exact' }).match(userFilter),
-        supabase.from('payments').select('id, amount, status', { count: 'exact' }).match(userFilter),
-        supabase.from('expenses').select('id, amount', { count: 'exact' }).match(userFilter),
+        supabase.from('patients').select('id', { count: 'exact' }).in('owner_id', targetUserIds),
+        supabase.from('payments').select('id, amount, status', { count: 'exact' }).in('owner_id', targetUserIds),
+        supabase.from('expenses').select('id, amount', { count: 'exact' }).in('owner_id', targetUserIds),
       ]);
 
       const totalRevenue = paymentsResult.data?.reduce((sum, payment) => 
@@ -56,69 +104,135 @@ const PainelPsiRegular = () => {
     enabled: !!isAdmin,
   });
 
-  // Dados de pacientes com filtro
+  // Dados de pacientes com filtro (apenas Psi Regular)
   const { data: patients = [] } = useQuery({
-    queryKey: ['admin-patients', filteredUserId, showAllUsers],
+    queryKey: ['admin-psi-regular-patients', filteredUserId, showAllUsers],
     queryFn: async () => {
-      let query = supabase
+      // Get Psi Regular plan ID
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'psi_regular')
+        .single();
+
+      if (!planData) return [];
+
+      // Get all Psi Regular user IDs
+      const { data: psiRegularUserIds } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .eq('status', 'active')
+        .eq('plan_id', planData.id);
+
+      const psiRegularIds = psiRegularUserIds?.map(sub => sub.user_id) || [];
+      
+      if (psiRegularIds.length === 0) return [];
+
+      // Apply user filter within Psi Regular users only
+      const targetUserIds = showAllUsers ? psiRegularIds : 
+        (filteredUserId && psiRegularIds.includes(filteredUserId) ? [filteredUserId] : []);
+
+      if (targetUserIds.length === 0) return [];
+
+      const { data, error } = await supabase
         .from('patients')
         .select('*')
+        .in('owner_id', targetUserIds)
         .order('created_at', { ascending: false })
         .limit(100);
-
-      if (!showAllUsers && filteredUserId) {
-        query = query.eq('owner_id', filteredUserId);
-      }
       
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: !!isAdmin,
   });
 
-  // Dados de pagamentos com filtro
+  // Dados de pagamentos com filtro (apenas Psi Regular)
   const { data: payments = [] } = useQuery({
-    queryKey: ['admin-payments', filteredUserId, showAllUsers],
+    queryKey: ['admin-psi-regular-payments', filteredUserId, showAllUsers],
     queryFn: async () => {
-      let query = supabase
+      // Get Psi Regular plan ID
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'psi_regular')
+        .single();
+
+      if (!planData) return [];
+
+      // Get all Psi Regular user IDs
+      const { data: psiRegularUserIds } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .eq('status', 'active')
+        .eq('plan_id', planData.id);
+
+      const psiRegularIds = psiRegularUserIds?.map(sub => sub.user_id) || [];
+      
+      if (psiRegularIds.length === 0) return [];
+
+      // Apply user filter within Psi Regular users only
+      const targetUserIds = showAllUsers ? psiRegularIds : 
+        (filteredUserId && psiRegularIds.includes(filteredUserId) ? [filteredUserId] : []);
+
+      if (targetUserIds.length === 0) return [];
+
+      const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
           patients!inner(full_name, cpf)
         `)
+        .in('owner_id', targetUserIds)
         .order('created_at', { ascending: false })
         .limit(100);
-
-      if (!showAllUsers && filteredUserId) {
-        query = query.eq('owner_id', filteredUserId);
-      }
       
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: !!isAdmin,
   });
 
-  // Dados de despesas com filtro
+  // Dados de despesas com filtro (apenas Psi Regular)
   const { data: expenses = [] } = useQuery({
-    queryKey: ['admin-expenses', filteredUserId, showAllUsers],
+    queryKey: ['admin-psi-regular-expenses', filteredUserId, showAllUsers],
     queryFn: async () => {
-      let query = supabase
+      // Get Psi Regular plan ID
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'psi_regular')
+        .single();
+
+      if (!planData) return [];
+
+      // Get all Psi Regular user IDs
+      const { data: psiRegularUserIds } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .eq('status', 'active')
+        .eq('plan_id', planData.id);
+
+      const psiRegularIds = psiRegularUserIds?.map(sub => sub.user_id) || [];
+      
+      if (psiRegularIds.length === 0) return [];
+
+      // Apply user filter within Psi Regular users only
+      const targetUserIds = showAllUsers ? psiRegularIds : 
+        (filteredUserId && psiRegularIds.includes(filteredUserId) ? [filteredUserId] : []);
+
+      if (targetUserIds.length === 0) return [];
+
+      const { data, error } = await supabase
         .from('expenses')
         .select(`
           *,
           expense_categories!inner(name, code)
         `)
+        .in('owner_id', targetUserIds)
         .order('payment_date', { ascending: false })
         .limit(100);
-
-      if (!showAllUsers && filteredUserId) {
-        query = query.eq('owner_id', filteredUserId);
-      }
       
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

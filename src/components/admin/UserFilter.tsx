@@ -16,10 +16,31 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showAllUsers, setShowAllUsers] = useState(true);
 
-  // Fetch all users with their profiles data
+  // Fetch only users with active "Psi Regular" plan
   const { data: users = [] } = useQuery({
-    queryKey: ['admin-users-with-profiles'],
+    queryKey: ['admin-psi-regular-users'],
     queryFn: async () => {
+      // First get Psi Regular plan ID
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('slug', 'psi_regular')
+        .single();
+
+      if (!planData) return [];
+
+      // Get users with active Psi Regular subscriptions
+      const { data: subscriptionsData } = await supabase
+        .from('user_subscriptions')
+        .select('user_id')
+        .eq('status', 'active')
+        .eq('plan_id', planData.id);
+
+      if (!subscriptionsData?.length) return [];
+
+      const userIds = subscriptionsData.map(sub => sub.user_id);
+
+      // Get profiles for these users
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -30,10 +51,11 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
         `)
         .not('full_name', 'is', null)
         .not('cpf', 'is', null)
+        .in('id', userIds)
         .order('full_name');
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -70,16 +92,16 @@ export const UserFilter = ({ onFilterChange }: UserFilterProps) => {
               onCheckedChange={handleShowAllUsersChange}
             />
             <Label htmlFor="show-all-users">
-              Mostrar dados de todos os usuários
+              Mostrar dados de todos os usuários Psi Regular
             </Label>
           </div>
           
           {!showAllUsers && (
             <div className="space-y-2">
-              <Label htmlFor="user-select">Selecionar usuário específico:</Label>
+              <Label htmlFor="user-select">Selecionar usuário Psi Regular específico:</Label>
               <Select onValueChange={handleUserSelect} value={selectedUserId || ''}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Escolha um usuário..." />
+                  <SelectValue placeholder="Escolha um usuário Psi Regular..." />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
