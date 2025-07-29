@@ -13,9 +13,6 @@ export const validateCPF = (cpf: string): boolean => {
   // Check if CPF has exactly 11 digits
   if (cleanCPF.length !== 11) return false;
   
-  // Additional security: Check for minimum and maximum valid ranges
-  const cpfNumber = parseInt(cleanCPF);
-  if (cpfNumber < 10000000000 || cpfNumber > 99999999999) return false;
   
   // Check for known invalid patterns (all same digits)
   if (/^(\d)\1+$/.test(cleanCPF)) return false;
