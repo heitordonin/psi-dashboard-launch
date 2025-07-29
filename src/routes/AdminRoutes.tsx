@@ -10,6 +10,7 @@ import AdminFinancials from '@/pages/AdminFinancials';
 import PaymentConfig from '@/pages/PaymentConfig';
 import AdminEnviarDocumentos from '@/pages/AdminEnviarDocumentos';
 import AdminEditarDocumento from '@/pages/AdminEditarDocumento';
+import AdminControleObrigacoes from '@/pages/AdminControleObrigacoes';
 import SubscriptionMonitoring from '@/pages/SubscriptionMonitoring';
 import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
@@ -40,6 +41,11 @@ export const adminRoutes = [
   <Route key="payment-config" path="/payment-config" element={
     <AdminRoute>
       <PaymentConfig />
+    </AdminRoute>
+  } />,
+  <Route key="admin-controle-obrigacoes" path="/admin/controle-obrigacoes" element={
+    <AdminRoute>
+      <AdminControleObrigacoes />
     </AdminRoute>
   } />,
   <Route key="admin-enviar-documentos" path="/admin/enviar-documentos" element={

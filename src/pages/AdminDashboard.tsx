@@ -9,7 +9,6 @@ import { AdminDashboardLoading } from "@/components/admin/AdminDashboardLoading"
 import { AdminKPICards } from "@/components/admin/AdminKPICards";
 import { AdminUserGrowthChart } from "@/components/admin/AdminUserGrowthChart";
 import { AdminTopEarnersTable } from "@/components/admin/AdminTopEarnersTable";
-import { AdminDarfControlBox } from "@/components/admin/AdminDarfControlBox";
 import { AdminFinancialKPIs } from "@/components/admin/AdminFinancialKPIs";
 import { AdminChurnMetrics } from "@/components/admin/AdminChurnMetrics";
 import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
@@ -56,7 +55,6 @@ const AdminDashboard = () => {
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
             />
-            <AdminDarfControlBox />
             <AdminTopEarnersTable topEarners={topEarners} />
           </div>
         </SidebarInset>

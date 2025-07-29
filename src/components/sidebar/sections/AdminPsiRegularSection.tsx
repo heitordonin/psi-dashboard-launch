@@ -1,4 +1,4 @@
-import { Users, Upload } from "lucide-react";
+import { Users, Upload, FileCheck } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -14,6 +14,11 @@ const adminPsiRegularItems = [
     title: "Painel Psi Regular",
     url: "/admin",
     icon: Users,
+  },
+  {
+    title: "Controle de Obrigações",
+    url: "/admin/controle-obrigacoes",
+    icon: FileCheck,
   },
   {
     title: "Enviar Documentos",
