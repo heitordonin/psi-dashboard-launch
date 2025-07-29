@@ -82,27 +82,36 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
   });
 
   const { data: churnMetrics, isLoading: churnMetricsLoading } = useQuery({
-    queryKey: ['admin-churn-metrics'],
+    queryKey: ['admin-churn-metrics', finalStartDate, finalEndDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_churn_metrics');
+      const { data, error } = await supabase.rpc('get_churn_metrics', {
+        start_date: finalStartDate,
+        end_date: finalEndDate
+      });
       if (error) throw error;
       return data[0] || { monthly_churn_rate: 0, total_cancellations_30_days: 0, retention_rate: 0, active_subscribers: 0 };
     }
   });
 
   const { data: ltvMetrics, isLoading: ltvMetricsLoading } = useQuery({
-    queryKey: ['admin-ltv-metrics'],
+    queryKey: ['admin-ltv-metrics', finalStartDate, finalEndDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_ltv_metrics');
+      const { data, error } = await supabase.rpc('get_ltv_metrics', {
+        start_date: finalStartDate,
+        end_date: finalEndDate
+      });
       if (error) throw error;
       return data[0] || { avg_ltv_gestao: 0, avg_ltv_psi_regular: 0, avg_subscription_duration_days: 0 };
     }
   });
 
   const { data: conversionMetrics, isLoading: conversionMetricsLoading } = useQuery({
-    queryKey: ['admin-conversion-metrics'],
+    queryKey: ['admin-conversion-metrics', finalStartDate, finalEndDate],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_conversion_metrics');
+      const { data, error } = await supabase.rpc('get_conversion_metrics', {
+        start_date: finalStartDate,
+        end_date: finalEndDate
+      });
       if (error) throw error;
       return data[0] || { free_to_paid_rate: 0, gestao_to_psi_regular_rate: 0, total_conversions_30_days: 0 };
     }

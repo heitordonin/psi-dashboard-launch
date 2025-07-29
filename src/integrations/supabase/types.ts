@@ -1051,7 +1051,9 @@ export type Database = {
         }[]
       }
       get_conversion_metrics: {
-        Args: Record<PropertyKey, never>
+        Args:
+          | Record<PropertyKey, never>
+          | { start_date?: string; end_date?: string }
         Returns: {
           free_to_paid_rate: number
           gestao_to_psi_regular_rate: number

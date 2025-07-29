@@ -12,6 +12,7 @@ import { AdminTopEarnersTable } from "@/components/admin/AdminTopEarnersTable";
 import { AdminDarfControlBox } from "@/components/admin/AdminDarfControlBox";
 import { AdminFinancialKPIs } from "@/components/admin/AdminFinancialKPIs";
 import { AdminChurnMetrics } from "@/components/admin/AdminChurnMetrics";
+import { PeriodFilter } from "@/components/dashboard/PeriodFilter";
 
 const AdminDashboard = () => {
   const [startDate, setStartDate] = useState<string>("");
@@ -39,6 +40,12 @@ const AdminDashboard = () => {
 
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">Churn e Retenção</h2>
+              <PeriodFilter 
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
               <AdminChurnMetrics churnMetrics={churnMetrics} conversionMetrics={conversionMetrics} />
             </div>
 
