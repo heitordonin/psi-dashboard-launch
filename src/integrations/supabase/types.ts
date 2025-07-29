@@ -1040,7 +1040,9 @@ export type Database = {
         }[]
       }
       get_churn_metrics: {
-        Args: Record<PropertyKey, never>
+        Args:
+          | Record<PropertyKey, never>
+          | { start_date?: string; end_date?: string }
         Returns: {
           monthly_churn_rate: number
           total_cancellations_30_days: number
