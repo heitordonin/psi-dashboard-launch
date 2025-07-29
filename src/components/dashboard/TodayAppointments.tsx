@@ -91,10 +91,7 @@ export const TodayAppointments = () => {
             <p className="text-muted-foreground mb-4">
               Aproveite o dia livre ou crie um novo agendamento
             </p>
-            <Button variant="outline" onClick={() => navigate("/agenda")} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Criar Agendamento
-            </Button>
+            
           </div> : <div className="space-y-6">
             {/* Resumo visual do dia */}
             <div className="grid grid-cols-2 gap-4">
