@@ -5,18 +5,27 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { DocumentsList } from '@/components/documents/DocumentsList';
 import { DocumentosRecebidosHeader } from '@/components/documents/DocumentosRecebidosHeader';
+import { DocumentosRecebidosUpgrade } from '@/components/documents/DocumentosRecebidosUpgrade';
 import { useAdminDocuments } from '@/hooks/useAdminDocuments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Navigate } from 'react-router-dom';
 
 const DocumentosRecebidos = () => {
   const { currentPlan } = useSubscription();
   const { documents, isLoading } = useAdminDocuments();
 
-  // Redirect if not Psi Regular plan
+  // Show upgrade page for non-Psi Regular plans
   if (currentPlan && currentPlan.slug !== 'psi_regular') {
-    return <Navigate to="/dashboard" replace />;
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset>
+            <DocumentosRecebidosUpgrade />
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
   }
 
   if (isLoading) {

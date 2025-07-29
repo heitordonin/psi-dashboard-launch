@@ -37,13 +37,9 @@ const psiRegularItem = {
 
 export const GestaoSection = () => {
   const location = useLocation();
-  const { currentPlan } = useSubscription();
 
-  // Add Documentos Recebidos if user has Psi Regular plan
-  const items = [...baseGestaoItems];
-  if (currentPlan?.slug === 'psi_regular') {
-    items.push(psiRegularItem);
-  }
+  // Always show Documentos Recebidos for all users
+  const items = [...baseGestaoItems, psiRegularItem];
 
   return (
     <SidebarGroup>
