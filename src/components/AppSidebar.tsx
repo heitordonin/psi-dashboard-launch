@@ -10,6 +10,7 @@ import { SidebarHeader } from "@/components/sidebar/SidebarHeader";
 import { SidebarItems } from "@/components/sidebar/SidebarItems";
 import { PsicloBankSection } from "@/components/sidebar/PsicloBankSection";
 import { AdminSection } from "@/components/sidebar/AdminSection";
+import { AdminPsiRegularSection } from "@/components/sidebar/sections/AdminPsiRegularSection";
 import { SidebarFooter } from "@/components/sidebar/SidebarFooter";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -29,6 +30,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <SidebarItems />
         {showPsicloBankSection && <PsicloBankSection />}
+        {canPerformAdminAction() && <AdminPsiRegularSection />}
         {canPerformAdminAction() && <AdminSection />}
       </SidebarContent>
       <SidebarSeparator />
