@@ -77,7 +77,12 @@ serve(async (req) => {
 
     // Parse request body with validation
     const body = await req.json();
-    const { planSlug } = body;
+    const { 
+      planSlug, 
+      trial_days, 
+      promotion_code, 
+      allow_promotion_codes = true 
+    } = body;
     
     // Validate input
     if (!planSlug || typeof planSlug !== 'string') {
@@ -89,8 +94,24 @@ serve(async (req) => {
     if (!allowedPlans.includes(planSlug)) {
       throw new Error(`Invalid plan slug. Allowed values: ${allowedPlans.join(', ')}`);
     }
+
+    // Validate optional parameters
+    if (trial_days !== undefined && (typeof trial_days !== 'number' || trial_days < 0)) {
+      throw new Error("trial_days must be a positive number");
+    }
+    if (promotion_code !== undefined && typeof promotion_code !== 'string') {
+      throw new Error("promotion_code must be a string");
+    }
+    if (typeof allow_promotion_codes !== 'boolean') {
+      throw new Error("allow_promotion_codes must be a boolean");
+    }
     
-    logStep("Plan slug received", { planSlug });
+    logStep("Request parameters received", { 
+      planSlug, 
+      trial_days, 
+      promotion_code: promotion_code ? '[PROVIDED]' : undefined,
+      allow_promotion_codes 
+    });
 
     // Buscar dados do perfil do usuário para obter CPF e nome completo
     const { data: profileData, error: profileError } = await supabaseService
@@ -182,6 +203,28 @@ serve(async (req) => {
 
     logStep("Price ID mapped", { planSlug, priceId });
 
+    // Configurar defaults de trial por plano
+    const getDefaultTrialDays = (plan: string): number => {
+      switch (plan) {
+        case 'gestao':
+          return parseInt(Deno.env.get("TRIAL_DAYS_GESTAO") || "7");
+        case 'psi_regular':
+          return parseInt(Deno.env.get("TRIAL_DAYS_PSI_REGULAR") || "14");
+        default:
+          return 0;
+      }
+    };
+
+    // Determinar configurações finais
+    const finalTrialDays = trial_days !== undefined ? trial_days : getDefaultTrialDays(planSlug);
+    const finalAllowPromotions = allow_promotion_codes;
+
+    logStep("Dynamic configuration determined", {
+      finalTrialDays,
+      finalAllowPromotions,
+      hasPromotionCode: !!promotion_code
+    });
+
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
     // Preparar metadata para eNotas
@@ -193,9 +236,9 @@ serve(async (req) => {
     };
     
     logStep("Metadata prepared for eNotas integration", sessionMetadata);
-    
-    // Criar sessão de checkout
-    const session = await stripe.checkout.sessions.create({
+
+    // Preparar configurações dinâmicas da sessão
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -208,7 +251,30 @@ serve(async (req) => {
       success_url: `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: sessionMetadata
-    });
+    };
+
+    // Adicionar trial period se configurado
+    if (finalTrialDays > 0) {
+      sessionConfig.subscription_data = {
+        trial_period_days: finalTrialDays
+      };
+      logStep("Trial period configured", { trial_period_days: finalTrialDays });
+    }
+
+    // Adicionar suporte a cupons se habilitado
+    if (finalAllowPromotions) {
+      sessionConfig.allow_promotion_codes = true;
+      logStep("Promotion codes enabled");
+    }
+
+    // Adicionar código de promoção específico se fornecido
+    if (promotion_code) {
+      sessionConfig.discounts = [{ promotion_code }];
+      logStep("Specific promotion code applied", { promotion_code });
+    }
+    
+    // Criar sessão de checkout
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
