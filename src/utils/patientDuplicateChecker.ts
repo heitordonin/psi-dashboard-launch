@@ -113,38 +113,8 @@ export const checkForDuplicates = async (
     deletedQueries.push(deletedCnpjQuery);
   }
 
-  // Check email duplicates
-  if (data.email) {
-    // Check active patients
-    let emailQuery = supabase
-      .from('patients')
-      .select('id')
-      .eq('owner_id', userId)
-      .eq('email', data.email.trim())
-      .is('deleted_at', null)
-      .limit(1);
-    
-    if (patientId) {
-      emailQuery = emailQuery.neq('id', patientId);
-    }
-    
-    queries.push(emailQuery);
-
-    // Check deleted patients
-    let deletedEmailQuery = supabase
-      .from('patients')
-      .select('id, full_name, cpf, cnpj, email')
-      .eq('owner_id', userId)
-      .eq('email', data.email.trim())
-      .not('deleted_at', 'is', null)
-      .limit(1);
-    
-    if (patientId) {
-      deletedEmailQuery = deletedEmailQuery.neq('id', patientId);
-    }
-    
-    deletedQueries.push(deletedEmailQuery);
-  }
+  // Note: Email duplicates are now allowed based on business requirements
+  // Multiple patients can have the same email address
 
   try {
     // Check active duplicates first
@@ -179,17 +149,7 @@ export const checkForDuplicates = async (
       duplicateIndex++;
     }
 
-    // Check email duplicate in active patients
-    if (data.email) {
-      const { data: emailResult, error } = results[duplicateIndex];
-      if (error) throw error;
-      if (emailResult && emailResult.length > 0) {
-        return { 
-          isDuplicate: true, 
-          message: 'Já existe um paciente ativo cadastrado com este email na sua conta.' 
-        };
-      }
-    }
+    // Note: Email validation removed - multiple patients can have the same email
 
     // Check for deleted patients that could be reactivated
     let deletedIndex = 0;
@@ -222,18 +182,7 @@ export const checkForDuplicates = async (
       deletedIndex++;
     }
 
-    // Check deleted email
-    if (data.email) {
-      const { data: deletedEmailResult, error } = deletedResults[deletedIndex];
-      if (error) throw error;
-      if (deletedEmailResult && deletedEmailResult.length > 0) {
-        return {
-          isDuplicate: true,
-          message: 'REACTIVATE_PATIENT',
-          deletedPatient: deletedEmailResult[0]
-        };
-      }
-    }
+    // Note: Email duplicate check for deleted patients also removed
 
     return { isDuplicate: false };
   } catch (error) {
