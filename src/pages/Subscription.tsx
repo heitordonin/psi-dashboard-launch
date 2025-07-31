@@ -74,7 +74,7 @@ const Subscription = () => {
     if (!currentPlan) return 'Gratuito';
     
     if (currentPlan.slug === 'free') return 'Gratuito';
-    if (currentPlan.slug === 'gestao') return 'R$ 69,00/mês';
+    if (currentPlan.slug === 'gestao') return 'R$ 49,00/mês';
     if (currentPlan.slug === 'psi_regular') return 'R$ 189,00/mês';
     
     return `R$ ${(currentPlan.price_monthly / 100).toFixed(2)}/mês`;
