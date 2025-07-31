@@ -52,6 +52,13 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Criar cliente Supabase com service role para buscar dados do perfil
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
     logStep("Authorization header found");
@@ -84,6 +91,34 @@ serve(async (req) => {
     }
     
     logStep("Plan slug received", { planSlug });
+
+    // Buscar dados do perfil do usuário para obter CPF e nome completo
+    const { data: profileData, error: profileError } = await supabaseService
+      .from('profiles')
+      .select('cpf, full_name')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      logStep("Error fetching user profile", { error: profileError });
+      throw new Error(`Failed to fetch user profile: ${profileError.message}`);
+    }
+
+    if (!profileData?.cpf) {
+      logStep("User CPF not found in profile", { userId: user.id });
+      throw new Error("CPF is required for subscription. Please complete your profile.");
+    }
+
+    if (!profileData?.full_name) {
+      logStep("User full name not found in profile", { userId: user.id });
+      throw new Error("Full name is required for subscription. Please complete your profile.");
+    }
+
+    logStep("User profile data retrieved", { 
+      userId: user.id, 
+      hasCpf: !!profileData.cpf, 
+      hasFullName: !!profileData.full_name 
+    });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
@@ -149,6 +184,16 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
+    // Preparar metadata para eNotas
+    const sessionMetadata = {
+      user_id: user.id,
+      plan_slug: planSlug,
+      customer_document: profileData.cpf,
+      customer_name: profileData.full_name
+    };
+    
+    logStep("Metadata prepared for eNotas integration", sessionMetadata);
+    
     // Criar sessão de checkout
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -162,10 +207,7 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
-      metadata: {
-        user_id: user.id,
-        plan_slug: planSlug
-      }
+      metadata: sessionMetadata
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
