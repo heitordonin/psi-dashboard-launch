@@ -45,6 +45,11 @@ export const patientSchema = z.object({
   
   is_payment_from_abroad: z.boolean().default(false)
 }).refine((data) => {
+  // Skip validation if payment is from abroad
+  if (data.is_payment_from_abroad) {
+    return true;
+  }
+  
   // If patient is individual, CPF is required
   if (data.patient_type === 'individual' && !data.cpf) {
     return false;
@@ -53,14 +58,33 @@ export const patientSchema = z.object({
   if (data.patient_type === 'company' && !data.cnpj) {
     return false;
   }
+  return true;
+}, {
+  message: 'CPF é obrigatório para pessoa física',
+  path: ['cpf']
+}).refine((data) => {
+  // Skip validation if payment is from abroad
+  if (data.is_payment_from_abroad) {
+    return true;
+  }
+  
+  // If patient is company, CNPJ is required
+  if (data.patient_type === 'company' && !data.cnpj) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'CNPJ é obrigatório para pessoa jurídica',
+  path: ['cnpj']
+}).refine((data) => {
   // If has financial guardian, guardian CPF is required
   if (data.has_financial_guardian && !data.guardian_cpf) {
     return false;
   }
   return true;
 }, {
-  message: 'Campos obrigatórios não preenchidos corretamente',
-  path: ['full_name'] // Show error on main field
+  message: 'CPF do responsável é obrigatório',
+  path: ['guardian_cpf']
 });
 
 export type PatientFormData = z.infer<typeof patientSchema>;
