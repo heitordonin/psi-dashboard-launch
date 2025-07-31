@@ -1,12 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, CreditCard } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { SubscriptionPlan } from "@/types/subscription";
 import { getPlanIcon, getFeatureLabels } from "./PlanUtils";
-import { useCancelSubscription } from "@/hooks/useCancelSubscription";
-import CancelSubscriptionModal from "./CancelSubscriptionModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,15 +14,8 @@ interface AuthenticatedPlanCardProps {
 }
 
 const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardProps) => {
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const cancelSubscription = useCancelSubscription();
   const { toast } = useToast();
-
-  const handleCancelSubscription = (immediate: boolean) => {
-    cancelSubscription.mutate({ immediate });
-    setShowCancelModal(false);
-  };
 
   const handleStripeCheckout = async () => {
     if (plan.slug === 'free') return;
@@ -54,14 +45,6 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
   };
 
   return (
-    <>
-      <CancelSubscriptionModal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancelSubscription}
-        currentPlan={plan}
-        isLoading={cancelSubscription.isPending}
-      />
     <Card className={`relative ${isCurrentPlan ? 'ring-2 ring-blue-500' : ''}`}>
       {isCurrentPlan && (
         <Badge className="absolute -top-2 left-4 bg-blue-500">
@@ -110,22 +93,9 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
         </div>
 
         {isCurrentPlan ? (
-          <div className="space-y-2">
-            <Button className="w-full" variant="secondary" disabled>
-              Plano Ativo
-            </Button>
-            {plan.slug !== 'free' && (
-              <Button 
-                className="w-full" 
-                variant="outline" 
-                onClick={() => setShowCancelModal(true)}
-                size="sm"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cancelar Plano
-              </Button>
-            )}
-          </div>
+          <Button className="w-full" variant="secondary" disabled>
+            Plano Ativo
+          </Button>
         ) : (
           <Button 
             className="w-full" 
@@ -148,7 +118,6 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
         )}
       </CardContent>
     </Card>
-    </>
   );
 };
 
