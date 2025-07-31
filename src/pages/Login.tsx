@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
+import { EmailNotConfirmedModal } from '@/components/auth/EmailNotConfirmedModal';
 import { toast } from 'sonner';
 
 const Login = () => {
@@ -14,6 +15,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [isEmailNotConfirmedOpen, setIsEmailNotConfirmedOpen] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +40,8 @@ const Login = () => {
       if (error) {
         if (error.message === 'Invalid login credentials') {
           toast.error('Email ou senha incorretos');
+        } else if (error.message === 'Email not confirmed') {
+          setIsEmailNotConfirmedOpen(true);
         } else {
           toast.error('Erro ao fazer login: ' + error.message);
         }
@@ -111,6 +115,12 @@ const Login = () => {
         open={isForgotPasswordOpen}
         onOpenChange={setIsForgotPasswordOpen}
         initialEmail={email}
+      />
+
+      <EmailNotConfirmedModal 
+        open={isEmailNotConfirmedOpen}
+        onOpenChange={setIsEmailNotConfirmedOpen}
+        email={email}
       />
     </div>
   );

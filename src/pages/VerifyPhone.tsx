@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,7 @@ const VerifyPhone = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendCount, setResendCount] = useState(0);
   const [canResend, setCanResend] = useState(true);
+  const [hasAutoSent, setHasAutoSent] = useState(false);
 
   // Obter o telefone do state da navegação
   const phone = location.state?.phone;
@@ -28,6 +29,36 @@ const VerifyPhone = () => {
     navigate('/dashboard');
     return null;
   }
+
+  // Enviar código automaticamente quando a página carrega
+  useEffect(() => {
+    const sendInitialOtp = async () => {
+      if (!hasAutoSent && phone) {
+        setHasAutoSent(true);
+        setIsResending(true);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-phone-otp', {
+            body: { phone: phone }
+          });
+
+          if (error) {
+            console.error('Erro ao enviar código inicial:', error);
+            toast.error('Erro ao enviar código. Use o botão "Reenviar Código" para tentar novamente.');
+          } else {
+            toast.success('Código enviado para seu WhatsApp!');
+          }
+        } catch (error: any) {
+          console.error('Erro ao chamar generate-phone-otp:', error);
+          toast.error('Erro ao enviar código. Use o botão "Reenviar Código" para tentar novamente.');
+        } finally {
+          setIsResending(false);
+        }
+      }
+    };
+
+    sendInitialOtp();
+  }, [phone, hasAutoSent]);
 
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
