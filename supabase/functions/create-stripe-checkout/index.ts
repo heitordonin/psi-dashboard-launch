@@ -150,6 +150,17 @@ serve(async (req) => {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
 
+      // Atualizar metadados do cliente com CPF e nome completo
+      await stripe.customers.update(customerId, {
+        metadata: {
+          user_id: user.id,
+          cpf: profileData.cpf,
+          full_name: profileData.full_name,
+          plan_slug: planSlug
+        }
+      });
+      logStep("Customer metadata updated", { customerId, cpf: profileData.cpf, full_name: profileData.full_name });
+
       // Verificar assinaturas ativas existentes e cancelar antes de criar nova
       const existingSubscriptions = await stripe.subscriptions.list({
         customer: customerId,
