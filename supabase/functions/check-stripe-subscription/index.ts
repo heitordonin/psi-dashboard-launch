@@ -173,11 +173,30 @@ serve(async (req) => {
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
 
-      // Mapear baseado no valor (em centavos BRL)
-      if (amount === 6900) { // R$69,00
+      // Obter price IDs das variáveis de ambiente primeiro
+      const gestaoPriceId = Deno.env.get('STRIPE_PRICE_GESTAO');
+      const psiRegularPriceId = Deno.env.get('STRIPE_PRICE_PSI_REGULAR');
+      
+      // Mapear baseado no price ID (mais confiável)
+      if (priceId === gestaoPriceId) {
         planSlug = "gestao";
-      } else if (amount === 18900) { // R$189,00
+      } else if (priceId === psiRegularPriceId) {
         planSlug = "psi_regular";
+      } else {
+        // Fallback para mapear baseado no valor (em centavos BRL)
+        if (amount === 6900) { // R$69,00
+          planSlug = "gestao";
+        } else if (amount === 18900) { // R$189,00
+          planSlug = "psi_regular";
+        }
+        
+        logStep("Used amount fallback for plan mapping", { 
+          priceId, 
+          amount, 
+          planSlug,
+          gestaoPriceId,
+          psiRegularPriceId 
+        });
       }
 
       logStep("Active/trialing subscription found", { 

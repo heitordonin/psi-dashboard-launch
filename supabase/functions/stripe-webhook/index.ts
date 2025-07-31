@@ -44,6 +44,7 @@ serve(async (req) => {
     const signature = req.headers.get("stripe-signature");
 
     if (!signature) {
+      logStep("Missing stripe-signature header", { headers: Object.fromEntries(req.headers.entries()) });
       throw new Error("Missing stripe-signature header");
     }
 
@@ -53,8 +54,16 @@ serve(async (req) => {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       logStep("Webhook signature verified", { eventType: event.type });
     } catch (err) {
-      logStep("Webhook signature verification failed", { error: err.message });
-      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+      logStep("Webhook signature verification failed", { 
+        error: err.message,
+        signature,
+        webhookSecret: webhookSecret ? `${webhookSecret.slice(0, 10)}...` : 'not set',
+        bodyLength: body.length
+      });
+      return new Response(`Webhook signature verification failed: ${err.message}`, { 
+        status: 400,
+        headers: corsHeaders 
+      });
     }
 
     // Check for duplicate events using event ID
