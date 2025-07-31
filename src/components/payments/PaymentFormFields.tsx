@@ -5,6 +5,8 @@ import { PaymentDescriptionField } from './PaymentDescriptionField';
 import { PaymentAmountField } from './PaymentAmountField';
 import { PaymentDueDateField } from './PaymentDueDateField';
 import { validateCPF, validateCNPJ } from '@/utils/securityValidation';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { isDemoUser } from '@/utils/demoUser';
 import type { Patient } from '@/types/patient';
 
 interface FormData {

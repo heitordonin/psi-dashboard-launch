@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { validatePatientForm } from '@/utils/patientFormValidation';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { PatientTypeSection } from './sections/PatientTypeSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { ContactSection } from './sections/ContactSection';
@@ -23,6 +24,7 @@ export const Step2_PersonalData = ({
   onPrevious,
   isEditMode = false
 }: Step2_PersonalDataProps) => {
+  const { user } = useAuth();
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handlePatientTypeChange = (type: 'individual' | 'company') => {
@@ -42,7 +44,7 @@ export const Step2_PersonalData = ({
   };
 
   const handleNext = () => {
-    const validationErrors = validatePatientForm(formData);
+    const validationErrors = validatePatientForm(formData, user?.email);
     
     // Filter errors relevant to this step
     const stepErrors: Record<string, string> = {};

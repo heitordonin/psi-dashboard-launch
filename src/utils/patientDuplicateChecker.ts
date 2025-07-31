@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoUserByEmail } from './demoUser';
 
 interface PatientFormData {
   full_name: string;
@@ -28,9 +29,16 @@ interface DuplicateCheckResult {
 export const checkForDuplicates = async (
   data: PatientFormData, 
   userId: string, 
-  patientId?: string
+  patientId?: string,
+  userEmail?: string
 ): Promise<DuplicateCheckResult> => {
   if (!userId) return { isDuplicate: false };
+
+  // Skip duplicates check for demo user
+  if (userEmail && isDemoUserByEmail(userEmail)) {
+    console.log('Skipping duplicate checks for demo user:', userEmail);
+    return { isDuplicate: false };
+  }
 
   const queries = [];
   const deletedQueries = [];

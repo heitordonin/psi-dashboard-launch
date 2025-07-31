@@ -47,7 +47,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
 
     try {
       // Verificar se o CPF já existe antes de tentar criar a conta
-      const cpfExists = await checkCpfExists(formData.cpf);
+      const cpfExists = await checkCpfExists(formData.cpf, formData.email);
       
       if (cpfExists) {
         setLoading(false);

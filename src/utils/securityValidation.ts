@@ -4,7 +4,9 @@
  */
 
 // CPF validation with enhanced security considerations
-export const validateCPF = (cpf: string): boolean => {
+export const validateCPF = (cpf: string, skipValidation: boolean = false): boolean => {
+  // Skip validation for demo user
+  if (skipValidation) return true;
   if (!cpf || typeof cpf !== 'string') return false;
   
   // Remove any non-digit characters
@@ -49,7 +51,9 @@ export const validateCPF = (cpf: string): boolean => {
 };
 
 // CNPJ validation with security considerations
-export const validateCNPJ = (cnpj: string): boolean => {
+export const validateCNPJ = (cnpj: string, skipValidation: boolean = false): boolean => {
+  // Skip validation for demo user
+  if (skipValidation) return true;
   if (!cnpj || typeof cnpj !== 'string') return false;
   
   // Remove any non-digit characters

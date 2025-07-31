@@ -31,7 +31,7 @@ export const Step5_Summary = ({
     deletedPatient,
     handleReactivateConfirm,
     handleReactivateCancel
-  } = usePatientMutations(user?.id, onClose);
+  } = usePatientMutations(user?.id, user?.email, onClose);
   const isEditMode = !!patientToEdit;
 
   const handleSave = () => {

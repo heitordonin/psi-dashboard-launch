@@ -36,7 +36,7 @@ interface PatientFormProps {
 
 export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   const { user } = useAuth();
-  const { 
+  const {
     createPatientMutation, 
     updatePatientMutation, 
     isLoading,
@@ -44,7 +44,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
     deletedPatient,
     handleReactivateConfirm,
     handleReactivateCancel
-  } = usePatientMutations(user?.id, onClose);
+  } = usePatientMutations(user?.id, user?.email, onClose);
 
   const [formData, setFormData] = useState<PatientFormData>({
     full_name: patient?.full_name || '',
@@ -88,7 +88,7 @@ export const PatientForm = ({ patient, onClose }: PatientFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validationErrors = validatePatientForm(formData);
+    const validationErrors = validatePatientForm(formData, user?.email);
     setErrors(validationErrors);
     
     if (Object.keys(validationErrors).length === 0) {

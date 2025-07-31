@@ -1,6 +1,7 @@
 
 import { validateCPF, validateCNPJ, sanitizeTextInput, validateAmount } from '@/utils/securityValidation';
 import { validateDueDateReceitaSaude, validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { isDemoUserByEmail } from '@/utils/demoUser';
 
 export const validatePaymentForm = (
   formData: {
@@ -13,8 +14,14 @@ export const validatePaymentForm = (
   isReceived: boolean,
   receivedDate: string,
   paymentTitular: 'patient' | 'other',
-  selectedPatient?: any
-) => {
+  selectedPatient?: any,
+  userEmail?: string
+): string | null => {
+  // Skip validation for demo user
+  if (userEmail && isDemoUserByEmail(userEmail)) {
+    console.log('Skipping payment form validation for demo user:', userEmail);
+    return null;
+  }
   if (!formData.patient_id || !formData.amount) {
     return 'Preencha todos os campos obrigatórios';
   }

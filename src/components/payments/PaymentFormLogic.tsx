@@ -63,7 +63,8 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
       isReceived,
       receivedDate,
       paymentTitular,
-      selectedPatient
+      selectedPatient,
+      user?.email
     );
 
     if (validationError) {

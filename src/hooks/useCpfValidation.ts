@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoUserByEmail } from '@/utils/demoUser';
 
 export const useCpfValidation = () => {
   const [isChecking, setIsChecking] = useState(false);
 
-  const checkCpfExists = async (cpf: string): Promise<boolean> => {
+  const checkCpfExists = async (cpf: string, userEmail?: string): Promise<boolean> => {
     if (!cpf || cpf.length < 11) return false;
+    
+    // Skip check for demo user
+    if (userEmail && isDemoUserByEmail(userEmail)) {
+      console.log('Skipping CPF existence check for demo user:', userEmail);
+      return false;
+    }
     
     setIsChecking(true);
     try {

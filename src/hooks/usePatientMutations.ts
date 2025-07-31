@@ -34,7 +34,7 @@ interface DeletedPatient {
   email?: string;
 }
 
-export const usePatientMutations = (userId: string | undefined, onClose: () => void) => {
+export const usePatientMutations = (userId: string | undefined, userEmail: string | null | undefined, onClose: () => void) => {
   const queryClient = useQueryClient();
   const [showReactivateModal, setShowReactivateModal] = useState(false);
   const [deletedPatient, setDeletedPatient] = useState<DeletedPatient | null>(null);
@@ -104,7 +104,7 @@ export const usePatientMutations = (userId: string | undefined, onClose: () => v
       if (!userId) throw new Error('User not authenticated');
       
       // Check for duplicates before creating
-      const duplicateResult = await checkForDuplicates(data, userId);
+      const duplicateResult = await checkForDuplicates(data, userId, undefined, userEmail || undefined);
       
       if (duplicateResult.isDuplicate) {
         if (duplicateResult.message === 'REACTIVATE_PATIENT' && duplicateResult.deletedPatient) {
@@ -180,7 +180,7 @@ export const usePatientMutations = (userId: string | undefined, onClose: () => v
       if (!patientId) throw new Error('Patient ID is required for update');
       
       // Check for duplicates before updating
-      const duplicateResult = await checkForDuplicates(data, userId!, patientId);
+      const duplicateResult = await checkForDuplicates(data, userId!, patientId, userEmail || undefined);
       if (duplicateResult.isDuplicate) {
         throw new Error(duplicateResult.message);
       }
