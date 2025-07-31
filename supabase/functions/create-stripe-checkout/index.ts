@@ -220,7 +220,7 @@ serve(async (req) => {
         case 'gestao':
           return parseInt(Deno.env.get("TRIAL_DAYS_GESTAO") || "7");
         case 'psi_regular':
-          return parseInt(Deno.env.get("TRIAL_DAYS_PSI_REGULAR") || "14");
+          return parseInt(Deno.env.get("TRIAL_DAYS_PSI_REGULAR") || "7");
         default:
           return 0;
       }
