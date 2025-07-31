@@ -99,37 +99,44 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    // Buscar TODAS as assinaturas ativas para detectar múltiplas assinaturas
+    // Buscar TODAS as assinaturas ativas e em trial para detectar múltiplas assinaturas
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 100, // Buscar todas as assinaturas ativas
+      status: "all", // Buscar todas para filtrar manualmente
+      limit: 100,
     });
 
-    logStep("Found active subscriptions", { 
-      count: subscriptions.data.length,
-      subscriptions: subscriptions.data.map(s => ({ 
+    // Filtrar apenas as assinaturas que consideramos "ativas" (active ou trialing)
+    const activeSubscriptions = subscriptions.data.filter(
+      sub => sub.status === "active" || sub.status === "trialing"
+    );
+
+    logStep("Found active/trialing subscriptions", { 
+      totalCount: subscriptions.data.length,
+      activeCount: activeSubscriptions.length,
+      subscriptions: activeSubscriptions.map(s => ({ 
         id: s.id, 
         status: s.status,
         created: s.created,
-        amount: s.items.data[0]?.price?.unit_amount
+        amount: s.items.data[0]?.price?.unit_amount,
+        trial_end: s.trial_end
       }))
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
+    const hasActiveSub = activeSubscriptions.length > 0;
     let planSlug = "free";
     let subscriptionData = null;
     let activeSubscription = null;
 
     if (hasActiveSub) {
       // Se há múltiplas assinaturas, cancelar as antigas e manter apenas a mais recente
-      if (subscriptions.data.length > 1) {
-        logStep("Multiple active subscriptions detected - cleaning up", { 
-          count: subscriptions.data.length
+      if (activeSubscriptions.length > 1) {
+        logStep("Multiple active/trialing subscriptions detected - cleaning up", { 
+          count: activeSubscriptions.length
         });
 
         // Ordenar por data de criação (mais recente primeiro)
-        const sortedSubscriptions = subscriptions.data.sort((a, b) => b.created - a.created);
+        const sortedSubscriptions = activeSubscriptions.sort((a, b) => b.created - a.created);
         activeSubscription = sortedSubscriptions[0]; // Manter a mais recente
         
         // Cancelar as assinaturas antigas
@@ -139,6 +146,7 @@ serve(async (req) => {
             await stripe.subscriptions.cancel(oldSubscription.id);
             logStep("Cancelled old subscription", { 
               subscriptionId: oldSubscription.id,
+              status: oldSubscription.status,
               amount: oldSubscription.items.data[0]?.price?.unit_amount
             });
           } catch (cancelError) {
@@ -149,7 +157,7 @@ serve(async (req) => {
           }
         }
       } else {
-        activeSubscription = subscriptions.data[0];
+        activeSubscription = activeSubscriptions[0];
       }
 
       subscriptionData = {
@@ -172,11 +180,13 @@ serve(async (req) => {
         planSlug = "psi_regular";
       }
 
-      logStep("Active subscription found", { 
+      logStep("Active/trialing subscription found", { 
         subscriptionId: activeSubscription.id, 
+        status: activeSubscription.status,
         planSlug,
         amount,
-        priceId 
+        priceId,
+        trial_end: activeSubscription.trial_end ? new Date(activeSubscription.trial_end * 1000).toISOString() : null
       });
 
       // Verificar se há assinaturas existentes no Supabase antes de atualizar
@@ -244,7 +254,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       plan_slug: planSlug,
-      subscription_status: hasActiveSub ? "active" : "inactive",
+      subscription_status: hasActiveSub ? activeSubscription?.status || "active" : "inactive",
       subscription_data: subscriptionData
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

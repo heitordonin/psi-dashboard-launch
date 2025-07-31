@@ -122,7 +122,7 @@ serve(async (req) => {
           let subscribed = false;
           let subscriptionEnd: string | null = null;
 
-          if (subscription.status === 'active' && subscription.items.data.length > 0) {
+          if ((subscription.status === 'active' || subscription.status === 'trialing') && subscription.items.data.length > 0) {
             const priceId = subscription.items.data[0].price.id;
             
             // Get price IDs from environment variables
@@ -157,11 +157,13 @@ serve(async (req) => {
               });
             }
 
-            logStep("Active subscription mapped", { 
+            logStep("Active/trialing subscription mapped", { 
               planSlug, 
+              status: subscription.status,
               subscriptionEnd,
               priceId,
-              cancelAtPeriodEnd: subscription.cancel_at_period_end
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+              trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
             });
           } else if (subscription.status === 'canceled' || event.type === 'customer.subscription.deleted') {
             logStep("Cancelled/deleted subscription - using free plan", { 
