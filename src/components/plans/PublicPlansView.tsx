@@ -20,10 +20,6 @@ const PublicPlansView = () => {
     }).format(price);
   };
 
-  const formatYearlyPrice = (yearlyPrice: number) => {
-    const monthlyYearlyPrice = yearlyPrice / 12;
-    return `ou ${formatPrice(monthlyYearlyPrice)} por mês (pagamento anual)`;
-  };
 
   const getStaticPlanData = (slug: string) => {
     switch (slug) {
@@ -83,8 +79,7 @@ const PublicPlansView = () => {
 
     return {
       ...staticData,
-      price: formatPrice(dbPlan.price_monthly),
-      yearlyPrice: dbPlan.price_yearly > 0 ? formatYearlyPrice(dbPlan.price_yearly) : undefined
+      price: formatPrice(dbPlan.price_monthly)
     };
   }).filter(Boolean) || [];
 
@@ -123,7 +118,6 @@ const PublicPlansView = () => {
               description={plan.description}
               price={plan.price}
               period={plan.period}
-              yearlyPrice={plan.yearlyPrice}
               features={plan.features}
               icon={plan.icon}
               isPopular={plan.isPopular}

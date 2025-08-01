@@ -14,7 +14,6 @@ interface PublicPlanCardProps {
   description: string;
   price: string;
   period: string;
-  yearlyPrice?: string;
   features: PlanFeature[];
   icon: React.ReactNode;
   isPopular?: boolean;
@@ -28,7 +27,6 @@ const PublicPlanCard = ({
   description,
   price,
   period,
-  yearlyPrice,
   features,
   icon,
   isPopular = false,
@@ -53,11 +51,6 @@ const PublicPlanCard = ({
         <div className="mt-4">
           <div className={`text-4xl font-bold ${priceColor}`}>{price}</div>
           <div className="text-sm text-gray-500">{period}</div>
-          {yearlyPrice && (
-            <div className="text-sm text-green-600 mt-1">
-              {yearlyPrice}
-            </div>
-          )}
         </div>
       </CardHeader>
       
