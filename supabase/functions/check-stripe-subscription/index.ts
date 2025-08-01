@@ -184,7 +184,7 @@ serve(async (req) => {
         planSlug = "psi_regular";
       } else {
         // Fallback para mapear baseado no valor (em centavos BRL)
-        if (amount === 6900) { // R$69,00
+        if (amount === 4900) { // R$49,00
           planSlug = "gestao";
         } else if (amount === 18900) { // R$189,00
           planSlug = "psi_regular";

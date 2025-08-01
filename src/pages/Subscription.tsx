@@ -74,10 +74,11 @@ const Subscription = () => {
     if (!currentPlan) return 'Gratuito';
     
     if (currentPlan.slug === 'free') return 'Gratuito';
-    if (currentPlan.slug === 'gestao') return 'R$ 49,00/mês';
-    if (currentPlan.slug === 'psi_regular') return 'R$ 189,00/mês';
     
-    return `R$ ${(currentPlan.price_monthly / 100).toFixed(2)}/mês`;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(currentPlan.price_monthly) + '/mês';
   };
 
   if (isLoading) {
