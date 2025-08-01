@@ -66,7 +66,7 @@ export const AdminUserGrowthChart = ({
             <Bar 
               dataKey="free_count" 
               stackId="stack" 
-              fill="hsl(var(--success))" 
+              fill="hsl(var(--muted-chart))" 
               name="Grátis"
             />
             <Bar 
@@ -78,7 +78,7 @@ export const AdminUserGrowthChart = ({
             <Bar 
               dataKey="psi_regular_count" 
               stackId="stack" 
-              fill="hsl(var(--warning))" 
+              fill="hsl(var(--success))" 
               name="Psi Regular"
             />
           </BarChart>

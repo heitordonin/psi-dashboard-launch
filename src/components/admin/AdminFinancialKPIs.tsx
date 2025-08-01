@@ -112,8 +112,8 @@ export const AdminFinancialKPIs = ({ mrrMetrics, ltvMetrics }: AdminFinancialKPI
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm">Free:</span>
-              <span className="font-medium">{formatCurrency(mrrMetrics?.mrr_free || 0)}</span>
+              <span className="text-sm text-muted-foreground">Free:</span>
+              <span className="font-medium text-muted-foreground">{formatCurrency(mrrMetrics?.mrr_free || 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm">Gestão:</span>
