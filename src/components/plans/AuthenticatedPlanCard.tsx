@@ -7,27 +7,31 @@ import { SubscriptionPlan } from "@/types/subscription";
 import { getPlanIcon, getFeatureLabels } from "./PlanUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
 interface AuthenticatedPlanCardProps {
   plan: SubscriptionPlan;
   isCurrentPlan: boolean;
 }
-
-const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardProps) => {
+const AuthenticatedPlanCard = ({
+  plan,
+  isCurrentPlan
+}: AuthenticatedPlanCardProps) => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleStripeCheckout = async () => {
     if (plan.slug === 'free') return;
-    
     setIsCheckingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
-        body: { planSlug: plan.slug }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-stripe-checkout', {
+        body: {
+          planSlug: plan.slug
+        }
       });
-
       if (error) throw error;
-
       if (data?.url) {
         // Abrir checkout do Stripe em nova aba
         window.open(data.url, '_blank');
@@ -37,20 +41,16 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
       toast({
         title: "Erro ao processar pagamento",
         description: "Tente novamente em alguns instantes.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsCheckingOut(false);
     }
   };
-
-  return (
-    <Card className={`relative ${isCurrentPlan ? 'ring-2 ring-blue-500' : ''}`}>
-      {isCurrentPlan && (
-        <Badge className="absolute -top-2 left-4 bg-blue-500">
+  return <Card className={`relative ${isCurrentPlan ? 'ring-2 ring-blue-500' : ''}`}>
+      {isCurrentPlan && <Badge className="absolute -top-2 left-4 bg-blue-500">
           Plano Atual
-        </Badge>
-      )}
+        </Badge>}
       
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
@@ -62,69 +62,43 @@ const AuthenticatedPlanCard = ({ plan, isCurrentPlan }: AuthenticatedPlanCardPro
         <div className="mt-4">
           <div className="text-3xl font-bold">
             {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(plan.price_monthly)}
+            style: 'currency',
+            currency: 'BRL'
+          }).format(plan.price_monthly)}
           </div>
           <div className="text-sm text-gray-500">por mês</div>
-          {plan.price_yearly > 0 && (
-            <div className="text-sm text-green-600 mt-1">
-              ou {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(plan.price_yearly / 12)} por mês (pagamento anual)
-            </div>
-          )}
+          {plan.price_yearly > 0}
         </div>
       </CardHeader>
 
       <CardContent>
         <div className="space-y-3 mb-6">
           {/* Only show patient limit for plans other than Psi Regular */}
-          {plan.slug !== 'psi_regular' && (
-            <div className="flex items-center">
+          {plan.slug !== 'psi_regular' && <div className="flex items-center">
               <Check className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-sm">
                 {plan.max_patients ? `Até ${plan.max_patients} pacientes` : 'Pacientes ilimitados'}
               </span>
-            </div>
-          )}
+            </div>}
           
-          {getFeatureLabels(plan.features).map((feature, index) => (
-            <div key={index} className="flex items-center">
+          {getFeatureLabels(plan.features).map((feature, index) => <div key={index} className="flex items-center">
               <Check className="w-4 h-4 text-green-500 mr-2" />
               <span className="text-sm">{feature}</span>
-            </div>
-          ))}
+            </div>)}
         </div>
 
-        {isCurrentPlan ? (
-          <Button className="w-full" variant="secondary" disabled>
+        {isCurrentPlan ? <Button className="w-full" variant="secondary" disabled>
             Plano Ativo
-          </Button>
-        ) : (
-          <Button 
-            className="w-full" 
-            variant="default"
-            onClick={handleStripeCheckout}
-            disabled={isCheckingOut || plan.slug === 'free'}
-          >
-            {isCheckingOut ? (
-              <>
+          </Button> : <Button className="w-full" variant="default" onClick={handleStripeCheckout} disabled={isCheckingOut || plan.slug === 'free'}>
+            {isCheckingOut ? <>
                 <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Processando...
-              </>
-            ) : (
-              <>
+              </> : <>
                 <CreditCard className="w-4 h-4 mr-2" />
                 {plan.slug === 'free' ? 'Plano Gratuito' : 'Assinar Plano'}
-              </>
-            )}
-          </Button>
-        )}
+              </>}
+          </Button>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default AuthenticatedPlanCard;
