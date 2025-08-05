@@ -72,28 +72,6 @@ export const CourtesyPlansManager = () => {
   // Debug logging
   console.log('CourtesyPlansManager - Component rendered');
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-red-500">
-              <h3 className="text-lg font-semibold mb-2">Erro</h3>
-              <p>{error}</p>
-              <Button 
-                onClick={() => setError(null)} 
-                className="mt-4"
-                variant="outline"
-              >
-                Tentar novamente
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (term: string) => {
@@ -304,6 +282,29 @@ export const CourtesyPlansManager = () => {
       debouncedSearch(value);
     }
   };
+
+  // Error state handling (after all hooks)
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-500">
+              <h3 className="text-lg font-semibold mb-2">Erro</h3>
+              <p>{error}</p>
+              <Button 
+                onClick={() => setError(null)} 
+                className="mt-4"
+                variant="outline"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">
