@@ -198,13 +198,13 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Para guest checkout ou checkout pós-signup, não verificar cliente existente
+    // Verificar se o cliente já existe no Stripe (mesmo para checkout pós-signup)
     let customerId;
-    if (!isGuestCheckout && !postSignup) {
+    if (!isGuestCheckout) {
       // Verificar se o cliente já existe no Stripe
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
+        customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
 
       // Verificar se já existe uma sessão de checkout ativa pendente
@@ -243,7 +243,7 @@ serve(async (req) => {
         try {
           await stripe.customers.update(customerId, {
             metadata: {
-              user_id: user.id,
+              user_id: postSignup ? userData?.email : user.id,
               cpf: profileData?.cpf || '',
               full_name: profileData?.full_name || '',
               plan_slug: planSlug
@@ -319,7 +319,28 @@ serve(async (req) => {
         }
         }
       } else {
-        logStep("No existing customer found, will create new customer");
+        // Criar novo cliente com metadados completos
+        try {
+          const newCustomer = await stripe.customers.create({
+            email: user.email,
+            metadata: {
+              user_id: postSignup ? userData?.email : user.id,
+              cpf: profileData?.cpf || '',
+              full_name: profileData?.full_name || '',
+              plan_slug: planSlug
+            }
+          });
+          customerId = newCustomer.id;
+          logStep("New customer created with metadata", { 
+            customerId, 
+            email: user.email,
+            cpf: profileData?.cpf, 
+            full_name: profileData?.full_name 
+          });
+        } catch (createError) {
+          logStep("Error creating new customer", { error: createError });
+          // Continuar sem customer ID se falhar
+        }
       }
     }
 
