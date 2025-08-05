@@ -4,10 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SignupForm } from '@/components/auth/SignupForm';
+import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
+import { useCheckoutRedirect } from '@/hooks/useCheckoutRedirect';
 
 const Signup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedPlan } = useCheckoutRedirect();
 
   useEffect(() => {
     if (user) {
@@ -30,7 +33,8 @@ const Signup = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SignupForm />
+          {selectedPlan && <PlanSelectionBanner selectedPlan={selectedPlan} />}
+          <SignupForm selectedPlan={selectedPlan} />
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">

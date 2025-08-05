@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { EmailNotConfirmedModal } from '@/components/auth/EmailNotConfirmedModal';
+import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
+import { useCheckoutRedirect } from '@/hooks/useCheckoutRedirect';
 import { toast } from 'sonner';
 
 const Login = () => {
@@ -16,9 +18,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isEmailNotConfirmedOpen, setIsEmailNotConfirmedOpen] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedPlan, executeCheckout, isProcessingCheckout } = useCheckoutRedirect();
 
   // Pré-preencher email se veio do cadastro
   useEffect(() => {
@@ -29,6 +32,13 @@ const Login = () => {
       setIsForgotPasswordOpen(true);
     }
   }, [location.state]);
+
+  // Executar checkout após login se há plano selecionado
+  useEffect(() => {
+    if (user && selectedPlan && !isProcessingCheckout) {
+      executeCheckout();
+    }
+  }, [user, selectedPlan, executeCheckout, isProcessingCheckout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +57,12 @@ const Login = () => {
         }
       } else {
         toast.success('Login realizado com sucesso!');
-        navigate('/dashboard');
+        if (selectedPlan) {
+          // O useEffect vai executar o checkout automaticamente
+          toast.info('Redirecionando para o checkout...');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       toast.error('Erro inesperado ao fazer login');
@@ -66,6 +81,7 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {selectedPlan && <PlanSelectionBanner selectedPlan={selectedPlan} />}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -89,8 +105,8 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoading || isProcessingCheckout}>
+              {isLoading ? 'Entrando...' : isProcessingCheckout ? 'Preparando checkout...' : 'Entrar'}
             </Button>
           </form>
           <div className="mt-4 text-center space-y-2">

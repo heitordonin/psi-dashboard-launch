@@ -8,12 +8,14 @@ import { SignupFormData, validateSignupForm, sanitizeSignupFormData } from './Si
 import { useCpfValidation } from '@/hooks/useCpfValidation';
 import { CpfExistsModal } from './CpfExistsModal';
 import { toast } from 'sonner';
+import { ValidPlan } from '@/utils/planValidation';
 
 interface SignupFormProps {
   onSuccess?: () => void;
+  selectedPlan?: ValidPlan | null;
 }
 
-export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
+export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan }) => {
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
     password: '',
@@ -76,7 +78,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
       });
 
       onSuccess?.();
-      navigate('/login');
+      
+      if (selectedPlan) {
+        // Redirecionar para login com parâmetro do plano para executar checkout
+        navigate(`/login?plan=${selectedPlan}`);
+      } else {
+        navigate('/login');
+      }
 
     } catch (error: any) {
       console.error('Error:', error);
