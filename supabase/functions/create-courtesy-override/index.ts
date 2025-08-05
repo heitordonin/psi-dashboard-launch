@@ -345,6 +345,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Trigger automatic subscription sync
+    console.log(`[CREATE-COURTESY-OVERRIDE] Triggering subscription sync for user ${user_id}`);
+    try {
+      const { data: syncResult, error: syncError } = await supabaseClient.functions.invoke(
+        'force-subscription-sync',
+        {
+          body: { 
+            userId: user_id,
+            triggerSource: 'courtesy_plan_creation',
+            overrideId: newOverride.id
+          }
+        }
+      );
+
+      if (syncError) {
+        console.warn('[CREATE-COURTESY-OVERRIDE] Subscription sync failed but override created:', syncError);
+      } else {
+        console.log('[CREATE-COURTESY-OVERRIDE] Subscription sync completed successfully:', syncResult);
+      }
+    } catch (syncError) {
+      console.warn('[CREATE-COURTESY-OVERRIDE] Subscription sync failed but override created:', syncError);
+    }
+
     const duration = performance.now() - startTime;
     console.log(`[CREATE-COURTESY-OVERRIDE] Successfully created override ${newOverride.id} in ${duration.toFixed(2)}ms`);
 
