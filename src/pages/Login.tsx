@@ -44,12 +44,16 @@ const Login = () => {
     }
   }, [location.state]);
 
-  // Executar checkout após login se há plano selecionado e está pronto
+  const [showCheckoutButton, setShowCheckoutButton] = useState(false);
+
+  // Verificar se deve mostrar botão de checkout após login
   useEffect(() => {
-    if (user && selectedPlan && isReadyForCheckout && !isProcessingCheckout) {
-      executeCheckout();
+    if (user && selectedPlan && isReadyForCheckout) {
+      setShowCheckoutButton(true);
+    } else {
+      setShowCheckoutButton(false);
     }
-  }, [user, selectedPlan, isReadyForCheckout, executeCheckout, isProcessingCheckout]);
+  }, [user, selectedPlan, isReadyForCheckout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +72,10 @@ const Login = () => {
         }
       } else {
         toast.success('Login realizado com sucesso!');
-        if (selectedPlan) {
-          // O useEffect vai executar o checkout automaticamente
-          toast.info('Redirecionando para o checkout...');
-        } else {
+        if (!selectedPlan) {
           navigate('/dashboard');
         }
+        // Se há plano selecionado, aguardar ação manual do usuário
       }
     } catch (error) {
       toast.error('Erro inesperado ao fazer login');
@@ -119,6 +121,17 @@ const Login = () => {
             <Button type="submit" className="w-full" disabled={isLoading || isProcessingCheckout}>
               {isLoading ? 'Entrando...' : isProcessingCheckout ? 'Preparando checkout...' : 'Entrar'}
             </Button>
+            {showCheckoutButton && (
+              <Button 
+                type="button" 
+                onClick={executeCheckout}
+                className="w-full mt-2"
+                disabled={isProcessingCheckout}
+                variant="outline"
+              >
+                {isProcessingCheckout ? 'Processando...' : 'Continuar para Checkout'}
+              </Button>
+            )}
           </form>
           <div className="mt-4 text-center space-y-2">
             <button
