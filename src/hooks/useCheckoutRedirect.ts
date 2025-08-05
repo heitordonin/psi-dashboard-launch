@@ -17,6 +17,7 @@ export const useCheckoutRedirect = () => {
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [invalidPlan, setInvalidPlan] = useState(false);
   const [lastCheckoutAttempt, setLastCheckoutAttempt] = useState(0);
+  const [isCheckingEmailStatus, setIsCheckingEmailStatus] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -103,7 +104,11 @@ export const useCheckoutRedirect = () => {
   }, []);
 
   const executeCheckout = useCallback(async () => {
-    if (!selectedPlan || isProcessingCheckout || !isReadyForCheckout) return;
+    // Prevenir múltiplas execuções simultâneas
+    if (!selectedPlan || isProcessingCheckout || !isReadyForCheckout || isCheckingEmailStatus) {
+      console.log('Checkout bloqueado:', { selectedPlan, isProcessingCheckout, isReadyForCheckout, isCheckingEmailStatus });
+      return;
+    }
 
     // Rate limiting no frontend
     const now = Date.now();
@@ -169,7 +174,7 @@ export const useCheckoutRedirect = () => {
     } finally {
       setIsProcessingCheckout(false);
     }
-  }, [selectedPlan, isProcessingCheckout, isReadyForCheckout, lastCheckoutAttempt, user]);
+  }, [selectedPlan, isProcessingCheckout, isReadyForCheckout, isCheckingEmailStatus, lastCheckoutAttempt, user]);
 
   const clearSelectedPlan = () => {
     setSelectedPlan(null);
@@ -185,15 +190,23 @@ export const useCheckoutRedirect = () => {
     clearSelectedPlan();
   };
 
+  // Computed state para loading unificado
+  const isAnyLoading = isProcessingCheckout || isCheckingEmailStatus;
+  const canExecuteCheckout = selectedPlan && isReadyForCheckout && !isAnyLoading && user?.email_confirmed_at;
+
   return {
     selectedPlan,
     isProcessingCheckout,
     isReadyForCheckout,
     emailNotConfirmed,
     invalidPlan,
+    isCheckingEmailStatus,
+    isAnyLoading,
+    canExecuteCheckout,
     executeCheckout,
     clearSelectedPlan,
     dismissEmailModal,
-    dismissInvalidPlanModal
+    dismissInvalidPlanModal,
+    setIsCheckingEmailStatus
   };
 };

@@ -29,7 +29,8 @@ const Login = () => {
     emailNotConfirmed,
     invalidPlan,
     executeCheckout,
-    isProcessingCheckout,
+    isAnyLoading,
+    canExecuteCheckout,
     dismissEmailModal,
     dismissInvalidPlanModal
   } = useCheckoutRedirect();
@@ -118,18 +119,18 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || isProcessingCheckout}>
-              {isLoading ? 'Entrando...' : isProcessingCheckout ? 'Preparando checkout...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoading || isAnyLoading}>
+              {isLoading ? 'Entrando...' : isAnyLoading ? 'Preparando checkout...' : 'Entrar'}
             </Button>
             {showCheckoutButton && (
               <Button 
                 type="button" 
                 onClick={executeCheckout}
                 className="w-full mt-2"
-                disabled={isProcessingCheckout}
+                disabled={!canExecuteCheckout || isAnyLoading}
                 variant="outline"
               >
-                {isProcessingCheckout ? 'Processando...' : 'Continuar para Checkout'}
+                {isAnyLoading ? 'Processando...' : 'Continuar para Checkout'}
               </Button>
             )}
           </form>
