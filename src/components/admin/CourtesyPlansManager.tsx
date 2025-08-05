@@ -240,18 +240,18 @@ export const CourtesyPlansManager = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg">
-                <DialogHeader>
+                <DialogHeader className="space-y-3 pb-6">
                   <DialogTitle>Criar Plano Cortesia</DialogTitle>
                   <DialogDescription>
                     Atribua um plano premium gratuito para um usuário específico
                   </DialogDescription>
                 </DialogHeader>
                 
-                <div className="space-y-4">
-                  <div>
+                <div className="space-y-6 px-1">
+                  <div className="space-y-2">
                     <Label htmlFor="search">Buscar Usuário</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         id="search"
                         placeholder="Digite nome ou email..."
@@ -260,18 +260,18 @@ export const CourtesyPlansManager = () => {
                         className="pl-10"
                       />
                       {isSearching && (
-                        <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin" />
+                        <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                       )}
                     </div>
                     
                     {selectedUser && (
-                      <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                         <div className="font-medium text-green-800">{selectedUser.full_name || selectedUser.display_name}</div>
-                        <div className="text-sm text-green-600">{selectedUser.email}</div>
+                        <div className="text-sm text-green-600 mt-1">{selectedUser.email}</div>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="mt-2"
+                          className="mt-3"
                           onClick={() => {
                             setSelectedUser(null);
                             setSearchTerm("");
@@ -283,24 +283,24 @@ export const CourtesyPlansManager = () => {
                     )}
                     
                     {!selectedUser && users.length > 0 && searchTerm.length >= 2 && (
-                      <div className="mt-2 border rounded-md max-h-40 overflow-y-auto">
+                      <div className="mt-3 border rounded-lg max-h-40 overflow-y-auto bg-card">
                         {users.map((user) => (
                           <div
                             key={user.id}
-                            className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                            className="p-4 hover:bg-muted cursor-pointer border-b last:border-b-0 transition-colors"
                             onClick={() => {
                               setSelectedUser(user);
                             }}
                           >
                             <div className="font-medium">{user.full_name || user.display_name}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="text-sm text-muted-foreground mt-1">{user.email}</div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="plan">Plano</Label>
                     <Select value={planSlug} onValueChange={setPlanSlug}>
                       <SelectTrigger>
@@ -313,7 +313,7 @@ export const CourtesyPlansManager = () => {
                     </Select>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="expires">Data de Expiração (opcional)</Label>
                     <Input
                       id="expires"
@@ -323,7 +323,7 @@ export const CourtesyPlansManager = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="reason">Motivo *</Label>
                     <Textarea
                       id="reason"
@@ -334,7 +334,7 @@ export const CourtesyPlansManager = () => {
                     />
                   </div>
 
-                  <div className="flex justify-end space-x-2 mt-6">
+                  <div className="flex justify-end gap-3 pt-6 border-t">
                     <Button
                       variant="outline"
                       onClick={() => {
