@@ -60,11 +60,10 @@ interface SubscriptionOverride {
 export const CourtesyPlansManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [planSlug, setPlanSlug] = useState("");
+  const [planSlug, setPlanSlug] = useState("gestao");
   const [expiresAt, setExpiresAt] = useState("");
   const [reason, setReason] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const forceSyncMutation = useForceSyncSubscription();
@@ -72,58 +71,80 @@ export const CourtesyPlansManager = () => {
   // Debug logging
   console.log('CourtesyPlansManager - Component rendered');
 
-  // Debounced search function
+  // Debounced search function with improved performance
   const debouncedSearch = useCallback(
     debounce(async (term: string) => {
-      if (!term || term.length < 2) {
-        setIsSearching(false);
-        return;
-      }
-
-      setIsSearching(true);
+      if (!term || term.length < 2) return [];
+      
       try {
         const { data, error } = await supabase.functions.invoke('search-users', {
           body: { searchTerm: term }
         });
-
+        
         if (error) throw error;
-        queryClient.setQueryData(['users', term], data.users || []);
-      } catch (error) {
-        console.error('Error searching users:', error);
-        toast.error('Erro ao buscar usuários');
-      } finally {
-        setIsSearching(false);
+        return data?.users || [];
+      } catch (err) {
+        console.error('Search error:', err);
+        toast.error('Erro ao buscar usuários. Tente novamente.');
+        return [];
       }
-    }, 300),
-    [queryClient]
+    }, 500),
+    []
   );
 
-  // Search users based on search term
-  const { data: users = [] } = useQuery({
-    queryKey: ["users", searchTerm],
-    queryFn: async () => {
-      if (!searchTerm || searchTerm.length < 2) return [];
-      
-      console.log('Searching users with term:', searchTerm);
-      try {
-        const { data, error } = await supabase.functions.invoke('search-users', {
-          body: { searchTerm }
-        });
+  // Search users with improved UX
+  const { 
+    data: searchResults = [], 
+    isLoading: isSearchLoading,
+    error: searchError 
+  } = useQuery({
+    queryKey: ['user-search', searchTerm],
+    queryFn: () => debouncedSearch(searchTerm),
+    enabled: searchTerm.length >= 2,
+    staleTime: 30000, // 30 seconds
+    retry: 1
+  });
 
-        if (error) {
-          console.error('Error from search-users function:', error);
-          throw error;
+  // Load initial list of recent users when dialog opens
+  const { 
+    data: recentUsers = [], 
+    isLoading: isRecentUsersLoading 
+  } = useQuery({
+    queryKey: ['recent-users'],
+    queryFn: async () => {
+      try {
+        // Get recent users (last 20 users by creation date)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, display_name')
+          .order('created_at', { ascending: false })
+          .limit(20);
+          
+        if (error) throw error;
+        
+        // Get emails from auth
+        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        const authUsersMap = new Map<string, string>();
+        if (authUsers?.users) {
+          authUsers.users.forEach((u: any) => {
+            if (u.id && u.email) {
+              authUsersMap.set(u.id, u.email);
+            }
+          });
         }
         
-        console.log('Successfully found users:', data);
-        return data.users || [];
+        return data?.map(profile => ({
+          id: profile.id,
+          email: authUsersMap.get(profile.id) || 'N/A',
+          full_name: profile.full_name,
+          display_name: profile.display_name
+        })) || [];
       } catch (err) {
-        console.error('Error searching users:', err);
-        toast.error(`Erro ao buscar usuários: ${err.message}`);
+        console.error('Error loading recent users:', err);
         return [];
       }
     },
-    enabled: false // We use manual triggering via debounced search
+    enabled: dialogOpen && searchTerm.length < 2
   });
 
   // Get existing subscription overrides with fallback
@@ -139,7 +160,6 @@ export const CourtesyPlansManager = () => {
           console.error('Edge function failed, trying direct query:', error);
           
           // Fallback to direct query
-          // Try direct query without relationship syntax
           const { data: directData, error: directError } = await supabase
             .from('subscription_overrides')
             .select(`
@@ -264,37 +284,55 @@ export const CourtesyPlansManager = () => {
     }
   });
 
-  const handleCreateOverride = () => {
-    if (!selectedUser || !planSlug || !reason.trim()) {
-      toast.error('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    if (expiresAt && new Date(expiresAt) <= new Date()) {
-      toast.error('Data de expiração deve ser no futuro');
-      return;
-    }
-
-    createOverrideMutation.mutate({
-      user_id: selectedUser.id,
-      plan_slug: planSlug,
-      expires_at: expiresAt || undefined,
-      reason: reason.trim()
-    });
-  };
-
   const resetForm = () => {
     setSelectedUser(null);
-    setPlanSlug("");
-    setExpiresAt("");
-    setReason("");
-    setSearchTerm("");
+    setSearchTerm('');
+    setPlanSlug('gestao');
+    setExpiresAt('');
+    setReason('');
+    setError(null);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    if (value.length >= 2) {
-      debouncedSearch(value);
+    setSelectedUser(null); // Clear selection when searching
+  };
+
+  const displayUsers = searchTerm.length >= 2 ? searchResults : recentUsers;
+  const isLoadingUsers = searchTerm.length >= 2 ? isSearchLoading : isRecentUsersLoading;
+
+  const handleCreateOverride = async () => {
+    if (!selectedUser) {
+      setError('Selecione um usuário');
+      return;
+    }
+
+    if (!reason.trim()) {
+      setError('Digite um motivo para o plano cortesia');
+      return;
+    }
+
+    if (expiresAt && new Date(expiresAt) <= new Date()) {
+      setError('Data de expiração deve ser no futuro');
+      return;
+    }
+
+    try {
+      setError(null);
+      await createOverrideMutation.mutateAsync({
+        user_id: selectedUser.id,
+        plan_slug: planSlug,
+        expires_at: expiresAt || undefined,
+        reason: reason.trim()
+      });
+      
+      toast.success(`Plano cortesia criado para ${selectedUser.full_name || selectedUser.display_name || selectedUser.email}`);
+      
+      setDialogOpen(false);
+      resetForm();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      setError(`Erro ao criar plano cortesia: ${errorMessage}`);
     }
   };
 
@@ -304,7 +342,7 @@ export const CourtesyPlansManager = () => {
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center text-red-500">
+            <div className="text-center text-destructive">
               <h3 className="text-lg font-semibold mb-2">Erro</h3>
               <p>{error}</p>
               <Button 
@@ -354,24 +392,75 @@ export const CourtesyPlansManager = () => {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         id="search"
-                        placeholder="Digite nome ou email..."
+                        placeholder="Digite nome, email ou CPF (mín. 2 caracteres)"
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-10"
                       />
-                      {isSearching && (
-                        <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                      {isLoadingUsers && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        </div>
                       )}
                     </div>
                     
+                    {/* User Selection */}
+                    <div className="mt-2 max-h-48 overflow-y-auto border rounded-md bg-card">
+                      {searchError && (
+                        <div className="p-3 text-sm text-destructive bg-destructive/10">
+                          Erro na busca: {searchError.message}
+                        </div>
+                      )}
+                      
+                      {isLoadingUsers ? (
+                        <div className="p-3 text-sm text-muted-foreground flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          {searchTerm.length >= 2 ? 'Buscando usuários...' : 'Carregando usuários recentes...'}
+                        </div>
+                      ) : displayUsers.length > 0 ? (
+                        <div className="divide-y">
+                          {searchTerm.length < 2 && (
+                            <div className="p-2 text-xs text-muted-foreground bg-muted/50">
+                              Usuários criados recentemente:
+                            </div>
+                          )}
+                          {displayUsers.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => setSelectedUser(user)}
+                              className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${
+                                selectedUser?.id === user.id ? 'bg-primary/10 border-l-2 border-primary' : ''
+                              }`}
+                            >
+                              <div className="text-sm font-medium">
+                                {user.full_name || user.display_name || 'Nome não informado'}
+                              </div>
+                              <div className="text-xs text-muted-foreground">{user.email}</div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : searchTerm.length >= 2 ? (
+                        <div className="p-3 text-sm text-muted-foreground">
+                          Nenhum usuário encontrado para "{searchTerm}"
+                        </div>
+                      ) : (
+                        <div className="p-3 text-sm text-muted-foreground">
+                          Digite pelo menos 2 caracteres para buscar usuários
+                        </div>
+                      )}
+                    </div>
+
                     {selectedUser && (
-                      <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="font-medium text-green-800">{selectedUser.full_name || selectedUser.display_name}</div>
-                        <div className="text-sm text-green-600 mt-1">{selectedUser.email}</div>
+                      <div className="mt-2 p-3 bg-primary/5 rounded-md border-l-2 border-primary">
+                        <div className="text-sm font-medium">Usuário Selecionado:</div>
+                        <div className="text-sm text-muted-foreground">
+                          {selectedUser.full_name || selectedUser.display_name} ({selectedUser.email})
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="mt-3"
+                          className="mt-2"
                           onClick={() => {
                             setSelectedUser(null);
                             setSearchTerm("");
@@ -379,23 +468,6 @@ export const CourtesyPlansManager = () => {
                         >
                           Limpar seleção
                         </Button>
-                      </div>
-                    )}
-                    
-                    {!selectedUser && users.length > 0 && searchTerm.length >= 2 && (
-                      <div className="mt-3 border rounded-lg max-h-40 overflow-y-auto bg-card">
-                        {users.map((user) => (
-                          <div
-                            key={user.id}
-                            className="p-4 hover:bg-muted cursor-pointer border-b last:border-b-0 transition-colors"
-                            onClick={() => {
-                              setSelectedUser(user);
-                            }}
-                          >
-                            <div className="font-medium">{user.full_name || user.display_name}</div>
-                            <div className="text-sm text-muted-foreground mt-1">{user.email}</div>
-                          </div>
-                        ))}
                       </div>
                     )}
                   </div>
@@ -421,6 +493,9 @@ export const CourtesyPlansManager = () => {
                       value={expiresAt}
                       onChange={(e) => setExpiresAt(e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Deixe em branco para plano sem expiração
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -433,6 +508,12 @@ export const CourtesyPlansManager = () => {
                       rows={3}
                     />
                   </div>
+
+                  {error && (
+                    <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/20">
+                      {error}
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-3 pt-6 border-t">
                     <Button
@@ -498,42 +579,38 @@ export const CourtesyPlansManager = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant={override.plan_slug === 'psi_regular' ? 'default' : 'secondary'}>
-                        {override.plan_slug === 'psi_regular' ? 'Psi Regular' : 
-                         override.plan_slug === 'gestao' ? 'Gestão' : override.plan_slug}
+                        {override.plan_slug === 'gestao' ? 'Gestão' : 'Psi Regular'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {override.expires_at 
-                        ? new Date(override.expires_at).toLocaleDateString('pt-BR')
-                        : 'Sem expiração'
-                      }
+                      {override.expires_at ? (
+                        new Date(override.expires_at).toLocaleDateString('pt-BR')
+                      ) : (
+                        <Badge variant="outline">Sem expiração</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="max-w-xs">
-                      <div className="truncate" title={override.reason}>
+                      <p className="text-sm truncate" title={override.reason}>
                         {override.reason}
-                      </div>
+                      </p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={override.is_active ? 'default' : 'secondary'}>
+                      <Badge variant={override.is_active ? 'default' : 'destructive'}>
                         {override.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deactivateOverrideMutation.mutate(override.id)}
-                        disabled={!override.is_active || deactivateOverrideMutation.isPending}
-                      >
-                        {deactivateOverrideMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <UserX className="w-4 h-4 mr-1" />
-                            Desativar
-                          </>
-                        )}
-                      </Button>
+                      {override.is_active && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deactivateOverrideMutation.mutate(override.id)}
+                          disabled={deactivateOverrideMutation.isPending}
+                        >
+                          <UserX className="w-4 h-4 mr-1" />
+                          Desativar
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
