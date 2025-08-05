@@ -109,12 +109,28 @@ export const useCheckoutRedirect = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Só limpar após checkout bem-sucedido
-        window.open(data.url, '_blank');
-        // Aguardar um momento antes de limpar (caso falhe a abertura da janela)
-        setTimeout(() => {
-          localStorage.removeItem(PLAN_STORAGE_KEY);
-        }, 1000);
+        // Tentar abrir em nova aba
+        const newWindow = window.open(data.url, '_blank');
+        
+        // Verificar se popup foi bloqueado ou falhou
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Fallback: redirect direto
+          toast.info('Redirecionando para o checkout...');
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 1000);
+        } else {
+          // Popup aberto com sucesso
+          toast.success('Checkout aberto em nova aba');
+          
+          // Aguardar confirmação antes de limpar
+          setTimeout(() => {
+            // Verificar se a janela ainda está aberta
+            if (!newWindow.closed) {
+              localStorage.removeItem(PLAN_STORAGE_KEY);
+            }
+          }, 2000);
+        }
       }
     } catch (error) {
       console.error('Erro no checkout:', error);
