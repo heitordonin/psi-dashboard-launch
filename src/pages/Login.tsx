@@ -50,6 +50,14 @@ const Login = () => {
     if (urlParams.get('postCheckout') === 'true') {
       setIsPostCheckout(true);
     }
+
+    // Show success message for post-signup checkout
+    const checkoutSuccess = urlParams.get('checkout_success');
+    const plan = urlParams.get('plan');
+    
+    if (checkoutSuccess === 'true' && plan) {
+      toast.success(`Pagamento realizado com sucesso! Faça login para acessar sua conta ${plan === 'gestao' ? 'Gestão' : plan === 'psi_regular' ? 'Psi Regular' : ''}.`);
+    }
   }, [location.state, location.search]);
 
   const [showCheckoutButton, setShowCheckoutButton] = useState(false);

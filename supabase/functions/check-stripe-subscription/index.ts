@@ -62,7 +62,99 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
-      logStep("No customer found, using atomic function for free plan assignment");
+      // Buscar assinaturas por email caso não encontre customer (checkout pós-signup)
+      logStep("No customer found, searching for subscriptions by email");
+      
+      const allCustomers = await stripe.customers.list({ limit: 100 });
+      const customerByEmail = allCustomers.data.find(c => c.email === user.email);
+      
+      if (customerByEmail) {
+        logStep("Found customer by email search", { customerId: customerByEmail.id });
+        // Continuar com a lógica normal usando o customer encontrado
+        const customerId = customerByEmail.id;
+        
+        // Buscar assinaturas deste customer
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "all",
+          limit: 100,
+        });
+        
+        const activeSubscriptions = subscriptions.data.filter(
+          sub => sub.status === "active" || sub.status === "trialing"
+        );
+        
+        if (activeSubscriptions.length > 0) {
+          logStep("Found active subscriptions for customer found by email", { 
+            customerId,
+            activeCount: activeSubscriptions.length 
+          });
+          
+          // Processar a assinatura ativa (usar a lógica já existente)
+          const activeSubscription = activeSubscriptions[0];
+          const priceId = activeSubscription.items.data[0].price.id;
+          const price = await stripe.prices.retrieve(priceId);
+          const amount = price.unit_amount || 0;
+          
+          const gestaoPriceId = Deno.env.get('STRIPE_PRICE_GESTAO');
+          const psiRegularPriceId = Deno.env.get('STRIPE_PRICE_PSI_REGULAR');
+          
+          let planSlug = "free";
+          if (priceId === gestaoPriceId) {
+            planSlug = "gestao";
+          } else if (priceId === psiRegularPriceId) {
+            planSlug = "psi_regular";
+          } else if (amount === 4900) {
+            planSlug = "gestao";
+          } else if (amount === 18900) {
+            planSlug = "psi_regular";
+          }
+          
+          const subscriptionData = {
+            id: activeSubscription.id,
+            status: activeSubscription.status,
+            current_period_start: new Date(activeSubscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(activeSubscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: activeSubscription.cancel_at_period_end
+          };
+          
+          // Usar função atômica para vincular a assinatura ao usuário
+          const { data: result, error: rpcError } = await supabaseClient
+            .rpc('atomic_upsert_subscription', {
+              p_user_id: user.id,
+              p_plan_slug: planSlug,
+              p_stripe_customer_id: customerId,
+              p_subscription_tier: planSlug,
+              p_subscription_end: subscriptionData.current_period_end,
+              p_subscribed: true
+            });
+          
+          if (rpcError) {
+            logStep("RPC Error in post-signup subscription linking", { error: rpcError });
+            throw new Error(`Atomic operation failed: ${rpcError.message}`);
+          }
+          
+          logStep("Post-signup subscription linked successfully", { 
+            result, 
+            planSlug,
+            customerId,
+            subscriptionId: activeSubscription.id 
+          });
+          
+          return new Response(JSON.stringify({
+            subscribed: true,
+            plan_slug: planSlug,
+            subscription_status: activeSubscription.status,
+            subscription_data: subscriptionData,
+            linked_post_signup: true
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+      }
+      
+      logStep("No customer found by email, using atomic function for free plan assignment");
       
       try {
         const { data: result, error: rpcError } = await supabaseClient
