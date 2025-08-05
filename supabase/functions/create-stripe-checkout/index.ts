@@ -161,18 +161,55 @@ serve(async (req) => {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
 
-      // Atualizar metadados do cliente com CPF e nome completo
-      await stripe.customers.update(customerId, {
-        metadata: {
-          user_id: user.id,
-          cpf: profileData.cpf,
-          full_name: profileData.full_name,
-          plan_slug: planSlug
-        }
+      // Verificar se já existe uma sessão de checkout ativa pendente
+      const existingSessions = await stripe.checkout.sessions.list({
+        customer: customerId,
+        limit: 10,
       });
-      logStep("Customer metadata updated", { customerId, cpf: profileData.cpf, full_name: profileData.full_name });
 
-      // Verificar assinaturas ativas existentes e cancelar antes de criar nova
+      const pendingSessions = existingSessions.data.filter(session => 
+        session.status === 'open' && 
+        session.expires_at > Math.floor(Date.now() / 1000) &&
+        session.mode === 'subscription'
+      );
+
+      if (pendingSessions.length > 0) {
+        const activeSession = pendingSessions[0];
+        logStep("Found active pending checkout session", { 
+          sessionId: activeSession.id,
+          expiresAt: new Date(activeSession.expires_at * 1000).toISOString(),
+          status: activeSession.status
+        });
+
+        // Retornar a sessão existente ao invés de criar uma nova
+        return new Response(JSON.stringify({ 
+          url: activeSession.url, 
+          sessionId: activeSession.id,
+          reused: true,
+          message: "Returning existing checkout session"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // Atualizar metadados do cliente com CPF e nome completo
+      try {
+        await stripe.customers.update(customerId, {
+          metadata: {
+            user_id: user.id,
+            cpf: profileData.cpf,
+            full_name: profileData.full_name,
+            plan_slug: planSlug
+          }
+        });
+        logStep("Customer metadata updated", { customerId, cpf: profileData.cpf, full_name: profileData.full_name });
+      } catch (updateError) {
+        logStep("Error updating customer metadata", { customerId, error: updateError });
+        // Não falhar por erro de metadados, apenas logar
+      }
+
+      // Verificar assinaturas ativas existentes
       const existingSubscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: "active",
@@ -180,32 +217,54 @@ serve(async (req) => {
       });
 
       if (existingSubscriptions.data.length > 0) {
-        logStep("Found existing active subscriptions, cancelling them", { 
+        logStep("Found existing active subscriptions", { 
           count: existingSubscriptions.data.length,
           subscriptions: existingSubscriptions.data.map(s => ({ 
             id: s.id, 
-            amount: s.items.data[0]?.price?.unit_amount 
+            amount: s.items.data[0]?.price?.unit_amount,
+            status: s.status,
+            currentPeriodEnd: new Date(s.current_period_end * 1000).toISOString()
           }))
         });
 
-        // Cancelar todas as assinaturas ativas existentes
+        // Verificar se já tem uma assinatura para o mesmo plano
+        const samePlanSubscription = existingSubscriptions.data.find(sub => {
+          const existingPriceId = sub.items.data[0]?.price?.id;
+          return existingPriceId === planPriceMap[planSlug];
+        });
+
+        if (samePlanSubscription) {
+          logStep("User already has active subscription for this plan", {
+            subscriptionId: samePlanSubscription.id,
+            planSlug,
+            currentPeriodEnd: new Date(samePlanSubscription.current_period_end * 1000).toISOString()
+          });
+          
+          throw new Error(`You already have an active subscription for the ${planSlug} plan. Please cancel your current subscription or use the Customer Portal to manage it.`);
+        }
+
+        // Se é um plano diferente, cancelar assinaturas existentes antes de criar nova
         for (const subscription of existingSubscriptions.data) {
           try {
-            await stripe.subscriptions.cancel(subscription.id);
-            logStep("Cancelled existing subscription", { 
+            await stripe.subscriptions.update(subscription.id, {
+              cancel_at_period_end: true
+            });
+            logStep("Scheduled cancellation for existing subscription", { 
               subscriptionId: subscription.id,
-              amount: subscription.items.data[0]?.price?.unit_amount
+              amount: subscription.items.data[0]?.price?.unit_amount,
+              willCancelAt: new Date(subscription.current_period_end * 1000).toISOString()
             });
           } catch (cancelError) {
-            logStep("Error cancelling existing subscription", { 
+            logStep("Error scheduling cancellation for existing subscription", { 
               subscriptionId: subscription.id,
               error: cancelError
             });
+            // Não falhar o processo por erro de cancelamento, apenas logar
           }
         }
       }
     } else {
-      logStep("No existing customer found");
+      logStep("No existing customer found, will create new customer");
     }
 
     // Get Price IDs from environment variables for security
