@@ -391,7 +391,7 @@ serve(async (req) => {
       success_url: isGuestCheckout 
         ? `${origin}/post-checkout-signup?session_id={CHECKOUT_SESSION_ID}&plan=${planSlug}`
         : postSignup
-        ? `${origin}/login?checkout_success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`
+        ? `${origin}/login` // Para pós-signup, redirecionar para login limpo sem parâmetros
         : `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: sessionMetadata
