@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     console.log('Fetching subscription overrides...');
 
-    // Get overrides with profile data
+    // Get subscription overrides with profile data
     const { data: overrides, error: overridesError } = await supabaseClient
       .from('subscription_overrides')
       .select(`
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         reason,
         created_at,
         is_active,
-        profiles!inner (
+        profiles:user_id (
           full_name,
           display_name
         )
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Combine override and auth data
+    // Enrich overrides with email data
     const enrichedOverrides: SubscriptionOverride[] = overrides.map(override => {
       const authUser = authUsers.users.find(u => u.id === override.user_id);
       return {
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    console.log(`Found ${enrichedOverrides.length} subscription overrides`);
+    console.log(`Successfully fetched ${enrichedOverrides.length} overrides`);
 
     return new Response(
       JSON.stringify({ overrides: enrichedOverrides }),

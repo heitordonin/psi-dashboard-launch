@@ -65,8 +65,34 @@ export const CourtesyPlansManager = () => {
   const [reason, setReason] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const forceSyncMutation = useForceSyncSubscription();
+
+  // Debug logging
+  console.log('CourtesyPlansManager - Component rendered');
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-500">
+              <h3 className="text-lg font-semibold mb-2">Erro</h3>
+              <p>{error}</p>
+              <Button 
+                onClick={() => setError(null)} 
+                className="mt-4"
+                variant="outline"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -100,25 +126,83 @@ export const CourtesyPlansManager = () => {
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
       
-      const { data, error } = await supabase.functions.invoke('search-users', {
-        body: { searchTerm }
-      });
+      console.log('Searching users with term:', searchTerm);
+      try {
+        const { data, error } = await supabase.functions.invoke('search-users', {
+          body: { searchTerm }
+        });
 
-      if (error) throw error;
-      return data.users || [];
+        if (error) {
+          console.error('Error from search-users function:', error);
+          throw error;
+        }
+        
+        console.log('Successfully found users:', data);
+        return data.users || [];
+      } catch (err) {
+        console.error('Error searching users:', err);
+        toast.error(`Erro ao buscar usuários: ${err.message}`);
+        return [];
+      }
     },
     enabled: false // We use manual triggering via debounced search
   });
 
-  // Get existing subscription overrides
-  const { data: overrides = [], isLoading: overridesLoading } = useQuery({
+  // Get existing subscription overrides with fallback
+  const { data: overrides = [], isLoading: overridesLoading, error: overridesError } = useQuery({
     queryKey: ["subscription-overrides"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-subscription-overrides');
-      
-      if (error) throw error;
-      return data.overrides || [];
-    }
+      console.log('Fetching subscription overrides...');
+      try {
+        // Try edge function first
+        const { data, error } = await supabase.functions.invoke('get-subscription-overrides');
+        
+        if (error) {
+          console.error('Edge function failed, trying direct query:', error);
+          
+          // Fallback to direct query
+          const { data: directData, error: directError } = await supabase
+            .from('subscription_overrides')
+            .select(`
+              id,
+              user_id,
+              plan_slug,
+              expires_at,
+              reason,
+              created_at,
+              is_active,
+              profiles:user_id (
+                full_name,
+                display_name
+              )
+            `)
+            .order('created_at', { ascending: false });
+            
+          if (directError) {
+            console.error('Direct query also failed:', directError);
+            throw directError;
+          }
+          
+          // Add mock email for fallback
+          const fallbackData = directData?.map(override => ({
+            ...override,
+            user_email: 'N/A (fallback mode)'
+          })) || [];
+          
+          console.log('Successfully fetched overrides via fallback:', fallbackData);
+          return fallbackData;
+        }
+        
+        console.log('Successfully fetched overrides via edge function:', data);
+        return data.overrides || [];
+      } catch (err) {
+        console.error('All methods failed:', err);
+        setError(`Erro ao carregar planos cortesia: ${err.message}`);
+        throw err;
+      }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Create new courtesy plan override
