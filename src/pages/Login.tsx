@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { EmailNotConfirmedModal } from '@/components/auth/EmailNotConfirmedModal';
 import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
@@ -22,6 +23,7 @@ const Login = () => {
   const [isEmailNotConfirmedOpen, setIsEmailNotConfirmedOpen] = useState(false);
   const [isPostCheckout, setIsPostCheckout] = useState(false);
   const { signIn, user } = useAuth();
+  const { userSubscription } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const { 
@@ -33,7 +35,8 @@ const Login = () => {
     isAnyLoading,
     canExecuteCheckout,
     dismissEmailModal,
-    dismissInvalidPlanModal
+    dismissInvalidPlanModal,
+    clearSelectedPlan
   } = useCheckoutRedirect();
 
   // Pré-preencher email se veio do cadastro
@@ -88,10 +91,18 @@ const Login = () => {
         }
       } else {
         toast.success('Login realizado com sucesso!');
-        if (!selectedPlan) {
-          navigate('/dashboard');
-        }
-        // Se há plano selecionado, aguardar ação manual do usuário
+        
+        // Verificar se usuário já tem assinatura ativa após login
+        setTimeout(() => {
+          // Se usuário tem assinatura ativa, limpar plano selecionado e ir para dashboard
+          if (userSubscription && userSubscription.status === 'active') {
+            clearSelectedPlan();
+            navigate('/dashboard');
+          } else if (!selectedPlan) {
+            navigate('/dashboard');
+          }
+          // Se há plano selecionado mas sem assinatura ativa, aguardar ação manual do usuário
+        }, 500);
       }
     } catch (error) {
       toast.error('Erro inesperado ao fazer login');

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidPlan, ValidPlan, validatePlanFromUrl } from '@/utils/planValidation';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ const CHECKOUT_DEBOUNCE_MS = 2000;
 export const useCheckoutRedirect = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { userSubscription } = useSubscription();
   const [selectedPlan, setSelectedPlan] = useState<ValidPlan | null>(null);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [isReadyForCheckout, setIsReadyForCheckout] = useState(false);
@@ -62,7 +64,13 @@ export const useCheckoutRedirect = () => {
         if (typeof window !== 'undefined') {
           const storedPlan = localStorage.getItem(PLAN_STORAGE_KEY);
           console.log('Stored plan:', storedPlan);
-          if (storedPlan && isValidPlan(storedPlan)) {
+          
+          // Se usuário já tem assinatura ativa, limpar localStorage e não mostrar plano
+          if (userSubscription && userSubscription.status === 'active') {
+            console.log('User has active subscription, clearing selected plan');
+            localStorage.removeItem(PLAN_STORAGE_KEY);
+            setSelectedPlan(null);
+          } else if (storedPlan && isValidPlan(storedPlan)) {
             setSelectedPlan(storedPlan);
           }
         }
