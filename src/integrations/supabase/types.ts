@@ -1255,6 +1255,10 @@ export type Database = {
         Args: { user_id?: string }
         Returns: boolean
       }
+      trigger_expired_overrides_sync: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       admin_document_status: "pending" | "paid" | "overdue" | "draft"
