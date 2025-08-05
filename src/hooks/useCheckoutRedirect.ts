@@ -18,36 +18,61 @@ export const useCheckoutRedirect = () => {
   const [invalidPlan, setInvalidPlan] = useState(false);
   const [lastCheckoutAttempt, setLastCheckoutAttempt] = useState(0);
   const [isCheckingEmailStatus, setIsCheckingEmailStatus] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cleanupTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Verificar se estamos no cliente para evitar erros de hidratação
   useEffect(() => {
-    // Verificar parâmetro da URL
-    const planParam = searchParams.get('plan');
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Só executar no cliente para evitar problemas de SSR/hidratação
+    if (!isClient) return;
     
-    if (planParam) {
-      // Validação robusta de planos
-      const validation = validatePlanFromUrl(planParam);
+    try {
+      console.log('Checking plan from URL or localStorage');
+      const planParam = searchParams.get('plan');
       
-      if (validation.isValid && validation.plan) {
-        setSelectedPlan(validation.plan);
-        localStorage.setItem(PLAN_STORAGE_KEY, validation.plan);
-        setInvalidPlan(false);
+      if (planParam) {
+        console.log('Plan param found:', planParam);
+        // Validação robusta de planos
+        const validation = validatePlanFromUrl(planParam);
+        
+        if (validation.isValid && validation.plan) {
+          console.log('Valid plan:', validation.plan);
+          setSelectedPlan(validation.plan);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(PLAN_STORAGE_KEY, validation.plan);
+          }
+          setInvalidPlan(false);
+        } else {
+          console.log('Invalid plan:', planParam, validation.error);
+          setInvalidPlan(true);
+          setSelectedPlan(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(PLAN_STORAGE_KEY);
+          }
+          return;
+        }
       } else {
-        setInvalidPlan(true);
-        setSelectedPlan(null);
-        localStorage.removeItem(PLAN_STORAGE_KEY);
-        return;
+        // Verificar localStorage apenas no cliente
+        if (typeof window !== 'undefined') {
+          const storedPlan = localStorage.getItem(PLAN_STORAGE_KEY);
+          console.log('Stored plan:', storedPlan);
+          if (storedPlan && isValidPlan(storedPlan)) {
+            setSelectedPlan(storedPlan);
+          }
+        }
       }
-    } else {
-      // Verificar localStorage
-      const storedPlan = localStorage.getItem(PLAN_STORAGE_KEY);
-      if (storedPlan && isValidPlan(storedPlan)) {
-        setSelectedPlan(storedPlan);
-      }
+    } catch (error) {
+      console.error('Error in plan initialization:', error);
+      setInvalidPlan(false);
+      setSelectedPlan(null);
     }
-  }, [searchParams]);
+  }, [searchParams, isClient]);
 
   useEffect(() => {
     // Limpar todos os timers anteriores se existirem
@@ -147,7 +172,7 @@ export const useCheckoutRedirect = () => {
           // Aguardar confirmação antes de limpar
           cleanupTimerRef.current = setTimeout(() => {
             // Verificar se a janela ainda está aberta
-            if (!newWindow.closed) {
+            if (!newWindow.closed && typeof window !== 'undefined') {
               localStorage.removeItem(PLAN_STORAGE_KEY);
             }
           }, 2000);
@@ -179,7 +204,9 @@ export const useCheckoutRedirect = () => {
 
   const clearSelectedPlan = () => {
     setSelectedPlan(null);
-    localStorage.removeItem(PLAN_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(PLAN_STORAGE_KEY);
+    }
   };
 
   const dismissEmailModal = () => {
