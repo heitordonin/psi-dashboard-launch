@@ -316,8 +316,7 @@ serve(async (req) => {
             });
             // Não falhar o processo por erro de cancelamento, apenas logar
           }
-        }
-        }
+         }
       } else {
         // Criar novo cliente com metadados completos
         try {
