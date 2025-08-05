@@ -85,10 +85,17 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
         toast.info("Redirecionando para o checkout...");
         
         try {
+          // Para checkout pós-signup, enviar dados do usuário diretamente
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
             body: { 
               planSlug: selectedPlan,
-              postSignup: true // Flag especial para checkout pós-signup
+              postSignup: true, // Flag especial para checkout pós-signup
+              userData: {
+                email: sanitizedData.email,
+                full_name: sanitizedData.fullName,
+                cpf: sanitizedData.cpf,
+                phone: sanitizedData.phone
+              }
             }
           });
 

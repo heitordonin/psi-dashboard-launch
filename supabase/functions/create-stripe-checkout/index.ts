@@ -67,7 +67,8 @@ serve(async (req) => {
       promotion_code, 
       allow_promotion_codes = true,
       isGuestCheckout = false,
-      postSignup = false // Flag para checkout pós-signup
+      postSignup = false, // Flag para checkout pós-signup
+      userData = null // Dados do usuário para checkout pós-signup
     } = body;
 
     let user = null;
@@ -84,6 +85,23 @@ serve(async (req) => {
         cpf: null,
         full_name: null
       };
+    } else if (postSignup && userData) {
+      // Checkout pós-signup: usar dados fornecidos diretamente
+      logStep("Post-signup checkout with user data", userData);
+      user = {
+        id: `temp_${Date.now()}`, // ID temporário
+        email: userData.email
+      };
+      profileData = {
+        cpf: userData.cpf,
+        full_name: userData.full_name
+      };
+      
+      logStep("Post-signup checkout - using provided user data", { 
+        email: user.email,
+        hasCpf: !!profileData.cpf, 
+        hasFullName: !!profileData.full_name 
+      });
     } else {
       // Fluxo normal com autenticação
       const authHeader = req.headers.get("Authorization");
@@ -180,9 +198,9 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Para guest checkout, não verificar cliente existente
+    // Para guest checkout ou checkout pós-signup, não verificar cliente existente
     let customerId;
-    if (!isGuestCheckout) {
+    if (!isGuestCheckout && !postSignup) {
       // Verificar se o cliente já existe no Stripe
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       if (customers.data.length > 0) {
@@ -348,10 +366,11 @@ serve(async (req) => {
     
     // Preparar metadata
     const sessionMetadata = {
-      user_id: user.id,
+      user_id: postSignup ? userData?.email : user.id, // Para pós-signup, usar email como identificador
       plan_slug: planSlug,
       customer_document: profileData?.cpf || '',
       customer_name: profileData?.full_name || '',
+      customer_email: user.email, // Sempre incluir email para vinculação
       is_guest_checkout: isGuestCheckout,
       post_signup: postSignup
     };
