@@ -227,11 +227,20 @@ serve(async (req) => {
           }))
         });
 
-        // Verificar se já tem uma assinatura para o mesmo plano
-        const samePlanSubscription = existingSubscriptions.data.find(sub => {
-          const existingPriceId = sub.items.data[0]?.price?.id;
-          return existingPriceId === planPriceMap[planSlug];
-        });
+      // Get Price IDs first to avoid usage before definition
+      const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
+      const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
+      
+      const planPriceMap: Record<string, string> = {
+        'gestao': gestaoPrice || '',
+        'psi_regular': psiRegularPrice || '',
+      };
+
+      // Verificar se já tem uma assinatura para o mesmo plano
+      const samePlanSubscription = existingSubscriptions.data.find(sub => {
+        const existingPriceId = sub.items.data[0]?.price?.id;
+        return existingPriceId === planPriceMap[planSlug];
+      });
 
         if (samePlanSubscription) {
           logStep("User already has active subscription for this plan", {
@@ -267,16 +276,7 @@ serve(async (req) => {
       logStep("No existing customer found, will create new customer");
     }
 
-    // Get Price IDs from environment variables for security
-    const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
-    const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
-    
-    const planPriceMap: Record<string, string> = {
-      'gestao': gestaoPrice || '',
-      'psi_regular': psiRegularPrice || '',
-    };
-
-    // Check if the specific plan's price ID is configured
+    // Check if the specific plan's price ID is configured (planPriceMap was already defined above)
     const priceId = planPriceMap[planSlug];
     if (!priceId) {
       throw new Error(`Price ID not configured for plan: ${planSlug}. Please set STRIPE_PRICE_${planSlug.toUpperCase()} environment variable.`);

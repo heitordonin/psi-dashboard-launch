@@ -69,7 +69,7 @@ export const useCheckoutRedirect = () => {
         // Aguardar estabilização do estado antes de permitir checkout
         timerRef.current = setTimeout(() => {
           setIsReadyForCheckout(true);
-        }, 500);
+        }, 1000);
       }
     } else {
       setIsReadyForCheckout(false);
@@ -118,11 +118,7 @@ export const useCheckoutRedirect = () => {
     }
     setLastCheckoutAttempt(now);
 
-    // Verificar email confirmado novamente
-    if (!user?.email_confirmed_at) {
-      setEmailNotConfirmed(true);
-      return;
-    }
+    console.log('Iniciando checkout:', { selectedPlan, userId: user?.id });
 
     setIsProcessingCheckout(true);
 
@@ -168,7 +164,12 @@ export const useCheckoutRedirect = () => {
         toast.error('Email não confirmado. Verifique sua caixa de entrada.');
       } else if (errorMessage.includes('Rate limit exceeded')) {
         toast.error('Muitas tentativas. Tente novamente em alguns minutos.');
+      } else if (errorMessage.includes('already have an active subscription')) {
+        toast.error('Você já possui uma assinatura ativa para este plano.');
+      } else if (errorMessage.includes('Price ID not configured')) {
+        toast.error('Configuração de preço não encontrada. Contate o suporte.');
       } else {
+        console.error('Erro detalhado do checkout:', error);
         toast.error('Erro ao processar checkout. Tente novamente.');
       }
     } finally {
