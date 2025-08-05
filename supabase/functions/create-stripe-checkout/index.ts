@@ -68,7 +68,18 @@ serve(async (req) => {
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    
+    // Verificar se o email foi confirmado
+    if (!user.email_confirmed_at) {
+      logStep("Email not confirmed", { userId: user.id, email: user.email });
+      throw new Error("Email not confirmed. Please check your inbox and confirm your email before proceeding with checkout.");
+    }
+    
+    logStep("User authenticated and email confirmed", { 
+      userId: user.id, 
+      email: user.email,
+      emailConfirmedAt: user.email_confirmed_at
+    });
 
     // Check rate limit
     if (!checkRateLimit(user.id)) {

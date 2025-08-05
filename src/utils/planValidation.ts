@@ -21,3 +21,35 @@ export const isValidPlan = (plan: string): plan is ValidPlan => {
 export const getPlanInfo = (plan: ValidPlan) => {
   return PLAN_INFO[plan];
 };
+
+export interface PlanValidationResult {
+  isValid: boolean;
+  plan: ValidPlan | null;
+  error?: string;
+}
+
+export const validatePlanFromUrl = (planParam: string): PlanValidationResult => {
+  if (!planParam || typeof planParam !== 'string') {
+    return {
+      isValid: false,
+      plan: null,
+      error: 'Parâmetro de plano inválido'
+    };
+  }
+
+  const trimmedPlan = planParam.trim().toLowerCase();
+  
+  if (!isValidPlan(trimmedPlan)) {
+    return {
+      isValid: false,
+      plan: null,
+      error: `Plano "${planParam}" não existe. Planos disponíveis: ${VALID_PLANS.join(', ')}`
+    };
+  }
+
+  return {
+    isValid: true,
+    plan: trimmedPlan,
+    error: undefined
+  };
+};

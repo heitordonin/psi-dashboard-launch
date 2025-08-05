@@ -5,12 +5,17 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
+import { InvalidPlanModal } from '@/components/auth/InvalidPlanModal';
 import { useCheckoutRedirect } from '@/hooks/useCheckoutRedirect';
 
 const Signup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { selectedPlan } = useCheckoutRedirect();
+  const { 
+    selectedPlan,
+    invalidPlan,
+    dismissInvalidPlanModal
+  } = useCheckoutRedirect();
 
   useEffect(() => {
     if (user) {
@@ -46,6 +51,11 @@ const Signup = () => {
           </div>
         </CardContent>
       </Card>
+
+      <InvalidPlanModal
+        isOpen={invalidPlan}
+        onClose={dismissInvalidPlanModal}
+      />
     </div>
   );
 };

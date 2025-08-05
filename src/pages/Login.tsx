@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { EmailNotConfirmedModal } from '@/components/auth/EmailNotConfirmedModal';
 import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
+import { EmailNotConfirmedForCheckoutModal } from '@/components/auth/EmailNotConfirmedForCheckoutModal';
+import { InvalidPlanModal } from '@/components/auth/InvalidPlanModal';
 import { useCheckoutRedirect } from '@/hooks/useCheckoutRedirect';
 import { toast } from 'sonner';
 
@@ -21,7 +23,16 @@ const Login = () => {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedPlan, executeCheckout, isProcessingCheckout } = useCheckoutRedirect();
+  const { 
+    selectedPlan, 
+    isReadyForCheckout,
+    emailNotConfirmed,
+    invalidPlan,
+    executeCheckout,
+    isProcessingCheckout,
+    dismissEmailModal,
+    dismissInvalidPlanModal
+  } = useCheckoutRedirect();
 
   // Pré-preencher email se veio do cadastro
   useEffect(() => {
@@ -33,12 +44,12 @@ const Login = () => {
     }
   }, [location.state]);
 
-  // Executar checkout após login se há plano selecionado
+  // Executar checkout após login se há plano selecionado e está pronto
   useEffect(() => {
-    if (user && selectedPlan && !isProcessingCheckout) {
+    if (user && selectedPlan && isReadyForCheckout && !isProcessingCheckout) {
       executeCheckout();
     }
-  }, [user, selectedPlan, executeCheckout, isProcessingCheckout]);
+  }, [user, selectedPlan, isReadyForCheckout, executeCheckout, isProcessingCheckout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +148,17 @@ const Login = () => {
         open={isEmailNotConfirmedOpen}
         onOpenChange={setIsEmailNotConfirmedOpen}
         email={email}
+      />
+
+      <EmailNotConfirmedForCheckoutModal
+        isOpen={emailNotConfirmed}
+        onClose={dismissEmailModal}
+        onTryCheckout={executeCheckout}
+      />
+
+      <InvalidPlanModal
+        isOpen={invalidPlan}
+        onClose={dismissInvalidPlanModal}
       />
     </div>
   );
