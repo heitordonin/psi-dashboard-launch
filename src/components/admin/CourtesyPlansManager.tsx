@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserX, Loader2, Search } from "lucide-react";
+import { Plus, UserX, Loader2, Search, AlertTriangle } from "lucide-react";
+import { useCourtesyPlanValidation } from '@/hooks/useCourtesyPlanValidation';
 import { useForceSyncSubscription } from "@/hooks/useForceSyncSubscription";
 import { debounce } from "lodash";
 
@@ -65,8 +66,11 @@ export const CourtesyPlansManager = () => {
   const [reason, setReason] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Array<{field: string, message: string}>>([]);
   const queryClient = useQueryClient();
   const forceSyncMutation = useForceSyncSubscription();
+
+  const { validateCourtesyPlan, getFieldError, hasErrors } = useCourtesyPlanValidation();
 
   // Debug logging
   console.log('CourtesyPlansManager - Component rendered');
@@ -302,18 +306,19 @@ export const CourtesyPlansManager = () => {
   const isLoadingUsers = searchTerm.length >= 2 ? isSearchLoading : isRecentUsersLoading;
 
   const handleCreateOverride = async () => {
-    if (!selectedUser) {
-      setError('Selecione um usuário');
-      return;
-    }
+    // Executar validação completa
+    const errors = validateCourtesyPlan({
+      selectedUser,
+      planSlug,
+      expiresAt,
+      reason,
+      existingOverrides: overrides
+    });
 
-    if (!reason.trim()) {
-      setError('Digite um motivo para o plano cortesia');
-      return;
-    }
+    setValidationErrors(errors);
 
-    if (expiresAt && new Date(expiresAt) <= new Date()) {
-      setError('Data de expiração deve ser no futuro');
+    if (hasErrors(errors)) {
+      setError(errors[0].message); // Mostrar o primeiro erro como mensagem principal
       return;
     }
 
@@ -492,21 +497,49 @@ export const CourtesyPlansManager = () => {
                       type="datetime-local"
                       value={expiresAt}
                       onChange={(e) => setExpiresAt(e.target.value)}
+                      min={new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16)} // Mínimo 1 hora no futuro
+                      max={new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)} // Máximo 2 anos
+                      className={getFieldError(validationErrors, 'expiresAt') ? 'border-destructive' : ''}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Deixe em branco para plano sem expiração
-                    </p>
+                    <div>
+                      {getFieldError(validationErrors, 'expiresAt') ? (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {getFieldError(validationErrors, 'expiresAt')}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Se não definir, o plano cortesia será permanente
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="reason">Motivo *</Label>
                     <Textarea
                       id="reason"
-                      placeholder="Descreva o motivo para este plano cortesia..."
+                      placeholder="Descreva o motivo para conceder este plano cortesia... (mínimo 10 caracteres)"
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      rows={3}
+                      className={`min-h-[100px] resize-none ${
+                        getFieldError(validationErrors, 'reason') ? 'border-destructive' : ''
+                      }`}
+                      maxLength={500}
                     />
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground">
+                        {getFieldError(validationErrors, 'reason') && (
+                          <span className="text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {getFieldError(validationErrors, 'reason')}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {reason.length}/500 caracteres
+                      </p>
+                    </div>
                   </div>
 
                   {error && (

@@ -139,10 +139,39 @@ Deno.serve(async (req) => {
     // Validate expires_at if provided
     if (expires_at) {
       const expiryDate = new Date(expires_at);
-      if (isNaN(expiryDate.getTime()) || expiryDate <= new Date()) {
-        console.error('[CREATE-COURTESY-OVERRIDE] Invalid expires_at:', expires_at);
+      const now = new Date();
+      
+      // Must be a valid date
+      if (isNaN(expiryDate.getTime())) {
+        console.error('[CREATE-COURTESY-OVERRIDE] Invalid date format:', expires_at);
         return new Response(
-          JSON.stringify({ error: 'expires_at must be a valid future date' }),
+          JSON.stringify({ error: 'expires_at must be a valid date in ISO format' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Must be in the future (at least 1 hour)
+      const minFutureDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      if (expiryDate <= minFutureDate) {
+        console.error('[CREATE-COURTESY-OVERRIDE] expires_at too close to current time:', expires_at);
+        return new Response(
+          JSON.stringify({ error: 'expires_at must be at least 1 hour in the future' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Cannot be more than 2 years in the future
+      const maxFutureDate = new Date(now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000); // 2 years
+      if (expiryDate > maxFutureDate) {
+        console.error('[CREATE-COURTESY-OVERRIDE] expires_at too far in future:', expires_at);
+        return new Response(
+          JSON.stringify({ error: 'expires_at cannot be more than 2 years in the future' }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -151,11 +180,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Validate reason length
-    if (reason.trim().length < 5 || reason.length > 500) {
-      console.error('[CREATE-COURTESY-OVERRIDE] Invalid reason length:', reason.length);
+    // Validate reason length and content
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length < 10 || trimmedReason.length > 500) {
+      console.error('[CREATE-COURTESY-OVERRIDE] Invalid reason length:', trimmedReason.length);
       return new Response(
-        JSON.stringify({ error: 'Reason must be between 5 and 500 characters' }),
+        JSON.stringify({ error: 'Reason must be between 10 and 500 characters' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -163,10 +193,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user exists
+    // Validate reason content - must contain meaningful text
+    if (!/[a-zA-ZÀ-ÿ]{3,}/.test(trimmedReason)) {
+      console.error('[CREATE-COURTESY-OVERRIDE] Reason lacks meaningful content:', trimmedReason);
+      return new Response(
+        JSON.stringify({ error: 'Reason must contain meaningful descriptive text' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Check for spam patterns (repeated characters)
+    if (/(.)\1{4,}/.test(trimmedReason)) {
+      console.error('[CREATE-COURTESY-OVERRIDE] Reason contains spam patterns:', trimmedReason);
+      return new Response(
+        JSON.stringify({ error: 'Reason cannot contain repetitive patterns' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Check if user exists and get additional validation data
     const { data: targetUser, error: userCheckError } = await supabaseClient
       .from('profiles')
-      .select('id')
+      .select('id, is_admin, created_at, full_name, email')
       .eq('id', user_id)
       .single();
 
@@ -176,6 +230,38 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Target user not found' }),
         { 
           status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Business Rule: Cannot create courtesy plans for admin users
+    if (targetUser.is_admin) {
+      console.warn('[CREATE-COURTESY-OVERRIDE] Attempt to create override for admin user:', user_id);
+      return new Response(
+        JSON.stringify({ error: 'Cannot create courtesy plans for administrator users' }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Business Rule: User must exist for at least 24 hours
+    const userCreatedAt = new Date(targetUser.created_at);
+    const minUserAge = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+    if (userCreatedAt > minUserAge) {
+      console.warn('[CREATE-COURTESY-OVERRIDE] User too new for courtesy plan:', { 
+        userId: user_id, 
+        createdAt: targetUser.created_at 
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'User must exist for at least 24 hours before receiving courtesy plan',
+          user_created_at: targetUser.created_at 
+        }),
+        { 
+          status: 422, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -209,13 +295,27 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'User already has an active courtesy plan',
-          existing_plan: existingOverride.plan_slug 
+          existing_plan: existingOverride.plan_slug,
+          details: `Cannot create ${plan_slug} plan - user already has active ${existingOverride.plan_slug} courtesy plan`
         }),
         { 
           status: 409, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // Business Rule: Check total active courtesy plans (admin monitoring)
+    const { count: totalActiveOverrides, error: countError } = await supabaseClient
+      .from('subscription_overrides')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    if (countError) {
+      console.error('[CREATE-COURTESY-OVERRIDE] Error counting active overrides:', countError);
+    } else if (totalActiveOverrides !== null && totalActiveOverrides > 1000) {
+      console.warn('[CREATE-COURTESY-OVERRIDE] High number of active courtesy plans:', totalActiveOverrides);
+      // Log for admin monitoring but don't block creation
     }
 
     console.log(`[CREATE-COURTESY-OVERRIDE] Creating override for user ${user_id} with plan ${plan_slug}`);
