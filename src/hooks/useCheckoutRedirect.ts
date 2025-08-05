@@ -18,6 +18,8 @@ export const useCheckoutRedirect = () => {
   const [invalidPlan, setInvalidPlan] = useState(false);
   const [lastCheckoutAttempt, setLastCheckoutAttempt] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Verificar parâmetro da URL
@@ -47,7 +49,7 @@ export const useCheckoutRedirect = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    // Limpar timer anterior se existir
+    // Limpar todos os timers anteriores se existirem
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -81,6 +83,24 @@ export const useCheckoutRedirect = () => {
       }
     };
   }, [selectedPlan, user]);
+
+  // Cleanup global para todos os timers
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current);
+        cleanupTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const executeCheckout = useCallback(async () => {
     if (!selectedPlan || isProcessingCheckout || !isReadyForCheckout) return;
@@ -116,7 +136,7 @@ export const useCheckoutRedirect = () => {
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
           // Fallback: redirect direto
           toast.info('Redirecionando para o checkout...');
-          setTimeout(() => {
+          fallbackTimerRef.current = setTimeout(() => {
             window.location.href = data.url;
           }, 1000);
         } else {
@@ -124,7 +144,7 @@ export const useCheckoutRedirect = () => {
           toast.success('Checkout aberto em nova aba');
           
           // Aguardar confirmação antes de limpar
-          setTimeout(() => {
+          cleanupTimerRef.current = setTimeout(() => {
             // Verificar se a janela ainda está aberta
             if (!newWindow.closed) {
               localStorage.removeItem(PLAN_STORAGE_KEY);
