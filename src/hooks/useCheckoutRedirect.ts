@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ export const useCheckoutRedirect = () => {
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [invalidPlan, setInvalidPlan] = useState(false);
   const [lastCheckoutAttempt, setLastCheckoutAttempt] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Verificar parâmetro da URL
@@ -46,6 +47,12 @@ export const useCheckoutRedirect = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    // Limpar timer anterior se existir
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
     // Verificar se está pronto para checkout
     if (selectedPlan && user) {
       // Verificar se email foi confirmado
@@ -57,19 +64,25 @@ export const useCheckoutRedirect = () => {
       } else {
         setEmailNotConfirmed(false);
         // Aguardar estabilização do estado antes de permitir checkout
-        const timer = setTimeout(() => {
+        timerRef.current = setTimeout(() => {
           setIsReadyForCheckout(true);
         }, 500);
-        
-        return () => clearTimeout(timer);
       }
     } else {
       setIsReadyForCheckout(false);
       setEmailNotConfirmed(false);
     }
+
+    // Cleanup function
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [selectedPlan, user]);
 
-  const executeCheckout = async () => {
+  const executeCheckout = useCallback(async () => {
     if (!selectedPlan || isProcessingCheckout || !isReadyForCheckout) return;
 
     // Rate limiting no frontend
@@ -120,7 +133,7 @@ export const useCheckoutRedirect = () => {
     } finally {
       setIsProcessingCheckout(false);
     }
-  };
+  }, [selectedPlan, isProcessingCheckout, isReadyForCheckout, lastCheckoutAttempt, user]);
 
   const clearSelectedPlan = () => {
     setSelectedPlan(null);
