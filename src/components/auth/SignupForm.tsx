@@ -9,6 +9,7 @@ import { useCpfValidation } from '@/hooks/useCpfValidation';
 import { CpfExistsModal } from './CpfExistsModal';
 import { toast } from 'sonner';
 import { ValidPlan } from '@/utils/planValidation';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -80,8 +81,31 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
       onSuccess?.();
       
       if (selectedPlan) {
-        // Redirecionar para login com parâmetro do plano para executar checkout
-        navigate(`/login?plan=${selectedPlan}`);
+        // Executar checkout automaticamente pós-signup
+        toast.info("Redirecionando para o checkout...");
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+            body: { 
+              planSlug: selectedPlan,
+              postSignup: true // Flag especial para checkout pós-signup
+            }
+          });
+
+          if (error) throw error;
+
+          if (data?.url) {
+            // Redirecionar para Stripe Checkout
+            window.location.href = data.url;
+            return;
+          }
+        } catch (checkoutError) {
+          console.error('Erro no checkout pós-signup:', checkoutError);
+          toast.error('Erro ao processar checkout. Redirecionando para login...');
+          // Fallback: redirecionar para login
+          navigate(`/login?plan=${selectedPlan}`);
+          return;
+        }
       } else {
         navigate('/login');
       }

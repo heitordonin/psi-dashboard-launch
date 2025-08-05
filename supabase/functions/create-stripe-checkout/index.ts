@@ -66,7 +66,8 @@ serve(async (req) => {
       trial_days, 
       promotion_code, 
       allow_promotion_codes = true,
-      isGuestCheckout = false 
+      isGuestCheckout = false,
+      postSignup = false // Flag para checkout pós-signup
     } = body;
 
     let user = null;
@@ -95,10 +96,14 @@ serve(async (req) => {
       user = userData.user;
       if (!user?.email) throw new Error("User not authenticated or email not available");
       
-      // Verificar se o email foi confirmado
-      if (!user.email_confirmed_at) {
+      // Verificar se o email foi confirmado (exceto para checkout pós-signup)
+      if (!user.email_confirmed_at && !postSignup) {
         logStep("Email not confirmed", { userId: user.id, email: user.email });
         throw new Error("Email not confirmed. Please check your inbox and confirm your email before proceeding with checkout.");
+      }
+      
+      if (postSignup) {
+        logStep("Post-signup checkout - bypassing email confirmation", { userId: user.id, email: user.email });
       }
       
       logStep("User authenticated and email confirmed", { 
@@ -347,7 +352,8 @@ serve(async (req) => {
       plan_slug: planSlug,
       customer_document: profileData?.cpf || '',
       customer_name: profileData?.full_name || '',
-      is_guest_checkout: isGuestCheckout
+      is_guest_checkout: isGuestCheckout,
+      post_signup: postSignup
     };
     
     logStep("Metadata prepared", sessionMetadata);
@@ -365,6 +371,8 @@ serve(async (req) => {
       mode: "subscription",
       success_url: isGuestCheckout 
         ? `${origin}/post-checkout-signup?session_id={CHECKOUT_SESSION_ID}&plan=${planSlug}`
+        : postSignup
+        ? `${origin}/login?checkout_success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`
         : `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: sessionMetadata
