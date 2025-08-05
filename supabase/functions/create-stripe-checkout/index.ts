@@ -76,10 +76,10 @@ serve(async (req) => {
 
     if (isGuestCheckout) {
       logStep("Guest checkout mode enabled");
-      // Para guest checkout, vamos usar email temporário
+      // Para guest checkout, não usar user_id fixo nos metadados
       user = { 
-        id: `guest_${Date.now()}`, 
-        email: `guest_${Date.now()}@temp.psiclo.com.br` 
+        id: null, // Não definir ID para guest checkout
+        email: null // Email será preenchido pelo Stripe
       };
       profileData = {
         cpf: null,
@@ -386,22 +386,26 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
     // Preparar metadata
-    const sessionMetadata = {
-      user_id: postSignup ? userData?.email : user.id, // Para pós-signup, usar email como identificador
+    const sessionMetadata: any = {
       plan_slug: planSlug,
-      customer_document: profileData?.cpf || '',
-      customer_name: profileData?.full_name || '',
-      customer_email: user.email, // Sempre incluir email para vinculação
       is_guest_checkout: isGuestCheckout,
       post_signup: postSignup
     };
+
+    // Só incluir user_id se não for guest checkout
+    if (!isGuestCheckout) {
+      sessionMetadata.user_id = postSignup ? userData?.email : user.id;
+      sessionMetadata.customer_document = profileData?.cpf || '';
+      sessionMetadata.customer_name = profileData?.full_name || '';
+      sessionMetadata.customer_email = user.email;
+    }
     
     logStep("Metadata prepared", sessionMetadata);
 
     // Preparar configurações dinâmicas da sessão
     const sessionConfig: any = {
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: isGuestCheckout ? undefined : (customerId ? undefined : user.email),
       line_items: [
         {
           price: priceId,

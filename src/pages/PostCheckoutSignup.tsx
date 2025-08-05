@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,24 @@ const PostCheckoutSignup = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Após criar conta, vincular sessão do Stripe com o usuário real
+      if (sessionId) {
+        try {
+          const { error: linkError } = await supabase.functions.invoke('link-stripe-session', {
+            body: { sessionId }
+          });
+
+          if (linkError) {
+            console.error("Erro ao vincular sessão:", linkError);
+            // Não falhar o processo por erro de vinculação
+          } else {
+            console.log("Sessão vinculada com sucesso");
+          }
+        } catch (linkError) {
+          console.error("Erro inesperado ao vincular sessão:", linkError);
+        }
       }
 
       toast({
