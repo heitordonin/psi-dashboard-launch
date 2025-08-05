@@ -139,6 +139,7 @@ export const CourtesyPlansManager = () => {
           console.error('Edge function failed, trying direct query:', error);
           
           // Fallback to direct query
+          // Try direct query without relationship syntax
           const { data: directData, error: directError } = await supabase
             .from('subscription_overrides')
             .select(`
@@ -148,11 +149,7 @@ export const CourtesyPlansManager = () => {
               expires_at,
               reason,
               created_at,
-              is_active,
-              profiles:user_id (
-                full_name,
-                display_name
-              )
+              is_active
             `)
             .order('created_at', { ascending: false });
             
@@ -161,11 +158,29 @@ export const CourtesyPlansManager = () => {
             throw directError;
           }
           
-          // Add mock email for fallback
-          const fallbackData = directData?.map(override => ({
-            ...override,
-            user_email: 'N/A (fallback mode)'
-          })) || [];
+          // Get profiles separately if direct query succeeds
+          let profilesData = [];
+          if (directData && directData.length > 0) {
+            const userIds = directData.map(o => o.user_id);
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, display_name')
+              .in('id', userIds);
+            profilesData = profiles || [];
+          }
+            
+          // Enrich data with profiles
+          const fallbackData = directData?.map(override => {
+            const profile = profilesData.find(p => p.id === override.user_id);
+            return {
+              ...override,
+              profiles: {
+                full_name: profile?.full_name || null,
+                display_name: profile?.display_name || null
+              },
+              user_email: 'N/A (fallback mode)'
+            };
+          }) || [];
           
           console.log('Successfully fetched overrides via fallback:', fallbackData);
           return fallbackData;

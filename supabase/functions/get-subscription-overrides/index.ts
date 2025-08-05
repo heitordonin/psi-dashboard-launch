@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
     console.log('Fetching subscription overrides...');
 
     // Get subscription overrides with profile data
+    // NOTE: We need to join with profiles table, not use the relationship syntax
     const { data: overrides, error: overridesError } = await supabaseClient
       .from('subscription_overrides')
       .select(`
@@ -44,11 +45,7 @@ Deno.serve(async (req) => {
         expires_at,
         reason,
         created_at,
-        is_active,
-        profiles:user_id (
-          full_name,
-          display_name
-        )
+        is_active
       `)
       .order('created_at', { ascending: false });
 
@@ -72,6 +69,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get profile data separately to avoid relationship issues
+    const userIds = overrides.map(o => o.user_id);
+    const { data: profiles, error: profilesError } = await supabaseClient
+      .from('profiles')
+      .select('id, full_name, display_name')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      // Continue without profile data if profiles fetch fails
+    }
+
     // Get email data from auth.users
     const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
 
@@ -86,11 +95,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Enrich overrides with email data
+    // Enrich overrides with profile and email data
     const enrichedOverrides: SubscriptionOverride[] = overrides.map(override => {
       const authUser = authUsers.users.find(u => u.id === override.user_id);
+      const profile = profiles?.find(p => p.id === override.user_id);
+      
       return {
         ...override,
+        profiles: {
+          full_name: profile?.full_name || null,
+          display_name: profile?.display_name || null
+        },
         user_email: authUser?.email || 'N/A'
       };
     });
