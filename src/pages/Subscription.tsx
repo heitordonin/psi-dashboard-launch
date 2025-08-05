@@ -13,6 +13,7 @@ const Subscription = () => {
   const { currentPlan, userSubscription, isLoading, isCancelledAtPeriodEnd } = useSubscription();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [isForcingSyncSubscription, setIsForcingSyncSubscription] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const { toast } = useToast();
 
@@ -40,6 +41,34 @@ const Subscription = () => {
       });
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const forceSubscriptionSync = async () => {
+    setIsForcingSyncSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('force-subscription-sync', {
+        body: { userId: (await supabase.auth.getUser()).data.user?.id }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sincronização forçada",
+        description: "As informações da assinatura foram sincronizadas com o Stripe.",
+      });
+      
+      // Recarregar a página para atualizar os dados
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      console.error('Error forcing subscription sync:', error);
+      toast({
+        title: "Erro na sincronização",
+        description: "Não foi possível sincronizar com o Stripe.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsForcingSyncSubscription(false);
     }
   };
 
@@ -134,15 +163,28 @@ const Subscription = () => {
                           Informações sobre sua assinatura ativa
                         </CardDescription>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={refreshSubscriptionStatus}
-                        disabled={isRefreshing}
-                      >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        Atualizar
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshSubscriptionStatus}
+                          disabled={isRefreshing}
+                        >
+                          <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          Atualizar
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={forceSubscriptionSync}
+                          disabled={isForcingSyncSubscription}
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                        >
+                          <RefreshCw className={`w-4 h-4 mr-2 ${isForcingSyncSubscription ? 'animate-spin' : ''}`} />
+                          Sincronizar Stripe
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
