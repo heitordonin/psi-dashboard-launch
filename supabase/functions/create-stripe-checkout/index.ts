@@ -205,39 +205,39 @@ serve(async (req) => {
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
-      logStep("Existing customer found", { customerId });
+        logStep("Existing customer found", { customerId });
 
-      // Verificar se já existe uma sessão de checkout ativa pendente
-      const existingSessions = await stripe.checkout.sessions.list({
-        customer: customerId,
-        limit: 10,
-      });
-
-      const pendingSessions = existingSessions.data.filter(session => 
-        session.status === 'open' && 
-        session.expires_at > Math.floor(Date.now() / 1000) &&
-        session.mode === 'subscription'
-      );
-
-      if (pendingSessions.length > 0) {
-        const activeSession = pendingSessions[0];
-        logStep("Found active pending checkout session", { 
-          sessionId: activeSession.id,
-          expiresAt: new Date(activeSession.expires_at * 1000).toISOString(),
-          status: activeSession.status
+        // Verificar se já existe uma sessão de checkout ativa pendente
+        const existingSessions = await stripe.checkout.sessions.list({
+          customer: customerId,
+          limit: 10,
         });
 
-        // Retornar a sessão existente ao invés de criar uma nova
-        return new Response(JSON.stringify({ 
-          url: activeSession.url, 
-          sessionId: activeSession.id,
-          reused: true,
-          message: "Returning existing checkout session"
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      }
+        const pendingSessions = existingSessions.data.filter(session => 
+          session.status === 'open' && 
+          session.expires_at > Math.floor(Date.now() / 1000) &&
+          session.mode === 'subscription'
+        );
+
+        if (pendingSessions.length > 0) {
+          const activeSession = pendingSessions[0];
+          logStep("Found active pending checkout session", { 
+            sessionId: activeSession.id,
+            expiresAt: new Date(activeSession.expires_at * 1000).toISOString(),
+            status: activeSession.status
+          });
+
+          // Retornar a sessão existente ao invés de criar uma nova
+          return new Response(JSON.stringify({ 
+            url: activeSession.url, 
+            sessionId: activeSession.id,
+            reused: true,
+            message: "Returning existing checkout session"
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
 
         // Atualizar metadados do cliente com CPF e nome completo
         try {
@@ -255,68 +255,69 @@ serve(async (req) => {
           // Não falhar por erro de metadados, apenas logar
         }
 
-      // Verificar assinaturas ativas existentes
-      const existingSubscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "active",
-        limit: 100,
-      });
-
-      if (existingSubscriptions.data.length > 0) {
-        logStep("Found existing active subscriptions", { 
-          count: existingSubscriptions.data.length,
-          subscriptions: existingSubscriptions.data.map(s => ({ 
-            id: s.id, 
-            amount: s.items.data[0]?.price?.unit_amount,
-            status: s.status,
-            currentPeriodEnd: new Date(s.current_period_end * 1000).toISOString()
-          }))
+        // Verificar assinaturas ativas existentes
+        const existingSubscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 100,
         });
 
-      // Get Price IDs first to avoid usage before definition
-      const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
-      const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
-      
-      const planPriceMap: Record<string, string> = {
-        'gestao': gestaoPrice || '',
-        'psi_regular': psiRegularPrice || '',
-      };
-
-      // Verificar se já tem uma assinatura para o mesmo plano
-      const samePlanSubscription = existingSubscriptions.data.find(sub => {
-        const existingPriceId = sub.items.data[0]?.price?.id;
-        return existingPriceId === planPriceMap[planSlug];
-      });
-
-        if (samePlanSubscription) {
-          logStep("User already has active subscription for this plan", {
-            subscriptionId: samePlanSubscription.id,
-            planSlug,
-            currentPeriodEnd: new Date(samePlanSubscription.current_period_end * 1000).toISOString()
+        if (existingSubscriptions.data.length > 0) {
+          logStep("Found existing active subscriptions", { 
+            count: existingSubscriptions.data.length,
+            subscriptions: existingSubscriptions.data.map(s => ({ 
+              id: s.id, 
+              amount: s.items.data[0]?.price?.unit_amount,
+              status: s.status,
+              currentPeriodEnd: new Date(s.current_period_end * 1000).toISOString()
+            }))
           });
-          
-          throw new Error(`You already have an active subscription for the ${planSlug} plan. Please cancel your current subscription or use the Customer Portal to manage it.`);
-        }
 
-        // Se é um plano diferente, cancelar assinaturas existentes antes de criar nova
-        for (const subscription of existingSubscriptions.data) {
-          try {
-            await stripe.subscriptions.update(subscription.id, {
-              cancel_at_period_end: true
+          // Get Price IDs first to avoid usage before definition
+          const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
+          const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
+          
+          const planPriceMap: Record<string, string> = {
+            'gestao': gestaoPrice || '',
+            'psi_regular': psiRegularPrice || '',
+          };
+
+          // Verificar se já tem uma assinatura para o mesmo plano
+          const samePlanSubscription = existingSubscriptions.data.find(sub => {
+            const existingPriceId = sub.items.data[0]?.price?.id;
+            return existingPriceId === planPriceMap[planSlug];
+          });
+
+          if (samePlanSubscription) {
+            logStep("User already has active subscription for this plan", {
+              subscriptionId: samePlanSubscription.id,
+              planSlug,
+              currentPeriodEnd: new Date(samePlanSubscription.current_period_end * 1000).toISOString()
             });
-            logStep("Scheduled cancellation for existing subscription", { 
-              subscriptionId: subscription.id,
-              amount: subscription.items.data[0]?.price?.unit_amount,
-              willCancelAt: new Date(subscription.current_period_end * 1000).toISOString()
-            });
-          } catch (cancelError) {
-            logStep("Error scheduling cancellation for existing subscription", { 
-              subscriptionId: subscription.id,
-              error: cancelError
-            });
-            // Não falhar o processo por erro de cancelamento, apenas logar
+            
+            throw new Error(`You already have an active subscription for the ${planSlug} plan. Please cancel your current subscription or use the Customer Portal to manage it.`);
           }
-         }
+
+          // Se é um plano diferente, cancelar assinaturas existentes antes de criar nova
+          for (const subscription of existingSubscriptions.data) {
+            try {
+              await stripe.subscriptions.update(subscription.id, {
+                cancel_at_period_end: true
+              });
+              logStep("Scheduled cancellation for existing subscription", { 
+                subscriptionId: subscription.id,
+                amount: subscription.items.data[0]?.price?.unit_amount,
+                willCancelAt: new Date(subscription.current_period_end * 1000).toISOString()
+              });
+            } catch (cancelError) {
+              logStep("Error scheduling cancellation for existing subscription", { 
+                subscriptionId: subscription.id,
+                error: cancelError
+              });
+              // Não falhar o processo por erro de cancelamento, apenas logar
+            }
+          }
+        }
       } else {
         // Criar novo cliente com metadados completos
         try {
