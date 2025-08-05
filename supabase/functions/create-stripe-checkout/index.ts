@@ -59,41 +59,89 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    
-    // Verificar se o email foi confirmado
-    if (!user.email_confirmed_at) {
-      logStep("Email not confirmed", { userId: user.id, email: user.email });
-      throw new Error("Email not confirmed. Please check your inbox and confirm your email before proceeding with checkout.");
-    }
-    
-    logStep("User authenticated and email confirmed", { 
-      userId: user.id, 
-      email: user.email,
-      emailConfirmedAt: user.email_confirmed_at
-    });
-
-    // Check rate limit
-    if (!checkRateLimit(user.id)) {
-      throw new Error("Rate limit exceeded. Please try again later.");
-    }
-
-    // Parse request body with validation
+    // Parse request body primeiro para verificar se é guest checkout
     const body = await req.json();
     const { 
       planSlug, 
       trial_days, 
       promotion_code, 
-      allow_promotion_codes = true 
+      allow_promotion_codes = true,
+      isGuestCheckout = false 
     } = body;
+
+    let user = null;
+    let profileData = null;
+
+    if (isGuestCheckout) {
+      logStep("Guest checkout mode enabled");
+      // Para guest checkout, vamos usar email temporário
+      user = { 
+        id: `guest_${Date.now()}`, 
+        email: `guest_${Date.now()}@temp.psiclo.com.br` 
+      };
+      profileData = {
+        cpf: null,
+        full_name: null
+      };
+    } else {
+      // Fluxo normal com autenticação
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) throw new Error("No authorization header provided");
+      logStep("Authorization header found");
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError) throw new Error(`Authentication error: ${userError.message}`);
+      user = userData.user;
+      if (!user?.email) throw new Error("User not authenticated or email not available");
+      
+      // Verificar se o email foi confirmado
+      if (!user.email_confirmed_at) {
+        logStep("Email not confirmed", { userId: user.id, email: user.email });
+        throw new Error("Email not confirmed. Please check your inbox and confirm your email before proceeding with checkout.");
+      }
+      
+      logStep("User authenticated and email confirmed", { 
+        userId: user.id, 
+        email: user.email,
+        emailConfirmedAt: user.email_confirmed_at
+      });
+
+      // Check rate limit
+      if (!checkRateLimit(user.id)) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      }
+
+      // Buscar dados do perfil do usuário para obter CPF e nome completo
+      const { data: profileDataResult, error: profileError } = await supabaseService
+        .from('profiles')
+        .select('cpf, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        logStep("Error fetching user profile", { error: profileError });
+        throw new Error(`Failed to fetch user profile: ${profileError.message}`);
+      }
+
+      if (!profileDataResult?.cpf) {
+        logStep("User CPF not found in profile", { userId: user.id });
+        throw new Error("CPF is required for subscription. Please complete your profile.");
+      }
+
+      if (!profileDataResult?.full_name) {
+        logStep("User full name not found in profile", { userId: user.id });
+        throw new Error("Full name is required for subscription. Please complete your profile.");
+      }
+
+      profileData = profileDataResult;
+      
+      logStep("User profile data retrieved", { 
+        userId: user.id, 
+        hasCpf: !!profileData.cpf, 
+        hasFullName: !!profileData.full_name 
+      });
+    }
     
     // Validate input
     if (!planSlug || typeof planSlug !== 'string') {
@@ -121,43 +169,18 @@ serve(async (req) => {
       planSlug, 
       trial_days, 
       promotion_code: promotion_code ? '[PROVIDED]' : undefined,
-      allow_promotion_codes 
-    });
-
-    // Buscar dados do perfil do usuário para obter CPF e nome completo
-    const { data: profileData, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('cpf, full_name')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      logStep("Error fetching user profile", { error: profileError });
-      throw new Error(`Failed to fetch user profile: ${profileError.message}`);
-    }
-
-    if (!profileData?.cpf) {
-      logStep("User CPF not found in profile", { userId: user.id });
-      throw new Error("CPF is required for subscription. Please complete your profile.");
-    }
-
-    if (!profileData?.full_name) {
-      logStep("User full name not found in profile", { userId: user.id });
-      throw new Error("Full name is required for subscription. Please complete your profile.");
-    }
-
-    logStep("User profile data retrieved", { 
-      userId: user.id, 
-      hasCpf: !!profileData.cpf, 
-      hasFullName: !!profileData.full_name 
+      allow_promotion_codes,
+      isGuestCheckout 
     });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Verificar se o cliente já existe no Stripe
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    // Para guest checkout, não verificar cliente existente
     let customerId;
-    if (customers.data.length > 0) {
+    if (!isGuestCheckout) {
+      // Verificar se o cliente já existe no Stripe
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
 
@@ -193,21 +216,21 @@ serve(async (req) => {
         });
       }
 
-      // Atualizar metadados do cliente com CPF e nome completo
-      try {
-        await stripe.customers.update(customerId, {
-          metadata: {
-            user_id: user.id,
-            cpf: profileData.cpf,
-            full_name: profileData.full_name,
-            plan_slug: planSlug
-          }
-        });
-        logStep("Customer metadata updated", { customerId, cpf: profileData.cpf, full_name: profileData.full_name });
-      } catch (updateError) {
-        logStep("Error updating customer metadata", { customerId, error: updateError });
-        // Não falhar por erro de metadados, apenas logar
-      }
+        // Atualizar metadados do cliente com CPF e nome completo
+        try {
+          await stripe.customers.update(customerId, {
+            metadata: {
+              user_id: user.id,
+              cpf: profileData?.cpf || '',
+              full_name: profileData?.full_name || '',
+              plan_slug: planSlug
+            }
+          });
+          logStep("Customer metadata updated", { customerId, cpf: profileData?.cpf, full_name: profileData?.full_name });
+        } catch (updateError) {
+          logStep("Error updating customer metadata", { customerId, error: updateError });
+          // Não falhar por erro de metadados, apenas logar
+        }
 
       // Verificar assinaturas ativas existentes
       const existingSubscriptions = await stripe.subscriptions.list({
@@ -271,12 +294,22 @@ serve(async (req) => {
             // Não falhar o processo por erro de cancelamento, apenas logar
           }
         }
+        }
+      } else {
+        logStep("No existing customer found, will create new customer");
       }
-    } else {
-      logStep("No existing customer found, will create new customer");
     }
 
-    // Check if the specific plan's price ID is configured (planPriceMap was already defined above)
+    // Get Price IDs 
+    const gestaoPrice = Deno.env.get("STRIPE_PRICE_GESTAO");
+    const psiRegularPrice = Deno.env.get("STRIPE_PRICE_PSI_REGULAR");
+    
+    const planPriceMap: Record<string, string> = {
+      'gestao': gestaoPrice || '',
+      'psi_regular': psiRegularPrice || '',
+    };
+
+    // Check if the specific plan's price ID is configured
     const priceId = planPriceMap[planSlug];
     if (!priceId) {
       throw new Error(`Price ID not configured for plan: ${planSlug}. Please set STRIPE_PRICE_${planSlug.toUpperCase()} environment variable.`);
@@ -308,15 +341,16 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
-    // Preparar metadata para eNotas
+    // Preparar metadata
     const sessionMetadata = {
       user_id: user.id,
       plan_slug: planSlug,
-      customer_document: profileData.cpf,
-      customer_name: profileData.full_name
+      customer_document: profileData?.cpf || '',
+      customer_name: profileData?.full_name || '',
+      is_guest_checkout: isGuestCheckout
     };
     
-    logStep("Metadata prepared for eNotas integration", sessionMetadata);
+    logStep("Metadata prepared", sessionMetadata);
 
     // Preparar configurações dinâmicas da sessão
     const sessionConfig: any = {
@@ -329,7 +363,9 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: isGuestCheckout 
+        ? `${origin}/post-checkout-signup?session_id={CHECKOUT_SESSION_ID}&plan=${planSlug}`
+        : `${origin}/checkout/success?success=true&plan=${planSlug}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/plans?canceled=true`,
       metadata: sessionMetadata
     };

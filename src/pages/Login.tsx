@@ -20,6 +20,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isEmailNotConfirmedOpen, setIsEmailNotConfirmedOpen] = useState(false);
+  const [isPostCheckout, setIsPostCheckout] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,7 +44,13 @@ const Login = () => {
     if (location.state?.showForgotPassword) {
       setIsForgotPasswordOpen(true);
     }
-  }, [location.state]);
+    
+    // Check se é pós-checkout
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('postCheckout') === 'true') {
+      setIsPostCheckout(true);
+    }
+  }, [location.state, location.search]);
 
   const [showCheckoutButton, setShowCheckoutButton] = useState(false);
 
@@ -89,9 +96,14 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Entrar</CardTitle>
+          <CardTitle className="text-2xl">
+            {isPostCheckout ? "Fazer Login" : "Entrar"}
+          </CardTitle>
           <CardDescription>
-            Entre com sua conta para acessar o Declara Psi
+            {isPostCheckout 
+              ? "Complete seu login para ativar sua assinatura"
+              : "Entre com sua conta para acessar o Declara Psi"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
