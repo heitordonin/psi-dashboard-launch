@@ -802,6 +802,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_overrides: {
+        Row: {
+          created_at: string
+          created_by_admin_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          plan_slug: string
+          reason: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_admin_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          plan_slug: string
+          reason: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_admin_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          plan_slug?: string
+          reason?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string
@@ -1050,6 +1086,14 @@ export type Database = {
       encrypt_value: {
         Args: { value_to_encrypt: string }
         Returns: string
+      }
+      get_active_subscription_override: {
+        Args: { p_user_id: string }
+        Returns: {
+          plan_slug: string
+          expires_at: string
+          reason: string
+        }[]
       }
       get_admin_financial_overview: {
         Args: { start_date: string; end_date: string }

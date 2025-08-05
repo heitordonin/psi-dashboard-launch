@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Upload, Activity, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Upload, Activity, BarChart3, Users } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { 
   SidebarGroup,
@@ -25,6 +25,11 @@ const adminItems = [
     title: "Monitoramento",
     url: "/admin/subscription-monitoring",
     icon: Activity,
+  },
+  {
+    title: "Planos Cortesia",
+    url: "/admin/courtesy-plans",
+    icon: Users,
   },
 ];
 

@@ -13,6 +13,7 @@ import AdminEditarDocumento from '@/pages/AdminEditarDocumento';
 import AdminControleObrigacoes from '@/pages/AdminControleObrigacoes';
 import AdminReceitaSaudeControl from '@/pages/AdminReceitaSaudeControl';
 import SubscriptionMonitoring from '@/pages/SubscriptionMonitoring';
+import AdminCourtesyPlans from '@/pages/AdminCourtesyPlans';
 import PsicloBankConfiguracao from '@/pages/PsicloBankConfiguracao';
 import PsicloBankGestao from '@/pages/PsicloBankGestao';
 import PsicloBankCadastroConta from '@/pages/PsicloBankCadastroConta';
@@ -103,6 +104,11 @@ export const adminRoutes = [
   <Route key="subscription-monitoring" path="/admin/subscription-monitoring" element={
     <AdminRoute>
       <SubscriptionMonitoring />
+    </AdminRoute>
+  } />,
+  <Route key="admin-courtesy-plans" path="/admin/courtesy-plans" element={
+    <AdminRoute>
+      <AdminCourtesyPlans />
     </AdminRoute>
   } />
 ];

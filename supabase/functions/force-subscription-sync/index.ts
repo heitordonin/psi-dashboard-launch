@@ -32,6 +32,53 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
+    // First check for active subscription override (courtesy plan)
+    const { data: overrideData, error: overrideError } = await supabaseClient
+      .rpc('get_active_subscription_override', { p_user_id: userId });
+
+    if (overrideError) {
+      logStep("Error checking override", { error: overrideError.message });
+    }
+
+    if (overrideData && overrideData.length > 0) {
+      const override = overrideData[0];
+      logStep("Found active subscription override", { 
+        planSlug: override.plan_slug, 
+        expiresAt: override.expires_at,
+        reason: override.reason 
+      });
+
+      const { data: result, error: rpcError } = await supabaseClient
+        .rpc('atomic_upsert_subscription', {
+          p_user_id: userId,
+          p_plan_slug: override.plan_slug,
+          p_stripe_customer_id: null,
+          p_subscription_tier: 'courtesy',
+          p_subscription_end: override.expires_at,
+          p_subscribed: true
+        });
+
+      if (rpcError) {
+        logStep("RPC Error in courtesy plan assignment", { error: rpcError });
+        throw new Error(`Courtesy plan assignment failed: ${rpcError.message}`);
+      }
+
+      logStep("Courtesy plan applied", { result, planSlug: override.plan_slug });
+      return new Response(JSON.stringify({ 
+        success: true, 
+        plan: override.plan_slug,
+        isCourtesy: true,
+        reason: override.reason,
+        expiresAt: override.expires_at,
+        message: "Courtesy plan applied"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    logStep("No active override found, proceeding with Stripe sync");
+
     // Buscar email do usuário
     const { data: profile } = await supabaseClient
       .from("profiles")
