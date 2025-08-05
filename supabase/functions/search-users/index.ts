@@ -13,22 +13,48 @@ interface User {
 }
 
 Deno.serve(async (req) => {
+  const startTime = performance.now();
+  console.log('[SEARCH-USERS] Function started');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[SEARCH-USERS] CORS preflight handled');
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  // Validate request method
+  if (req.method !== 'POST') {
+    console.error('[SEARCH-USERS] Invalid method:', req.method);
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
+  }
 
-    const { searchTerm } = await req.json();
+  try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[SEARCH-USERS] Missing environment variables');
+      throw new Error('Missing required environment variables');
+    }
 
-    if (!searchTerm || searchTerm.length < 2) {
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('[SEARCH-USERS] Supabase client initialized');
+
+    // Parse and validate request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('[SEARCH-USERS] Invalid JSON in request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Search term must be at least 2 characters' }),
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -36,19 +62,72 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Searching users with term:', searchTerm);
+    const { searchTerm } = requestBody;
+    
+    if (!searchTerm || typeof searchTerm !== 'string') {
+      console.error('[SEARCH-USERS] Missing or invalid searchTerm:', searchTerm);
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid searchTerm' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
-    // Search in profiles table for names and get auth users data
-    const { data: profiles, error: profilesError } = await supabaseClient
+    if (searchTerm.length < 2) {
+      console.log('[SEARCH-USERS] Search term too short:', searchTerm.length);
+      return new Response(
+        JSON.stringify({ 
+          users: [],
+          message: 'Search term must be at least 2 characters long'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (searchTerm.length > 100) {
+      console.error('[SEARCH-USERS] Search term too long:', searchTerm.length);
+      return new Response(
+        JSON.stringify({ error: 'Search term too long (max 100 characters)' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const searchTermSafe = searchTerm.trim().toLowerCase();
+    console.log(`[SEARCH-USERS] Searching for: "${searchTermSafe}"`);
+
+    // Search profiles table with timeout
+    const profileSearchPromise = supabaseClient
       .from('profiles')
       .select('id, full_name, display_name')
-      .or(`full_name.ilike.%${searchTerm}%,display_name.ilike.%${searchTerm}%`)
-      .limit(20);
+      .or(`full_name.ilike.%${searchTermSafe}%,display_name.ilike.%${searchTermSafe}%`)
+      .limit(50); // Limit results to prevent excessive data
 
-    if (profilesError) {
-      console.error('Error searching profiles:', profilesError);
+    const searchTimeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Profile search timeout')), 8000)
+    );
+
+    let profilesData;
+    try {
+      const profilesResult = await Promise.race([profileSearchPromise, searchTimeoutPromise]);
+      profilesData = profilesResult.data || [];
+      
+      if (profilesResult.error) {
+        console.error('[SEARCH-USERS] Profile search error:', profilesResult.error);
+        throw profilesResult.error;
+      }
+      
+      console.log(`[SEARCH-USERS] Found ${profilesData.length} profiles`);
+    } catch (profileError) {
+      console.error('[SEARCH-USERS] Profile search failed:', profileError);
       return new Response(
-        JSON.stringify({ error: 'Error searching profiles' }),
+        JSON.stringify({ error: 'Profile search failed', details: profileError.message }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -56,23 +135,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!profiles || profiles.length === 0) {
+    if (profilesData.length === 0) {
+      console.log('[SEARCH-USERS] No profiles found');
+      const duration = performance.now() - startTime;
+      console.log(`[SEARCH-USERS] Function completed in ${duration.toFixed(2)}ms`);
+      
       return new Response(
-        JSON.stringify({ users: [] }),
+        JSON.stringify({ 
+          users: [],
+          message: 'No users found',
+          metadata: {
+            search_term: searchTermSafe,
+            execution_time_ms: Math.round(duration)
+          }
+        }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Get email data from auth.users for the found profiles
-    const userIds = profiles.map(p => p.id);
-    const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
+    // Get authentication data with timeout
+    console.log('[SEARCH-USERS] Fetching auth users...');
+    
+    const authTimeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Auth request timeout')), 10000)
+    );
 
-    if (authError) {
-      console.error('Error fetching auth users:', authError);
+    let authUsers: any;
+    try {
+      const authPromise = supabaseClient.auth.admin.listUsers();
+      authUsers = await Promise.race([authPromise, authTimeoutPromise]);
+      
+      if (authUsers.error) {
+        console.error('[SEARCH-USERS] Auth users error:', authUsers.error);
+        throw authUsers.error;
+      }
+      
+      console.log(`[SEARCH-USERS] Retrieved ${authUsers.data?.users?.length || 0} auth users`);
+    } catch (authError) {
+      console.error('[SEARCH-USERS] Auth fetch failed:', authError);
       return new Response(
-        JSON.stringify({ error: 'Error fetching user emails' }),
+        JSON.stringify({ error: 'Failed to fetch user authentication data', details: authError.message }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -81,31 +185,56 @@ Deno.serve(async (req) => {
     }
 
     // Combine profile and auth data
-    const users: User[] = profiles
+    console.log('[SEARCH-USERS] Combining profile and auth data...');
+    
+    const users: User[] = profilesData
       .map(profile => {
-        const authUser = authUsers.users.find(u => u.id === profile.id);
+        const authUser = authUsers.data?.users?.find((u: any) => u.id === profile.id);
+        if (!authUser?.email) {
+          console.warn(`[SEARCH-USERS] No email found for user ${profile.id}`);
+          return null;
+        }
+        
         return {
           id: profile.id,
-          email: authUser?.email || 'N/A',
-          full_name: profile.full_name || 'N/A',
-          display_name: profile.display_name || 'N/A'
+          email: authUser.email,
+          full_name: profile.full_name || '',
+          display_name: profile.display_name || ''
         };
       })
-      .filter(user => user.email !== 'N/A'); // Only return users with valid email
+      .filter(user => user !== null) as User[];
 
-    console.log(`Found ${users.length} users for search term: ${searchTerm}`);
+    const duration = performance.now() - startTime;
+    console.log(`[SEARCH-USERS] Successfully found ${users.length} users in ${duration.toFixed(2)}ms`);
 
     return new Response(
-      JSON.stringify({ users }),
+      JSON.stringify({ 
+        users,
+        metadata: {
+          search_term: searchTermSafe,
+          total_count: users.length,
+          execution_time_ms: Math.round(duration)
+        }
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 
   } catch (error) {
-    console.error('Unexpected error in search-users:', error);
+    const duration = performance.now() - startTime;
+    console.error('[SEARCH-USERS] Unexpected error:', {
+      error: error.message,
+      stack: error.stack,
+      duration_ms: Math.round(duration)
+    });
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
