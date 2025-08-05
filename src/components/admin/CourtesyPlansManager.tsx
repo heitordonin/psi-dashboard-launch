@@ -312,9 +312,9 @@ export const CourtesyPlansManager = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Gestão de Planos Cortesia</CardTitle>
-              <DialogDescription>
+              <p className="text-sm text-muted-foreground">
                 Crie e gerencie planos cortesia para usuários específicos
-              </DialogDescription>
+              </p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
