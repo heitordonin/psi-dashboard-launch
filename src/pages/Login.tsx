@@ -6,13 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
 import { ForgotPasswordModal } from '@/components/auth/ForgotPasswordModal';
 import { EmailNotConfirmedModal } from '@/components/auth/EmailNotConfirmedModal';
-import { PlanSelectionBanner } from '@/components/auth/PlanSelectionBanner';
-import { EmailNotConfirmedForCheckoutModal } from '@/components/auth/EmailNotConfirmedForCheckoutModal';
-import { InvalidPlanModal } from '@/components/auth/InvalidPlanModal';
-import { useCheckoutRedirect } from '@/hooks/useCheckoutRedirect';
 import { toast } from 'sonner';
 
 const Login = () => {
@@ -21,23 +16,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isEmailNotConfirmedOpen, setIsEmailNotConfirmedOpen] = useState(false);
-  const [isPostCheckout, setIsPostCheckout] = useState(false);
-  const { signIn, user } = useAuth();
-  const { userSubscription } = useSubscription();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { 
-    selectedPlan, 
-    isReadyForCheckout,
-    emailNotConfirmed,
-    invalidPlan,
-    executeCheckout,
-    isAnyLoading,
-    canExecuteCheckout,
-    dismissEmailModal,
-    dismissInvalidPlanModal,
-    clearSelectedPlan
-  } = useCheckoutRedirect();
 
   // Pré-preencher email se veio do cadastro
   useEffect(() => {
@@ -47,32 +28,15 @@ const Login = () => {
     if (location.state?.showForgotPassword) {
       setIsForgotPasswordOpen(true);
     }
-    
-    // Check se é pós-checkout
-    const urlParams = new URLSearchParams(location.search);
-    if (urlParams.get('postCheckout') === 'true') {
-      setIsPostCheckout(true);
-    }
 
     // Show success message for post-signup checkout
-    const checkoutSuccess = urlParams.get('checkout_success');
-    const plan = urlParams.get('plan');
+    const checkoutSuccess = location.search.includes('checkout_success=true');
+    const plan = new URLSearchParams(location.search).get('plan');
     
-    if (checkoutSuccess === 'true' && plan) {
+    if (checkoutSuccess && plan) {
       toast.success(`Pagamento realizado com sucesso! Faça login para acessar sua conta ${plan === 'gestao' ? 'Gestão' : plan === 'psi_regular' ? 'Psi Regular' : ''}.`);
     }
   }, [location.state, location.search]);
-
-  const [showCheckoutButton, setShowCheckoutButton] = useState(false);
-
-  // Verificar se deve mostrar botão de checkout após login
-  useEffect(() => {
-    if (user && selectedPlan && isReadyForCheckout) {
-      setShowCheckoutButton(true);
-    } else {
-      setShowCheckoutButton(false);
-    }
-  }, [user, selectedPlan, isReadyForCheckout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,18 +55,7 @@ const Login = () => {
         }
       } else {
         toast.success('Login realizado com sucesso!');
-        
-        // Verificar se usuário já tem assinatura ativa após login
-        setTimeout(() => {
-          // Se usuário tem assinatura ativa, limpar plano selecionado e ir para dashboard
-          if (userSubscription && userSubscription.status === 'active') {
-            clearSelectedPlan();
-            navigate('/dashboard');
-          } else if (!selectedPlan) {
-            navigate('/dashboard');
-          }
-          // Se há plano selecionado mas sem assinatura ativa, aguardar ação manual do usuário
-        }, 500);
+        navigate('/dashboard');
       }
     } catch (error) {
       toast.error('Erro inesperado ao fazer login');
@@ -115,18 +68,12 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">
-            {isPostCheckout ? "Fazer Login" : "Entrar"}
-          </CardTitle>
+          <CardTitle className="text-2xl">Entrar</CardTitle>
           <CardDescription>
-            {isPostCheckout 
-              ? "Complete seu login para ativar sua assinatura"
-              : "Entre com sua conta para acessar o Declara Psi"
-            }
+            Entre com sua conta para acessar o Declara Psi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {selectedPlan && <PlanSelectionBanner selectedPlan={selectedPlan} />}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -150,20 +97,9 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || isAnyLoading}>
-              {isLoading ? 'Entrando...' : isAnyLoading ? 'Preparando checkout...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
-            {showCheckoutButton && (
-              <Button 
-                type="button" 
-                onClick={executeCheckout}
-                className="w-full mt-2"
-                disabled={!canExecuteCheckout || isAnyLoading}
-                variant="outline"
-              >
-                {isAnyLoading ? 'Processando...' : 'Continuar para Checkout'}
-              </Button>
-            )}
           </form>
           <div className="mt-4 text-center space-y-2">
             <button
@@ -193,17 +129,6 @@ const Login = () => {
         open={isEmailNotConfirmedOpen}
         onOpenChange={setIsEmailNotConfirmedOpen}
         email={email}
-      />
-
-      <EmailNotConfirmedForCheckoutModal
-        isOpen={emailNotConfirmed}
-        onClose={dismissEmailModal}
-        onTryCheckout={executeCheckout}
-      />
-
-      <InvalidPlanModal
-        isOpen={invalidPlan}
-        onClose={dismissInvalidPlanModal}
       />
     </div>
   );
