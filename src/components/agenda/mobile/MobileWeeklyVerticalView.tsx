@@ -89,11 +89,12 @@ export const MobileWeeklyVerticalView = ({
               ) : (
                 <div className="space-y-2">
                   {dayAppointments.map((appointment) => (
-                    <CompactAppointmentItem
-                      key={appointment.id}
-                      appointment={appointment}
-                      onEdit={onEditAppointment}
-                    />
+                  <CompactAppointmentItem
+                    key={appointment.id}
+                    appointment={appointment}
+                    onEdit={onEditAppointment}
+                    onUpdateStatus={onUpdateAppointment}
+                  />
                   ))}
                 </div>
               )}
