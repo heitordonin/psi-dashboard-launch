@@ -361,7 +361,18 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                     <Input 
                       placeholder="MM/AAAA" 
                       maxLength={7}
-                      {...field} 
+                      {...field}
+                      onChange={(e) => {
+                        // Remove caracteres não numéricos
+                        let value = e.target.value.replace(/\D/g, '');
+                        
+                        // Aplica máscara MM/AAAA
+                        if (value.length >= 2) {
+                          value = value.substring(0, 2) + '/' + value.substring(2, 6);
+                        }
+                        
+                        field.onChange(value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
