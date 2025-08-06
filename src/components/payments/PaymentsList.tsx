@@ -2,6 +2,8 @@
 import { CreditCard, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { PaymentItem } from "./PaymentItem";
 import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 import { ThumbZoneActions } from "@/components/ui/thumb-zone-actions";
@@ -10,6 +12,7 @@ import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePagination } from "@/hooks/usePagination";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentsListProps {
@@ -33,6 +36,19 @@ export const PaymentsList = ({
 }: PaymentsListProps) => {
   const isMobile = useIsMobile();
   const { triggerHaptic } = useHapticFeedback();
+
+  const {
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    paginatedData: paginatedPayments,
+    goToPage,
+    nextPage,
+    previousPage,
+    changeItemsPerPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination({ data: payments, defaultItemsPerPage: 25 });
 
   const pullToRefresh = usePullToRefresh({
     onRefresh: async () => {
@@ -115,8 +131,27 @@ export const PaymentsList = ({
 
   const content = (
     <>
+      {/* Items per page selector */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Itens por página:</span>
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => changeItemsPerPage(Number(value))}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="text-sm text-gray-600">
+          {payments.length > 0 && `${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, payments.length)} de ${payments.length}`}
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {payments.map((payment) => (
+        {paginatedPayments.map((payment) => (
           <PaymentItem
             key={payment.id}
             payment={payment}
@@ -125,6 +160,43 @@ export const PaymentsList = ({
           />
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => previousPage()}
+                  className={hasPreviousPage ? "cursor-pointer" : "pointer-events-none opacity-50"}
+                />
+              </PaginationItem>
+              
+              {/* Page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <Button
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(page)}
+                    className="w-10 h-10"
+                  >
+                    {page}
+                  </Button>
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => nextPage()}
+                  className={hasNextPage ? "cursor-pointer" : "pointer-events-none opacity-50"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
       
       {isMobile && (
         <FloatingActionButton onClick={handleAddPayment}>

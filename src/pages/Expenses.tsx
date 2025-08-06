@@ -8,12 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { ActionDropdown } from "@/components/ui/action-dropdown";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { AdvancedExpenseFilter } from "@/components/AdvancedExpenseFilter";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { usePagination } from "@/hooks/usePagination";
 import { toast } from "sonner";
 import type { Expense } from "@/types/expense";
 
@@ -115,6 +118,19 @@ const Expenses = () => {
 
     return matchesSearch && matchesCategory && matchesDateRange && matchesResidential && matchesCompetency;
   });
+
+  const {
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    paginatedData: paginatedExpenses,
+    goToPage,
+    nextPage,
+    previousPage,
+    changeItemsPerPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = usePagination({ data: filteredExpenses, defaultItemsPerPage: 25 });
 
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
@@ -237,52 +253,110 @@ const Expenses = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col divide-y">
-                      {filteredExpenses.map((expense) => {
-                        const effectiveAmount = getEffectiveAmount(expense);
-                        return (
-                          <div key={expense.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
-                                {expense.expense_categories?.name || 'Categoria não encontrada'}
-                              </p>
-                              {expense.description && (
-                                <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
-                              )}
-                               <div className="text-xs text-gray-500 mt-1 space-y-1">
-                                {expense.competency ? (
-                                  <>
-                                    <p>Competência: {expense.competency}</p>
-                                    <p>Data Pagamento: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
-                                  </>
-                                ) : (
-                                  <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
+                    <>
+                      {/* Items per page selector */}
+                      <div className="flex justify-between items-center mb-4 px-4 pt-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Itens por página:</span>
+                          <Select value={itemsPerPage.toString()} onValueChange={(value) => changeItemsPerPage(Number(value))}>
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="25">25</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {filteredExpenses.length > 0 && `${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, filteredExpenses.length)} de ${filteredExpenses.length}`}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col divide-y">
+                        {paginatedExpenses.map((expense) => {
+                          const effectiveAmount = getEffectiveAmount(expense);
+                          return (
+                            <div key={expense.id} className="flex justify-between items-start p-4 hover:bg-gray-50 transition-colors">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-gray-900 truncate">
+                                  {expense.expense_categories?.name || 'Categoria não encontrada'}
+                                </p>
+                                {expense.description && (
+                                  <p className="text-xs text-gray-600 truncate mt-1">{expense.description}</p>
                                 )}
-                               </div>
-                              {expense.is_residential && (
-                                <div className="mt-1">
-                                  <p className="text-xs text-green-600">Residencial (20% aplicado)</p>
-                                  <p className="text-xs text-gray-500">
-                                    Valor original: R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                 <div className="text-xs text-gray-500 mt-1 space-y-1">
+                                  {expense.competency ? (
+                                    <>
+                                      <p>Competência: {expense.competency}</p>
+                                      <p>Data Pagamento: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
+                                    </>
+                                  ) : (
+                                    <p>Data: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}</p>
+                                  )}
+                                 </div>
+                                {expense.is_residential && (
+                                  <div className="mt-1">
+                                    <p className="text-xs text-green-600">Residencial (20% aplicado)</p>
+                                    <p className="text-xs text-gray-500">
+                                      Valor original: R$ {Number(expense.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 ml-4">
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    R$ {Number(effectiveAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </p>
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 ml-4">
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-gray-900">
-                                  R$ {Number(effectiveAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </p>
+                                <ActionDropdown
+                                  onEdit={() => handleEditExpense(expense)}
+                                  onDelete={() => handleDeleteExpense(expense)}
+                                />
                               </div>
-                              <ActionDropdown
-                                onEdit={() => handleEditExpense(expense)}
-                                onDelete={() => handleDeleteExpense(expense)}
-                              />
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="p-4">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => previousPage()}
+                                  className={hasPreviousPage ? "cursor-pointer" : "pointer-events-none opacity-50"}
+                                />
+                              </PaginationItem>
+                              
+                              {/* Page numbers */}
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <PaginationItem key={page}>
+                                  <Button
+                                    variant={currentPage === page ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => goToPage(page)}
+                                    className="w-10 h-10"
+                                  >
+                                    {page}
+                                  </Button>
+                                </PaginationItem>
+                              ))}
+                              
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => nextPage()}
+                                  className={hasNextPage ? "cursor-pointer" : "pointer-events-none opacity-50"}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
