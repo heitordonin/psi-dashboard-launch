@@ -3,14 +3,16 @@ import { validateExpenseDateReceitaSaude } from '@/utils/receitaSaudeValidation'
 
 interface UseExpenseDateHandlerProps {
   onDateChange: (date: string) => void;
+  onPopoverClose?: () => void;
 }
 
-export function useExpenseDateHandler({ onDateChange }: UseExpenseDateHandlerProps) {
+export function useExpenseDateHandler({ onDateChange, onPopoverClose }: UseExpenseDateHandlerProps) {
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState<string>('');
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
 
   const formatDateForDatabase = (date: Date): string => {
+    // Use local timezone to avoid offset issues
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -41,6 +43,7 @@ export function useExpenseDateHandler({ onDateChange }: UseExpenseDateHandlerPro
       console.log('✅ useExpenseDateHandler - Data válida');
       onDateChange(formattedDate);
       setHasRetroactiveWarning(false);
+      onPopoverClose?.();
     }
   };
 
@@ -49,6 +52,7 @@ export function useExpenseDateHandler({ onDateChange }: UseExpenseDateHandlerPro
     setShowRetroactiveDialog(false);
     setHasRetroactiveWarning(false);
     setPendingDate('');
+    onPopoverClose?.();
   };
 
   const handleRetroactiveCancel = () => {

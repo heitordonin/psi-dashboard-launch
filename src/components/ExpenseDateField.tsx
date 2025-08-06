@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,6 +24,8 @@ export const ExpenseDateField: React.FC<ExpenseDateFieldProps> = ({
   placeholder = "Selecione a data",
   required = false
 }) => {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  
   const {
     showRetroactiveDialog,
     pendingDate,
@@ -32,10 +34,15 @@ export const ExpenseDateField: React.FC<ExpenseDateFieldProps> = ({
     handleRetroactiveConfirm,
     handleRetroactiveCancel
   } = useExpenseDateHandler({
-    onDateChange: onValueChange
+    onDateChange: onValueChange,
+    onPopoverClose: () => setIsPopoverOpen(false)
   });
 
-  const dateValue = value ? new Date(value) : undefined;
+  // Create date object with proper local timezone handling
+  const dateValue = value ? (() => {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  })() : undefined;
 
   return (
     <>
@@ -43,7 +50,7 @@ export const ExpenseDateField: React.FC<ExpenseDateFieldProps> = ({
         <FormLabel className={required ? "required" : ""}>
           {label}
         </FormLabel>
-        <Popover>
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
           <PopoverTrigger asChild>
             <FormControl>
               <Button
