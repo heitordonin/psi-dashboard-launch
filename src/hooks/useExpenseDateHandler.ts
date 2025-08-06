@@ -26,10 +26,20 @@ export function useExpenseDateHandler({ onDateChange, onPopoverClose }: UseExpen
       return;
     }
 
+    console.log('🔄 useExpenseDateHandler - Data recebida do calendário:', {
+      originalDate: date,
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      day: date.getDate(),
+      toISOString: date.toISOString(),
+      toDateString: date.toDateString(),
+    });
+
     const formattedDate = formatDateForDatabase(date);
     
-    console.log('🔄 useExpenseDateHandler - Validando data de despesa:', {
-      formattedDate
+    console.log('🔄 useExpenseDateHandler - Data formatada para database:', {
+      formattedDate,
+      originalDate: date
     });
     
     const validation = validateExpenseDateReceitaSaude(formattedDate);
@@ -40,7 +50,7 @@ export function useExpenseDateHandler({ onDateChange, onPopoverClose }: UseExpen
       setShowRetroactiveDialog(true);
       setHasRetroactiveWarning(true);
     } else {
-      console.log('✅ useExpenseDateHandler - Data válida');
+      console.log('✅ useExpenseDateHandler - Data válida, enviando:', formattedDate);
       onDateChange(formattedDate);
       setHasRetroactiveWarning(false);
       onPopoverClose?.();

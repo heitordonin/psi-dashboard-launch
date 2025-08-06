@@ -40,8 +40,16 @@ export const ExpenseDateField: React.FC<ExpenseDateFieldProps> = ({
 
   // Create date object with proper local timezone handling
   const dateValue = value ? (() => {
+    console.log('📅 ExpenseDateField - Criando Date object a partir do valor:', value);
     const [year, month, day] = value.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    const createdDate = new Date(year, month - 1, day);
+    console.log('📅 ExpenseDateField - Date object criado:', {
+      value,
+      year, month, day,
+      createdDate: createdDate.toISOString(),
+      dateString: createdDate.toDateString()
+    });
+    return createdDate;
   })() : undefined;
 
   return (
@@ -62,7 +70,13 @@ export const ExpenseDateField: React.FC<ExpenseDateFieldProps> = ({
                 )}
               >
                 {value ? (
-                  format(new Date(value), "dd/MM/yyyy")
+                  (() => {
+                    const [year, month, day] = value.split('-').map(Number);
+                    const displayDate = new Date(year, month - 1, day);
+                    const formatted = format(displayDate, "dd/MM/yyyy");
+                    console.log('📅 ExpenseDateField - Exibindo data:', { value, displayDate, formatted });
+                    return formatted;
+                  })()
                 ) : (
                   <span>{placeholder}</span>
                 )}
