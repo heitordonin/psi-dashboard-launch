@@ -78,7 +78,7 @@ export const CourtesyPlansManager = () => {
   // Debounced search function with improved performance
   const debouncedSearch = useCallback(
     debounce(async (term: string) => {
-      if (!term || term.length < 2) return [];
+      if (!term || term.length < 1) return [];
       
       try {
         const { data, error } = await supabase.functions.invoke('search-users', {
@@ -92,7 +92,7 @@ export const CourtesyPlansManager = () => {
         toast.error('Erro ao buscar usuários. Tente novamente.');
         return [];
       }
-    }, 500),
+    }, 300),
     []
   );
 
@@ -104,27 +104,61 @@ export const CourtesyPlansManager = () => {
   } = useQuery({
     queryKey: ['user-search', searchTerm],
     queryFn: () => debouncedSearch(searchTerm),
-    enabled: searchTerm.length >= 2,
+    enabled: searchTerm.length >= 1,
     staleTime: 30000, // 30 seconds
     retry: 1
   });
 
-  // Load initial list of recent users when dialog opens
+  // Load initial list of eligible users (users with paid plans, no active overrides)
   const { 
-    data: recentUsers = [], 
-    isLoading: isRecentUsersLoading 
+    data: eligibleUsers = [], 
+    isLoading: isEligibleUsersLoading 
   } = useQuery({
-    queryKey: ['recent-users'],
+    queryKey: ['eligible-users-default'],
     queryFn: async () => {
       try {
-        // Get recent users (last 20 users by creation date)
-        const { data, error } = await supabase
+        // Get users with active paid subscriptions (gestao or psi_regular)
+        const { data: subscriptions, error: subError } = await supabase
+          .from('user_subscriptions')
+          .select(`
+            user_id,
+            subscription_plans!inner(slug, name)
+          `)
+          .eq('status', 'active')
+          .in('subscription_plans.slug', ['gestao', 'psi_regular']);
+
+        if (subError) throw subError;
+
+        // Get active overrides to exclude users who already have them
+        const { data: overrides, error: overrideError } = await supabase
+          .from('subscription_overrides')
+          .select('user_id')
+          .eq('is_active', true)
+          .gte('expires_at', new Date().toISOString())
+          .or('expires_at.is.null');
+
+        if (overrideError) throw overrideError;
+
+        const usersWithOverrides = new Set(overrides?.map(o => o.user_id) || []);
+        
+        // Get eligible user IDs (paid plan, no active override)
+        const eligibleUserIds = subscriptions
+          ?.filter(sub => !usersWithOverrides.has(sub.user_id))
+          .map(sub => sub.user_id) || [];
+
+        if (eligibleUserIds.length === 0) {
+          return [];
+        }
+
+        // Get profiles for eligible users
+        const { data: profiles, error: profileError } = await supabase
           .from('profiles')
           .select('id, full_name, display_name')
-          .order('created_at', { ascending: false })
+          .in('id', eligibleUserIds)
+          .order('full_name', { ascending: true })
           .limit(20);
-          
-        if (error) throw error;
+
+        if (profileError) throw profileError;
         
         // Get emails from auth
         const { data: authUsers } = await supabase.auth.admin.listUsers();
@@ -137,18 +171,18 @@ export const CourtesyPlansManager = () => {
           });
         }
         
-        return data?.map(profile => ({
+        return profiles?.map(profile => ({
           id: profile.id,
           email: authUsersMap.get(profile.id) || 'N/A',
           full_name: profile.full_name,
           display_name: profile.display_name
         })) || [];
       } catch (err) {
-        console.error('Error loading recent users:', err);
+        console.error('Error loading eligible users:', err);
         return [];
       }
     },
-    enabled: dialogOpen && searchTerm.length < 2
+    enabled: dialogOpen && searchTerm.length < 1
   });
 
   // Get existing subscription overrides with fallback
@@ -302,8 +336,8 @@ export const CourtesyPlansManager = () => {
     setSelectedUser(null); // Clear selection when searching
   };
 
-  const displayUsers = searchTerm.length >= 2 ? searchResults : recentUsers;
-  const isLoadingUsers = searchTerm.length >= 2 ? isSearchLoading : isRecentUsersLoading;
+  const displayUsers = searchTerm.length >= 1 ? searchResults : eligibleUsers;
+  const isLoadingUsers = searchTerm.length >= 1 ? isSearchLoading : isEligibleUsersLoading;
 
   const handleCreateOverride = async () => {
     // Executar validação completa
@@ -397,7 +431,7 @@ export const CourtesyPlansManager = () => {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         id="search"
-                        placeholder="Digite nome, email ou CPF (mín. 2 caracteres)"
+                        placeholder="Digite nome, email ou CPF..."
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-10"
@@ -420,13 +454,13 @@ export const CourtesyPlansManager = () => {
                       {isLoadingUsers ? (
                         <div className="p-3 text-sm text-muted-foreground flex items-center gap-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          {searchTerm.length >= 2 ? 'Buscando usuários...' : 'Carregando usuários recentes...'}
+                          {searchTerm.length >= 1 ? 'Buscando usuários...' : 'Carregando usuários elegíveis...'}
                         </div>
                       ) : displayUsers.length > 0 ? (
                         <div className="divide-y">
-                          {searchTerm.length < 2 && (
+                          {searchTerm.length < 1 && (
                             <div className="p-2 text-xs text-muted-foreground bg-muted/50">
-                              Usuários criados recentemente:
+                              Usuários elegíveis para plano cortesia:
                             </div>
                           )}
                           {displayUsers.map((user) => (
@@ -434,7 +468,7 @@ export const CourtesyPlansManager = () => {
                               key={user.id}
                               type="button"
                               onClick={() => setSelectedUser(user)}
-                              className={`w-full text-left p-3 hover:bg-muted/50 transition-colors ${
+                              className={`w-full text-left p-4 hover:bg-muted/50 transition-colors active:bg-muted/70 touch-manipulation ${
                                 selectedUser?.id === user.id ? 'bg-primary/10 border-l-2 border-primary' : ''
                               }`}
                             >
@@ -442,16 +476,19 @@ export const CourtesyPlansManager = () => {
                                 {user.full_name || user.display_name || 'Nome não informado'}
                               </div>
                               <div className="text-xs text-muted-foreground">{user.email}</div>
+                              {selectedUser?.id === user.id && (
+                                <div className="text-xs text-primary mt-1">✓ Selecionado</div>
+                              )}
                             </button>
                           ))}
                         </div>
-                      ) : searchTerm.length >= 2 ? (
+                      ) : searchTerm.length >= 1 ? (
                         <div className="p-3 text-sm text-muted-foreground">
                           Nenhum usuário encontrado para "{searchTerm}"
                         </div>
                       ) : (
                         <div className="p-3 text-sm text-muted-foreground">
-                          Digite pelo menos 2 caracteres para buscar usuários
+                          Nenhum usuário elegível encontrado. Usuários elegíveis são aqueles com planos pagos ativos e sem plano cortesia ativo.
                         </div>
                       )}
                     </div>

@@ -75,12 +75,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (searchTerm.length < 2) {
+    if (searchTerm.length < 1) {
       console.log('[SEARCH-USERS] Search term too short:', searchTerm.length);
       return new Response(
         JSON.stringify({ 
           users: [],
-          message: 'Search term must be at least 2 characters long'
+          message: 'Search term must be at least 1 character long'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -102,11 +102,12 @@ Deno.serve(async (req) => {
     const searchTermSafe = searchTerm.trim().toLowerCase();
     console.log(`[SEARCH-USERS] Searching for: "${searchTermSafe}"`);
 
-    // Search profiles table with timeout
+    // Search profiles table with expanded search including CPF and better ordering
     const profileSearchPromise = supabaseClient
       .from('profiles')
-      .select('id, full_name, display_name')
-      .or(`full_name.ilike.%${searchTermSafe}%,display_name.ilike.%${searchTermSafe}%`)
+      .select('id, full_name, display_name, cpf')
+      .or(`full_name.ilike.%${searchTermSafe}%,display_name.ilike.%${searchTermSafe}%,cpf.ilike.%${searchTermSafe}%`)
+      .order('full_name', { ascending: true })
       .limit(50); // Limit results to prevent excessive data
 
     const searchTimeoutPromise = new Promise((_, reject) => 
