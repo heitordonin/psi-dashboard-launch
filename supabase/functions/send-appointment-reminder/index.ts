@@ -44,59 +44,87 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Buscar informações do agendamento
     console.log('🔍 Fetching appointment information...');
-    const { data: appointment, error: appointmentError } = await supabaseClient
-      .from('appointments')
-      .select(`
-        *,
-        patients (
-          id,
-          full_name,
-          email,
-          phone
-        )
-      `)
-      .eq('id', appointmentId)
-      .single();
+    let appointment;
+    try {
+      const { data, error } = await supabaseClient
+        .from('appointments')
+        .select(`
+          *,
+          patients (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .eq('id', appointmentId)
+        .single();
 
-    if (appointmentError) {
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Appointment not found');
+      }
+
+      appointment = data;
+      console.log('✅ Appointment data retrieved:', appointment);
+
+    } catch (appointmentError: any) {
       console.error('❌ Error fetching appointment:', appointmentError);
       return new Response(
-        JSON.stringify({ error: "Appointment not found", details: appointmentError }),
+        JSON.stringify({ 
+          error: "Failed to fetch appointment", 
+          details: appointmentError.message,
+          appointmentId 
+        }),
         { 
           status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders }
         }
       );
     }
-
-    console.log('✅ Appointment data retrieved:', appointment);
 
     // Buscar informações do perfil do usuário (terapeuta)
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('display_name, full_name, phone')
-      .eq('id', appointment.user_id)
-      .maybeSingle();
+    let profile;
+    let agendaSettings;
+    
+    try {
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('display_name, full_name, phone')
+        .eq('id', appointment.user_id)
+        .maybeSingle();
 
-    // Buscar configurações de agenda para obter o timezone
-    const { data: agendaSettings } = await supabaseClient
-      .from('agenda_settings')
-      .select('timezone')
-      .eq('user_id', appointment.user_id)
-      .maybeSingle();
+      if (profileError) {
+        console.warn('⚠️ Warning fetching profile:', profileError);
+      }
+      profile = profileData;
 
-    if (profileError) {
-      console.error('❌ Error fetching profile:', profileError);
-      return new Response(
-        JSON.stringify({ error: "Profile not found", details: profileError }),
-        { 
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        }
-      );
+      // Buscar configurações de agenda para obter o timezone
+      const { data: settingsData, error: settingsError } = await supabaseClient
+        .from('agenda_settings')
+        .select('timezone')
+        .eq('user_id', appointment.user_id)
+        .maybeSingle();
+
+      if (settingsError) {
+        console.warn('⚠️ Warning fetching agenda settings:', settingsError);
+      }
+      agendaSettings = settingsData;
+
+      console.log('✅ Profile and settings retrieved:', { 
+        profile: profile ? 'found' : 'not found',
+        agendaSettings: agendaSettings ? 'found' : 'using default'
+      });
+
+    } catch (fetchError: any) {
+      console.warn('⚠️ Non-critical error fetching profile/settings:', fetchError);
+      // Continue execution with defaults
+      profile = null;
+      agendaSettings = null;
     }
-
-    console.log('✅ Profile data retrieved:', profile);
 
     const therapistName = profile?.display_name || profile?.full_name || "Seu terapeuta";
     const patientName = appointment.patient_name || appointment.patients?.full_name || "Paciente";
@@ -107,32 +135,51 @@ const handler = async (req: Request): Promise<Response> => {
     const userTimezone = agendaSettings?.timezone || 'America/Sao_Paulo';
 
     // Formatação simples usando apenas JavaScript nativo
-    const appointmentDate = new Date(appointment.start_datetime);
+    let formattedDate: string;
+    let formattedTime: string;
+    let timeWithTimezone: string;
     
-    // Formatação robusta e simples
-    const brazilianDate = appointmentDate.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric',
-      timeZone: userTimezone
-    });
-    
-    const brazilianTime = appointmentDate.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: userTimezone
-    });
-    
-    const formattedDate = brazilianDate;
-    const formattedTime = brazilianTime;
-    const timeWithTimezone = `${formattedTime} (${userTimezone})`;
-    
-    console.log('✅ Date formatting successful:', { 
-      appointmentDate: appointmentDate.toISOString(),
-      userTimezone,
-      formattedDate, 
-      formattedTime 
-    });
+    try {
+      const appointmentDate = new Date(appointment.start_datetime);
+      
+      // Validar se a data é válida
+      if (isNaN(appointmentDate.getTime())) {
+        throw new Error('Invalid appointment date');
+      }
+      
+      // Formatação robusta e simples
+      formattedDate = appointmentDate.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        timeZone: userTimezone
+      });
+      
+      formattedTime = appointmentDate.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: userTimezone
+      });
+      
+      timeWithTimezone = `${formattedTime} (${userTimezone})`;
+      
+      console.log('✅ Date formatting successful:', { 
+        appointmentDate: appointmentDate.toISOString(),
+        userTimezone,
+        formattedDate, 
+        formattedTime 
+      });
+
+    } catch (dateError: any) {
+      console.error('❌ Date formatting error:', dateError);
+      // Fallback simples
+      const fallbackDate = new Date(appointment.start_datetime);
+      formattedDate = fallbackDate.toDateString();
+      formattedTime = fallbackDate.toTimeString().substring(0, 5);
+      timeWithTimezone = `${formattedTime} (UTC)`;
+      
+      console.log('🔄 Using fallback formatting:', { formattedDate, formattedTime });
+    }
 
     let emailSent = false;
     let whatsappSent = false;
@@ -222,13 +269,17 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         // Log no banco de dados
-        await supabaseClient
-          .from('appointment_reminders')
-          .insert({
-            appointment_id: appointmentId,
-            reminder_type: 'email',
-            status: 'sent'
-          });
+        try {
+          await supabaseClient
+            .from('appointment_reminders')
+            .insert({
+              appointment_id: appointmentId,
+              reminder_type: 'email',
+              status: 'sent'
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log email success:', logError);
+        }
 
       } catch (emailError) {
         console.error('❌ Email sending failed:', emailError);
@@ -240,14 +291,18 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         // Log erro no banco
-        await supabaseClient
-          .from('appointment_reminders')
-          .insert({
-            appointment_id: appointmentId,
-            reminder_type: 'email',
-            status: 'failed',
-            error_message: emailError.message
-          });
+        try {
+          await supabaseClient
+            .from('appointment_reminders')
+            .insert({
+              appointment_id: appointmentId,
+              reminder_type: 'email',
+              status: 'failed',
+              error_message: emailError.message
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log email error:', logError);
+        }
       }
     }
 
@@ -297,13 +352,17 @@ _Mensagem automática do Psiclo_`;
         });
 
         // Log no banco de dados
-        await supabaseClient
-          .from('appointment_reminders')
-          .insert({
-            appointment_id: appointmentId,
-            reminder_type: 'whatsapp',
-            status: 'sent'
-          });
+        try {
+          await supabaseClient
+            .from('appointment_reminders')
+            .insert({
+              appointment_id: appointmentId,
+              reminder_type: 'whatsapp',
+              status: 'sent'
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log WhatsApp success:', logError);
+        }
 
       } catch (whatsappError: any) {
         console.error('❌ WhatsApp sending failed:', whatsappError);
@@ -315,14 +374,18 @@ _Mensagem automática do Psiclo_`;
         });
 
         // Log erro no banco
-        await supabaseClient
-          .from('appointment_reminders')
-          .insert({
-            appointment_id: appointmentId,
-            reminder_type: 'whatsapp',
-            status: 'failed',
-            error_message: whatsappError.message
-          });
+        try {
+          await supabaseClient
+            .from('appointment_reminders')
+            .insert({
+              appointment_id: appointmentId,
+              reminder_type: 'whatsapp',
+              status: 'failed',
+              error_message: whatsappError.message
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log WhatsApp error:', logError);
+        }
       }
     }
 
