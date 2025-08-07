@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
-import { formatInTimeZone } from "npm:date-fns-tz@3.0.0";
+import { formatInTimeZone } from "https://esm.sh/date-fns-tz@3.0.0";
+import { format } from "https://esm.sh/date-fns@3.6.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,15 +111,32 @@ const handler = async (req: Request): Promise<Response> => {
     // Formatar data e hora do agendamento com timezone correto
     const appointmentDate = new Date(appointment.start_datetime);
     
-    const formattedDate = formatInTimeZone(appointmentDate, userTimezone, 'EEEE, dd \'de\' MMMM \'de\' yyyy', {
-      locale: { code: 'pt-BR' }
-    });
+    let formattedDate: string;
+    let formattedTime: string;
+    let timeWithTimezone: string;
     
-    const formattedTime = formatInTimeZone(appointmentDate, userTimezone, 'HH:mm');
-    
-    // Obter informação do timezone para exibição
-    const timezoneDisplay = formatInTimeZone(appointmentDate, userTimezone, 'xxx (zzzz)');
-    const timeWithTimezone = `${formattedTime} (${timezoneDisplay})`;
+    try {
+      // Usar formatação mais simples e robusta
+      formattedDate = formatInTimeZone(appointmentDate, userTimezone, 'dd/MM/yyyy');
+      formattedTime = formatInTimeZone(appointmentDate, userTimezone, 'HH:mm');
+      timeWithTimezone = `${formattedTime} (${userTimezone})`;
+      
+      console.log('✅ Date formatting successful:', { 
+        appointmentDate: appointmentDate.toISOString(),
+        userTimezone,
+        formattedDate, 
+        formattedTime 
+      });
+      
+    } catch (formatError) {
+      console.error('❌ Date formatting error:', formatError);
+      // Fallback para formatação simples
+      formattedDate = format(appointmentDate, 'dd/MM/yyyy');
+      formattedTime = format(appointmentDate, 'HH:mm'); 
+      timeWithTimezone = `${formattedTime} (UTC)`;
+      
+      console.log('🔄 Using fallback formatting:', { formattedDate, formattedTime });
+    }
 
     let emailSent = false;
     let whatsappSent = false;
