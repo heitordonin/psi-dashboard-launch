@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
-import { formatInTimeZone } from "https://esm.sh/date-fns-tz@3.0.0";
-import { format } from "https://esm.sh/date-fns@3.6.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,14 +76,14 @@ const handler = async (req: Request): Promise<Response> => {
       .from('profiles')
       .select('display_name, full_name, phone')
       .eq('id', appointment.user_id)
-      .single();
+      .maybeSingle();
 
     // Buscar configurações de agenda para obter o timezone
     const { data: agendaSettings } = await supabaseClient
       .from('agenda_settings')
       .select('timezone')
       .eq('user_id', appointment.user_id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
@@ -108,35 +106,33 @@ const handler = async (req: Request): Promise<Response> => {
     // Obter timezone do usuário (padrão: America/Sao_Paulo)
     const userTimezone = agendaSettings?.timezone || 'America/Sao_Paulo';
 
-    // Formatar data e hora do agendamento com timezone correto
+    // Formatação simples usando apenas JavaScript nativo
     const appointmentDate = new Date(appointment.start_datetime);
     
-    let formattedDate: string;
-    let formattedTime: string;
-    let timeWithTimezone: string;
+    // Formatação robusta e simples
+    const brazilianDate = appointmentDate.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      timeZone: userTimezone
+    });
     
-    try {
-      // Usar formatação mais simples e robusta
-      formattedDate = formatInTimeZone(appointmentDate, userTimezone, 'dd/MM/yyyy');
-      formattedTime = formatInTimeZone(appointmentDate, userTimezone, 'HH:mm');
-      timeWithTimezone = `${formattedTime} (${userTimezone})`;
-      
-      console.log('✅ Date formatting successful:', { 
-        appointmentDate: appointmentDate.toISOString(),
-        userTimezone,
-        formattedDate, 
-        formattedTime 
-      });
-      
-    } catch (formatError) {
-      console.error('❌ Date formatting error:', formatError);
-      // Fallback para formatação simples
-      formattedDate = format(appointmentDate, 'dd/MM/yyyy');
-      formattedTime = format(appointmentDate, 'HH:mm'); 
-      timeWithTimezone = `${formattedTime} (UTC)`;
-      
-      console.log('🔄 Using fallback formatting:', { formattedDate, formattedTime });
-    }
+    const brazilianTime = appointmentDate.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: userTimezone
+    });
+    
+    const formattedDate = brazilianDate;
+    const formattedTime = brazilianTime;
+    const timeWithTimezone = `${formattedTime} (${userTimezone})`;
+    
+    console.log('✅ Date formatting successful:', { 
+      appointmentDate: appointmentDate.toISOString(),
+      userTimezone,
+      formattedDate, 
+      formattedTime 
+    });
 
     let emailSent = false;
     let whatsappSent = false;
