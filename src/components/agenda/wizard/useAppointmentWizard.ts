@@ -175,14 +175,26 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
         console.log('📲 Enviando lembrete imediato para:', {
           email: formData.patient_email,
-          phone: formData.patient_phone
+          phone: formData.patient_phone,
+          appointmentId: editingAppointment ? editingAppointment.id : appointmentResult?.id
         });
         
         try {
+          // Aguardar um momento para garantir que o agendamento foi criado
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const targetAppointmentId = editingAppointment ? editingAppointment.id : appointmentResult?.id;
+          
+          if (!targetAppointmentId) {
+            console.error('❌ ID do agendamento não encontrado para lembrete');
+            toast.error('Agendamento criado, mas falha ao obter ID para lembrete');
+            return true;
+          }
+
           // Chamar edge function para enviar lembretes de agendamento
           const { data: reminderResult, error: reminderError } = await supabase.functions.invoke('send-appointment-reminder', {
             body: {
-              appointmentId: editingAppointment ? editingAppointment.id : appointmentResult?.id,
+              appointmentId: targetAppointmentId,
               reminderType: 'immediate'
             }
           });
