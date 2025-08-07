@@ -16,6 +16,69 @@ interface WhatsAppRequest {
   messageType?: string
 }
 
+// Função para validar e formatar números de telefone brasileiros
+const formatBrazilianPhoneNumber = (phoneNumber: string): { formatted: string; isValid: boolean; error?: string } => {
+  console.log('🔍 Formatando número original:', phoneNumber);
+  
+  // Remove todos os caracteres não numéricos
+  const digitsOnly = phoneNumber.replace(/\D/g, '');
+  console.log('📱 Apenas dígitos extraídos:', digitsOnly);
+  
+  // Se já tem código do país (55), remove para validação
+  let cleanNumber = digitsOnly;
+  if (digitsOnly.startsWith('55') && digitsOnly.length >= 12) {
+    cleanNumber = digitsOnly.substring(2);
+    console.log('🌍 Removendo código do país 55:', cleanNumber);
+  }
+  
+  // Validar se tem 10 ou 11 dígitos (formato brasileiro válido)
+  if (cleanNumber.length < 10 || cleanNumber.length > 11) {
+    const error = `Número inválido: deve ter 10 ou 11 dígitos, recebido ${cleanNumber.length} dígitos`;
+    console.error('❌', error);
+    return {
+      formatted: `whatsapp:+55${cleanNumber}`,
+      isValid: false,
+      error
+    };
+  }
+  
+  // Validar código de área (primeiro 2 dígitos)
+  const areaCode = cleanNumber.substring(0, 2);
+  const validAreaCodes = ['11', '12', '13', '14', '15', '16', '17', '18', '19', // SP
+                         '21', '22', '24', // RJ  
+                         '27', '28', // ES
+                         '31', '32', '33', '34', '35', '37', '38', // MG
+                         '41', '42', '43', '44', '45', '46', // PR
+                         '47', '48', '49', // SC
+                         '51', '53', '54', '55', // RS
+                         '61', '62', '64', '65', '66', '67', '68', '69', // Centro-Oeste
+                         '71', '73', '74', '75', '77', '79', // BA e SE
+                         '81', '87', '82', '83', '84', '85', '86', '88', '89', // Nordeste
+                         '91', '93', '94', '95', '96', '97', '98', '99']; // Norte
+  
+  if (!validAreaCodes.includes(areaCode)) {
+    const error = `Código de área inválido: ${areaCode}`;
+    console.warn('⚠️', error);
+  }
+  
+  // Se tem 11 dígitos, verificar se o terceiro dígito é 9 (celular)
+  if (cleanNumber.length === 11) {
+    const thirdDigit = cleanNumber.charAt(2);
+    if (thirdDigit !== '9') {
+      const warning = `Número de 11 dígitos sem '9' no terceiro dígito: ${cleanNumber}`;
+      console.warn('⚠️', warning);
+    }
+  }
+  
+  const formattedNumber = `whatsapp:+55${cleanNumber}`;
+  console.log('✅ Número formatado com sucesso:', formattedNumber);
+  
+  return {
+    formatted: formattedNumber,
+    isValid: true
+  };
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -61,10 +124,37 @@ serve(async (req) => {
     }
 
     // Format phone number for WhatsApp (must include country code)
-    const formattedTo = to.startsWith('whatsapp:') ? to : `whatsapp:+55${to.replace(/\D/g, '')}`
-    const formattedFrom = twilioPhoneNumber.startsWith('whatsapp:') ? twilioPhoneNumber : `whatsapp:${twilioPhoneNumber}`
-
-    console.log('Sending WhatsApp message:', { from: formattedFrom, to: formattedTo, templateSid: resolvedTemplateSid, templateVariables, message })
+    console.log('🚀 Iniciando formatação de número para WhatsApp...');
+    
+    let formattedTo: string;
+    if (to.startsWith('whatsapp:')) {
+      formattedTo = to;
+      console.log('📞 Número já formatado como WhatsApp:', formattedTo);
+    } else {
+      const phoneResult = formatBrazilianPhoneNumber(to);
+      formattedTo = phoneResult.formatted;
+      
+      if (!phoneResult.isValid) {
+        console.error('❌ Erro na validação do número:', phoneResult.error);
+        return new Response(
+          JSON.stringify({ error: `Número de telefone inválido: ${phoneResult.error}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    const formattedFrom = twilioPhoneNumber.startsWith('whatsapp:') ? twilioPhoneNumber : `whatsapp:${twilioPhoneNumber}`;
+    
+    console.log('📤 Enviando mensagem WhatsApp:', {
+      from: formattedFrom,
+      to: formattedTo,
+      templateSid: resolvedTemplateSid,
+      hasTemplateVariables: !!templateVariables,
+      templateVariables,
+      hasMessage: !!message,
+      messageType,
+      paymentId
+    });
 
     // Send message via Twilio API
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
@@ -94,12 +184,30 @@ serve(async (req) => {
 
     const twilioData = await twilioResponse.json()
     
+    console.log('📨 Resposta completa do Twilio:', {
+      status: twilioResponse.status,
+      statusText: twilioResponse.statusText,
+      headers: Object.fromEntries(twilioResponse.headers.entries()),
+      data: twilioData
+    });
+    
     if (!twilioResponse.ok) {
-      console.error('Twilio API error:', twilioData)
-      throw new Error(twilioData.message || 'Failed to send WhatsApp message')
+      console.error('❌ Erro da API do Twilio:', {
+        status: twilioResponse.status,
+        statusText: twilioResponse.statusText,
+        errorData: twilioData,
+        formDataSent: Object.fromEntries(formData.entries())
+      });
+      throw new Error(twilioData.message || `Falha ao enviar mensagem WhatsApp: ${twilioResponse.status} ${twilioResponse.statusText}`)
     }
 
-    console.log('WhatsApp message sent successfully:', twilioData.sid)
+    console.log('✅ Mensagem WhatsApp enviada com sucesso!', {
+      messageId: twilioData.sid,
+      status: twilioData.status,
+      to: twilioData.to,
+      from: twilioData.from,
+      accountSid: twilioData.account_sid
+    });
 
     // Get user ID from auth header
     const authHeader = req.headers.get('Authorization')
