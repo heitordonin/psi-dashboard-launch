@@ -42,3 +42,6 @@ verify_jwt = true
 
 [functions.cleanup-subscriptions]
 verify_jwt = false
+
+[functions.send-appointment-reminder]
+verify_jwt = true

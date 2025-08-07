@@ -3,6 +3,7 @@ import { AppointmentWizardData, Appointment } from '@/types/appointment';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useAgendaSettings } from '@/hooks/useAgendaSettings';
+import { supabase } from '@/integrations/supabase/client';
 import { addMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -153,31 +154,60 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
 
       console.log('📤 Sending appointment data to API:', appointmentData);
 
+      let appointmentResult: any;
       if (editingAppointment) {
         // Atualizar agendamento existente
         console.log('🔄 Updating existing appointment with ID:', editingAppointment.id);
-        const result = await updateAppointmentAsync({ id: editingAppointment.id, ...appointmentData });
-        console.log('✅ Appointment updated successfully:', result);
+        appointmentResult = await updateAppointmentAsync({ id: editingAppointment.id, ...appointmentData });
+        console.log('✅ Appointment updated successfully:', appointmentResult);
       } else {
         // Criar novo agendamento
         console.log('🆕 Creating new appointment');
-        const result = await createAppointmentAsync(appointmentData);
-        console.log('✅ Appointment created successfully:', result);
+        appointmentResult = await createAppointmentAsync(appointmentData);
+        console.log('✅ Appointment created successfully:', appointmentResult);
       }
 
       // As mutações já fazem invalidação automática, força refresh adicional
       console.log('🔄 Invalidating appointments cache after operation');
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
 
-      // Implementar lógica de lembrete imediato se necessário
+      // Implementar lógica de lembrete imediato
       if (formData.send_immediate_reminder && (formData.patient_email || formData.patient_phone)) {
         console.log('📲 Enviando lembrete imediato para:', {
           email: formData.patient_email,
           phone: formData.patient_phone
         });
         
-        // TODO: Implementar chamada para função de lembrete imediato
-        toast.info('Lembrete imediato será enviado em breve');
+        try {
+          // Chamar edge function para enviar lembretes de agendamento
+          const { data: reminderResult, error: reminderError } = await supabase.functions.invoke('send-appointment-reminder', {
+            body: {
+              appointmentId: editingAppointment ? editingAppointment.id : appointmentResult?.id,
+              reminderType: 'immediate'
+            }
+          });
+
+          if (reminderError) {
+            console.error('❌ Erro ao enviar lembrete imediato:', reminderError);
+            toast.error(`Agendamento criado, mas falha no lembrete: ${reminderError.message}`);
+          } else {
+            console.log('✅ Lembrete imediato enviado com sucesso:', reminderResult);
+            const { emailSent, whatsappSent } = reminderResult;
+            
+            if (emailSent && whatsappSent) {
+              toast.success('Agendamento criado e lembretes enviados por email e WhatsApp!');
+            } else if (emailSent) {
+              toast.success('Agendamento criado e lembrete enviado por email!');
+            } else if (whatsappSent) {
+              toast.success('Agendamento criado e lembrete enviado por WhatsApp!');
+            } else {
+              toast.warning('Agendamento criado, mas nenhum lembrete foi enviado');
+            }
+          }
+        } catch (reminderError: any) {
+          console.error('❌ Erro inesperado ao enviar lembrete:', reminderError);
+          toast.error(`Agendamento criado, mas falha no lembrete: ${reminderError.message}`);
+        }
       }
 
       return true;
