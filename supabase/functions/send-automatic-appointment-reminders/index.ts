@@ -54,8 +54,12 @@ interface AppointmentReminderData {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const startTime = Date.now();
+  
   console.log('🔄 Optimized automatic appointment reminders started');
   console.log('Request method:', req.method);
+  console.log('Execution ID:', executionId);
   console.log('Timestamp:', new Date().toISOString());
 
   // Handle CORS preflight requests
@@ -63,6 +67,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('✅ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
+
+  let supabase: any;
 
   try {
     // Initialize Supabase client
@@ -73,15 +79,32 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Missing Supabase configuration');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('✅ Supabase client initialized');
+
+    // Log execution start
+    await logEvent(supabase, executionId, 'info', 'Execution started', {
+      timestamp: new Date().toISOString(),
+      trigger: 'cron_job'
+    });
+
+    // Register execution start in metrics
+    await logMetrics(supabase, executionId, 'running');
 
     // Check global rate limit
     if (!checkGlobalRateLimit()) {
-      console.warn('⚠️ Global rate limit exceeded, skipping this execution');
+      const message = 'Global rate limit exceeded, skipping this execution';
+      console.warn(`⚠️ ${message}`);
+      
+      await logEvent(supabase, executionId, 'warn', message);
+      await logMetrics(supabase, executionId, 'success', Date.now() - startTime, 0, 0, 0, 0, null, {
+        skipped_reason: 'global_rate_limit'
+      });
+
       return new Response(
         JSON.stringify({ 
-          message: 'Global rate limit exceeded',
+          message,
+          execution_id: executionId,
           timestamp: new Date().toISOString()
         }),
         {
@@ -103,14 +126,33 @@ const handler = async (req: Request): Promise<Response> => {
       windowEnd: windowEnd.toISOString()
     });
 
+    await logEvent(supabase, executionId, 'info', 'Fetching pending reminders', {
+      window_start: now.toISOString(),
+      window_end: windowEnd.toISOString()
+    });
+
     // Get all pending reminders using optimized query
+    const queryStartTime = Date.now();
     const remindersToSend = await getPendingRemindersOptimized(supabase, now, windowEnd);
+    const queryDuration = Date.now() - queryStartTime;
+    
     console.log(`📋 Found ${remindersToSend.length} reminders to process`);
 
+    await logEvent(supabase, executionId, 'info', 'Query completed', {
+      reminders_found: remindersToSend.length,
+      query_duration_ms: queryDuration
+    });
+
     if (remindersToSend.length === 0) {
+      const duration = Date.now() - startTime;
+      await logMetrics(supabase, executionId, 'success', duration, 0, 0, 0, 0, null, {
+        query_duration_ms: queryDuration
+      });
+
       return new Response(
         JSON.stringify({ 
           message: 'No reminders to process',
+          execution_id: executionId,
           processed: 0,
           timestamp: new Date().toISOString()
         }),
@@ -125,17 +167,58 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Process reminders in batches with rate limiting
-    const results = await processBatchedReminders(supabase, remindersToSend);
+    const processingStartTime = Date.now();
+    const results = await processBatchedReminders(supabase, remindersToSend, executionId);
+    const processingDuration = Date.now() - processingStartTime;
+    const totalDuration = Date.now() - startTime;
 
     console.log(`🏁 Processing complete. Success: ${results.successCount}, Errors: ${results.errorCount}, Rate Limited: ${results.rateLimitedCount}`);
+
+    await logEvent(supabase, executionId, 'info', 'Execution completed', {
+      total_reminders: remindersToSend.length,
+      successful_reminders: results.successCount,
+      failed_reminders: results.errorCount,
+      rate_limited_reminders: results.rateLimitedCount,
+      processing_duration_ms: processingDuration,
+      total_duration_ms: totalDuration
+    });
+
+    // Check for critical failures and create alerts
+    if (results.errorCount > 0) {
+      const errorRate = (results.errorCount / remindersToSend.length) * 100;
+      if (errorRate > 50) { // Alert if more than 50% failed
+        await createAlert(supabase, 'high_error_rate', 'critical', 
+          'High Error Rate in Reminder System', 
+          `Error rate: ${errorRate.toFixed(2)}% (${results.errorCount}/${remindersToSend.length} failures)`,
+          {
+            execution_id: executionId,
+            error_rate: errorRate,
+            failed_count: results.errorCount,
+            total_count: remindersToSend.length
+          }
+        );
+      }
+    }
+
+    // Register final metrics
+    await logMetrics(supabase, executionId, 'success', totalDuration, 
+      remindersToSend.length, results.successCount, results.errorCount, results.rateLimitedCount,
+      null, {
+        query_duration_ms: queryDuration,
+        processing_duration_ms: processingDuration,
+        batches_processed: Math.ceil(remindersToSend.length / BATCH_SIZE)
+      }
+    );
 
     return new Response(
       JSON.stringify({ 
         message: 'Automatic reminders processed',
+        execution_id: executionId,
         processed: remindersToSend.length,
         success: results.successCount,
         errors: results.errorCount,
         rateLimited: results.rateLimitedCount,
+        duration_ms: totalDuration,
         timestamp: new Date().toISOString()
       }),
       {
@@ -148,12 +231,38 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
+    const duration = Date.now() - startTime;
     console.error("💥 Error in automatic reminders function:", error);
     console.error("Error stack:", error.stack);
+
+    // Log critical error
+    if (supabase) {
+      await logEvent(supabase, executionId, 'critical', 'Execution failed with critical error', 
+        {}, null, null, null, {
+          error_message: error.message,
+          error_stack: error.stack
+        }
+      );
+
+      await logMetrics(supabase, executionId, 'error', duration, 0, 0, 0, 0, error.message);
+
+      // Create critical alert
+      await createAlert(supabase, 'critical_failure', 'critical',
+        'Critical Failure in Reminder System',
+        `Execution ${executionId} failed with error: ${error.message}`,
+        {
+          execution_id: executionId,
+          error_message: error.message,
+          error_stack: error.stack,
+          duration_ms: duration
+        }
+      );
+    }
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
+        execution_id: executionId,
         timestamp: new Date().toISOString(),
         function: 'send-automatic-appointment-reminders'
       }),
@@ -438,12 +547,18 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
 }
 
 // Batch processing with rate limiting and retry logic
-async function processBatchedReminders(supabase: any, reminders: AppointmentReminderData[]): Promise<{
+async function processBatchedReminders(supabase: any, reminders: AppointmentReminderData[], executionId: string): Promise<{
   successCount: number;
   errorCount: number;
   rateLimitedCount: number;
 }> {
   console.log('🔄 Processing reminders in batches...');
+  
+  await logEvent(supabase, executionId, 'info', 'Starting batch processing', {
+    total_reminders: reminders.length,
+    batch_size: BATCH_SIZE,
+    max_concurrent_batches: MAX_CONCURRENT_BATCHES
+  });
   
   let successCount = 0;
   let errorCount = 0;
@@ -466,12 +581,18 @@ async function processBatchedReminders(supabase: any, reminders: AppointmentRemi
       semaphore[slotIndex] = batchIndex;
     }));
 
-    try {
-      console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} reminders`);
-      
-      const batchResults = await Promise.allSettled(
-        batch.map(reminder => processReminderWithRetry(supabase, reminder))
-      );
+      try {
+        console.log(`📦 Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} reminders`);
+        
+        await logEvent(supabase, executionId, 'debug', `Processing batch ${batchIndex + 1}`, {
+          batch_index: batchIndex + 1,
+          batch_size: batch.length,
+          total_batches: batches.length
+        });
+        
+        const batchResults = await Promise.allSettled(
+          batch.map(reminder => processReminderWithRetry(supabase, reminder, executionId))
+        );
 
       for (const result of batchResults) {
         if (result.status === 'fulfilled') {
@@ -500,8 +621,8 @@ async function processBatchedReminders(supabase: any, reminders: AppointmentRemi
   return { successCount, errorCount, rateLimitedCount };
 }
 
-// Retry logic with exponential backoff
-async function processReminderWithRetry(supabase: any, reminder: AppointmentReminderData, maxRetries = 3): Promise<{
+// Retry logic with exponential backoff and structured logging
+async function processReminderWithRetry(supabase: any, reminder: AppointmentReminderData, executionId: string, maxRetries = 3): Promise<{
   success: boolean;
   rateLimited: boolean;
   error?: string;
@@ -509,6 +630,13 @@ async function processReminderWithRetry(supabase: any, reminder: AppointmentRemi
   // Check user rate limit
   if (!checkUserRateLimit(reminder.user_id)) {
     console.warn(`⚠️ Rate limit exceeded for user ${reminder.user_id}`);
+    
+    await logEvent(supabase, executionId, 'warn', 'User rate limit exceeded', {
+      user_id: reminder.user_id,
+      appointment_id: reminder.appointment_id,
+      reminder_type: reminder.reminder_type
+    }, reminder.appointment_id, reminder.user_id, reminder.reminder_type);
+    
     return { success: false, rateLimited: true };
   }
 
@@ -517,12 +645,27 @@ async function processReminderWithRetry(supabase: any, reminder: AppointmentRemi
   // Check circuit breaker
   if (!canExecute(service)) {
     console.warn(`⚠️ Circuit breaker open for ${service}`);
+    
+    await logEvent(supabase, executionId, 'warn', 'Circuit breaker open', {
+      service,
+      appointment_id: reminder.appointment_id,
+      reminder_type: reminder.reminder_type
+    }, reminder.appointment_id, reminder.user_id, reminder.reminder_type);
+    
     return { success: false, rateLimited: false, error: 'Circuit breaker open' };
   }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`📤 Processing reminder attempt ${attempt}/${maxRetries} for appointment ${reminder.appointment_id} (${reminder.reminder_type})`);
+      
+      await logEvent(supabase, executionId, 'debug', `Reminder attempt ${attempt}`, {
+        attempt,
+        max_retries: maxRetries,
+        appointment_id: reminder.appointment_id,
+        reminder_type: reminder.reminder_type,
+        patient_name: reminder.patient_name
+      }, reminder.appointment_id, reminder.user_id, reminder.reminder_type);
       
       if (reminder.reminder_type === 'email' && reminder.patient_email) {
         await sendEmailReminderOptimized(supabase, reminder);
@@ -532,15 +675,39 @@ async function processReminderWithRetry(supabase: any, reminder: AppointmentRemi
         await markReminderSent(supabase, reminder, 'whatsapp');
       } else {
         console.log(`⚠️ Skipping reminder - missing contact info: ${reminder.reminder_type} for appointment ${reminder.appointment_id}`);
+        
+        await logEvent(supabase, executionId, 'warn', 'Skipping reminder - missing contact info', {
+          reminder_type: reminder.reminder_type,
+          has_email: !!reminder.patient_email,
+          has_phone: !!reminder.patient_phone
+        }, reminder.appointment_id, reminder.user_id, reminder.reminder_type);
+        
         return { success: false, rateLimited: false, error: 'Missing contact info' };
       }
 
       onSuccess(service);
       console.log(`✅ ${reminder.reminder_type} reminder sent for appointment ${reminder.appointment_id}`);
+      
+      await logEvent(supabase, executionId, 'info', `${reminder.reminder_type} reminder sent successfully`, {
+        appointment_id: reminder.appointment_id,
+        patient_name: reminder.patient_name,
+        reminder_number: reminder.reminder_number,
+        minutes_before: reminder.minutes_before
+      }, reminder.appointment_id, reminder.user_id, reminder.reminder_type);
+      
       return { success: true, rateLimited: false };
 
     } catch (error: any) {
       console.error(`❌ Error processing reminder (attempt ${attempt}):`, error);
+      
+      await logEvent(supabase, executionId, 'error', `Reminder attempt ${attempt} failed`, {
+        attempt,
+        max_retries: maxRetries,
+        error_message: error.message
+      }, reminder.appointment_id, reminder.user_id, reminder.reminder_type, {
+        error_message: error.message,
+        error_stack: error.stack
+      });
       
       onFailure(service);
       
@@ -557,6 +724,100 @@ async function processReminderWithRetry(supabase: any, reminder: AppointmentRemi
   }
 
   return { success: false, rateLimited: false, error: 'Max retries exceeded' };
+}
+
+// Monitoring utility functions
+async function logMetrics(
+  supabase: any, 
+  executionId: string, 
+  status: string, 
+  durationMs?: number,
+  totalReminders: number = 0,
+  successfulReminders: number = 0, 
+  failedReminders: number = 0,
+  rateLimitedReminders: number = 0,
+  errorMessage?: string | null,
+  performanceData: any = {}
+) {
+  try {
+    const { error } = await supabase.rpc('log_reminder_execution_metrics', {
+      p_execution_id: executionId,
+      p_status: status,
+      p_duration_ms: durationMs,
+      p_total_reminders: totalReminders,
+      p_successful_reminders: successfulReminders,
+      p_failed_reminders: failedReminders,
+      p_rate_limited_reminders: rateLimitedReminders,
+      p_error_message: errorMessage,
+      p_performance_data: performanceData
+    });
+
+    if (error) {
+      console.error('Failed to log metrics:', error);
+    }
+  } catch (error) {
+    console.error('Error logging metrics:', error);
+  }
+}
+
+async function logEvent(
+  supabase: any,
+  executionId: string, 
+  level: string,
+  message: string,
+  context: any = {},
+  appointmentId?: string | null,
+  userId?: string | null,
+  reminderType?: string | null,
+  errorDetails?: any | null
+) {
+  try {
+    const { error } = await supabase.rpc('log_reminder_event', {
+      p_execution_id: executionId,
+      p_level: level,
+      p_message: message,
+      p_context: context,
+      p_appointment_id: appointmentId,
+      p_user_id: userId,
+      p_reminder_type: reminderType,
+      p_error_details: errorDetails
+    });
+
+    if (error) {
+      console.error('Failed to log event:', error);
+    }
+  } catch (error) {
+    console.error('Error logging event:', error);
+  }
+}
+
+async function createAlert(
+  supabase: any,
+  alertType: string,
+  severity: string,
+  title: string,
+  message: string,
+  details: any = {},
+  executionId?: string
+) {
+  try {
+    const { error } = await supabase.rpc('create_system_alert', {
+      p_alert_type: alertType,
+      p_severity: severity,
+      p_title: title,
+      p_message: message,
+      p_details: details,
+      p_execution_id: executionId
+    });
+
+    if (error) {
+      console.error('Failed to create alert:', error);
+    } else {
+      console.log(`🚨 Created ${severity} alert: ${title}`);
+    }
+  } catch (error) {
+    console.error('Error creating alert:', error);
+  }
 }
 
 // Optimized reminder sending with circuit breaker support

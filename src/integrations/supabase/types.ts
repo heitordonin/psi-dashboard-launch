@@ -179,6 +179,93 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_reminder_logs: {
+        Row: {
+          appointment_id: string | null
+          context: Json | null
+          error_details: Json | null
+          execution_id: string
+          id: string
+          log_level: string
+          message: string
+          reminder_type: string | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          context?: Json | null
+          error_details?: Json | null
+          execution_id: string
+          id?: string
+          log_level?: string
+          message: string
+          reminder_type?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          context?: Json | null
+          error_details?: Json | null
+          execution_id?: string
+          id?: string
+          log_level?: string
+          message?: string
+          reminder_type?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      appointment_reminder_metrics: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_id: string
+          failed_reminders: number | null
+          id: string
+          performance_data: Json | null
+          rate_limited_reminders: number | null
+          started_at: string
+          status: string
+          successful_reminders: number | null
+          total_reminders: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id: string
+          failed_reminders?: number | null
+          id?: string
+          performance_data?: Json | null
+          rate_limited_reminders?: number | null
+          started_at?: string
+          status?: string
+          successful_reminders?: number | null
+          total_reminders?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id?: string
+          failed_reminders?: number | null
+          id?: string
+          performance_data?: Json | null
+          rate_limited_reminders?: number | null
+          started_at?: string
+          status?: string
+          successful_reminders?: number | null
+          total_reminders?: number | null
+        }
+        Relationships: []
+      }
       appointment_reminders: {
         Row: {
           appointment_id: string
@@ -904,6 +991,51 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          alert_type: string
+          created_at: string
+          details: Json | null
+          execution_id: string | null
+          id: string
+          message: string
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          triggered_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          alert_type: string
+          created_at?: string
+          details?: Json | null
+          execution_id?: string | null
+          id?: string
+          message: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          triggered_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          alert_type?: string
+          created_at?: string
+          details?: Json | null
+          execution_id?: string | null
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          triggered_at?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           cancel_at_period_end: boolean
@@ -1051,7 +1183,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      appointment_reminder_metrics_summary: {
+        Row: {
+          avg_duration_ms: number | null
+          execution_date: string | null
+          failed_executions: number | null
+          success_rate_percentage: number | null
+          successful_executions: number | null
+          total_executions: number | null
+          total_failed_reminders: number | null
+          total_rate_limited_reminders: number | null
+          total_reminders_sent: number | null
+          total_successful_reminders: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       atomic_cancel_and_insert_subscription: {
@@ -1102,6 +1248,17 @@ export type Database = {
       cleanup_old_subscriptions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_system_alert: {
+        Args: {
+          p_alert_type: string
+          p_severity: string
+          p_title: string
+          p_message: string
+          p_details?: Json
+          p_execution_id?: string
+        }
+        Returns: string
       }
       decrypt_value: {
         Args: { value_to_decrypt: string }
@@ -1278,6 +1435,33 @@ export type Database = {
       is_admin: {
         Args: { user_id?: string }
         Returns: boolean
+      }
+      log_reminder_event: {
+        Args: {
+          p_execution_id: string
+          p_level: string
+          p_message: string
+          p_context?: Json
+          p_appointment_id?: string
+          p_user_id?: string
+          p_reminder_type?: string
+          p_error_details?: Json
+        }
+        Returns: string
+      }
+      log_reminder_execution_metrics: {
+        Args: {
+          p_execution_id: string
+          p_status: string
+          p_duration_ms?: number
+          p_total_reminders?: number
+          p_successful_reminders?: number
+          p_failed_reminders?: number
+          p_rate_limited_reminders?: number
+          p_error_message?: string
+          p_performance_data?: Json
+        }
+        Returns: string
       }
       trigger_expired_overrides_sync: {
         Args: Record<PropertyKey, never>
