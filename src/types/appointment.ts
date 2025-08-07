@@ -52,10 +52,20 @@ export interface AgendaSettings {
   timezone: string;
   google_calendar_integration: boolean;
   google_calendar_id?: string;
+  // Legacy fields (mantidos para compatibilidade)
   email_reminder_enabled: boolean;
   email_reminder_minutes?: number;
   whatsapp_reminder_enabled: boolean;
   whatsapp_reminder_minutes?: number;
+  // Novos campos para 2 lembretes
+  email_reminder_1_enabled: boolean;
+  email_reminder_1_minutes?: number;
+  email_reminder_2_enabled: boolean;
+  email_reminder_2_minutes?: number;
+  whatsapp_reminder_1_enabled: boolean;
+  whatsapp_reminder_1_minutes?: number;
+  whatsapp_reminder_2_enabled: boolean;
+  whatsapp_reminder_2_minutes?: number;
   created_at?: string;
   updated_at?: string;
 }

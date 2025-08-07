@@ -44,6 +44,18 @@ export default function AgendaConfiguracoes() {
     timezone: 'America/Sao_Paulo',
     google_calendar_integration: false,
     google_calendar_id: '',
+    email_reminder_enabled: false,
+    email_reminder_minutes: 60,
+    whatsapp_reminder_enabled: false,
+    whatsapp_reminder_minutes: 60,
+    email_reminder_1_enabled: false,
+    email_reminder_1_minutes: 60,
+    email_reminder_2_enabled: false,
+    email_reminder_2_minutes: 15,
+    whatsapp_reminder_1_enabled: false,
+    whatsapp_reminder_1_minutes: 60,
+    whatsapp_reminder_2_enabled: false,
+    whatsapp_reminder_2_minutes: 15,
   });
 
   useEffect(() => {
@@ -177,7 +189,139 @@ export default function AgendaConfiguracoes() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <CalendarIcon className="mr-2 h-5 w-5" />
+              Lembretes por E-mail
+            </CardTitle>
+            <CardDescription>
+              Configure até 2 lembretes automáticos por e-mail antes das consultas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Lembrete 1</h4>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="email_reminder_1_enabled"
+                    checked={formData.email_reminder_1_enabled}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_1_enabled: checked }))}
+                  />
+                  <Label htmlFor="email_reminder_1_enabled">Ativado</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10080"
+                    placeholder="60"
+                    className="w-20"
+                    value={formData.email_reminder_1_minutes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email_reminder_1_minutes: parseInt(e.target.value) || 60 }))}
+                    disabled={!formData.email_reminder_1_enabled}
+                  />
+                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                </div>
+              </div>
+            </div>
 
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Lembrete 2</h4>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="email_reminder_2_enabled"
+                    checked={formData.email_reminder_2_enabled}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_2_enabled: checked }))}
+                  />
+                  <Label htmlFor="email_reminder_2_enabled">Ativado</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10080"
+                    placeholder="15"
+                    className="w-20"
+                    value={formData.email_reminder_2_minutes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email_reminder_2_minutes: parseInt(e.target.value) || 15 }))}
+                    disabled={!formData.email_reminder_2_enabled}
+                  />
+                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <CalendarIcon className="mr-2 h-5 w-5" />
+              Lembretes por WhatsApp
+            </CardTitle>
+            <CardDescription>
+              Configure até 2 lembretes automáticos por WhatsApp antes das consultas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Lembrete 1</h4>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="whatsapp_reminder_1_enabled"
+                    checked={formData.whatsapp_reminder_1_enabled}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_enabled: checked }))}
+                  />
+                  <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10080"
+                    placeholder="60"
+                    className="w-20"
+                    value={formData.whatsapp_reminder_1_minutes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(e.target.value) || 60 }))}
+                    disabled={!formData.whatsapp_reminder_1_enabled}
+                  />
+                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Lembrete 2</h4>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="whatsapp_reminder_2_enabled"
+                    checked={formData.whatsapp_reminder_2_enabled}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_enabled: checked }))}
+                  />
+                  <Label htmlFor="whatsapp_reminder_2_enabled">Ativado</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10080"
+                    placeholder="15"
+                    className="w-20"
+                    value={formData.whatsapp_reminder_2_minutes || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_minutes: parseInt(e.target.value) || 15 }))}
+                    disabled={!formData.whatsapp_reminder_2_enabled}
+                  />
+                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSaving}>

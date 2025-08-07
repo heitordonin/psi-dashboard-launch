@@ -104,6 +104,10 @@ export type Database = {
       agenda_settings: {
         Row: {
           created_at: string
+          email_reminder_1_enabled: boolean
+          email_reminder_1_minutes: number | null
+          email_reminder_2_enabled: boolean
+          email_reminder_2_minutes: number | null
           email_reminder_enabled: boolean
           email_reminder_minutes: number | null
           end_time: string
@@ -115,12 +119,20 @@ export type Database = {
           timezone: string
           updated_at: string
           user_id: string
+          whatsapp_reminder_1_enabled: boolean
+          whatsapp_reminder_1_minutes: number | null
+          whatsapp_reminder_2_enabled: boolean
+          whatsapp_reminder_2_minutes: number | null
           whatsapp_reminder_enabled: boolean
           whatsapp_reminder_minutes: number | null
           working_days: Json
         }
         Insert: {
           created_at?: string
+          email_reminder_1_enabled?: boolean
+          email_reminder_1_minutes?: number | null
+          email_reminder_2_enabled?: boolean
+          email_reminder_2_minutes?: number | null
           email_reminder_enabled?: boolean
           email_reminder_minutes?: number | null
           end_time?: string
@@ -132,12 +144,20 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id: string
+          whatsapp_reminder_1_enabled?: boolean
+          whatsapp_reminder_1_minutes?: number | null
+          whatsapp_reminder_2_enabled?: boolean
+          whatsapp_reminder_2_minutes?: number | null
           whatsapp_reminder_enabled?: boolean
           whatsapp_reminder_minutes?: number | null
           working_days?: Json
         }
         Update: {
           created_at?: string
+          email_reminder_1_enabled?: boolean
+          email_reminder_1_minutes?: number | null
+          email_reminder_2_enabled?: boolean
+          email_reminder_2_minutes?: number | null
           email_reminder_enabled?: boolean
           email_reminder_minutes?: number | null
           end_time?: string
@@ -149,6 +169,10 @@ export type Database = {
           timezone?: string
           updated_at?: string
           user_id?: string
+          whatsapp_reminder_1_enabled?: boolean
+          whatsapp_reminder_1_minutes?: number | null
+          whatsapp_reminder_2_enabled?: boolean
+          whatsapp_reminder_2_minutes?: number | null
           whatsapp_reminder_enabled?: boolean
           whatsapp_reminder_minutes?: number | null
           working_days?: Json
