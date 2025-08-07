@@ -12,6 +12,50 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
   const { settings } = useAgendaSettings();
 
   const hasPatientContact = formData.patient_email || formData.patient_phone;
+  
+  // Verificar se pelo menos um lembrete de e-mail está habilitado
+  const hasEmailRemindersEnabled = settings?.email_reminder_1_enabled || settings?.email_reminder_2_enabled || settings?.email_reminder_enabled;
+  
+  // Verificar se pelo menos um lembrete de WhatsApp está habilitado
+  const hasWhatsAppRemindersEnabled = settings?.whatsapp_reminder_1_enabled || settings?.whatsapp_reminder_2_enabled || settings?.whatsapp_reminder_enabled;
+  
+  // Função para obter descrição dos lembretes de e-mail
+  const getEmailReminderDescription = () => {
+    const reminders = [];
+    if (settings?.email_reminder_1_enabled && settings?.email_reminder_1_minutes) {
+      reminders.push(`${settings.email_reminder_1_minutes}min`);
+    }
+    if (settings?.email_reminder_2_enabled && settings?.email_reminder_2_minutes) {
+      reminders.push(`${settings.email_reminder_2_minutes}min`);
+    }
+    // Fallback para configuração antiga
+    if (reminders.length === 0 && settings?.email_reminder_enabled && settings?.email_reminder_minutes) {
+      reminders.push(`${settings.email_reminder_minutes}min`);
+    }
+    
+    if (reminders.length === 0) return 'Configure nas configurações da agenda';
+    if (reminders.length === 1) return `Enviado ${reminders[0]} antes`;
+    return `${reminders.length} lembretes: ${reminders.join(' e ')} antes`;
+  };
+  
+  // Função para obter descrição dos lembretes de WhatsApp
+  const getWhatsAppReminderDescription = () => {
+    const reminders = [];
+    if (settings?.whatsapp_reminder_1_enabled && settings?.whatsapp_reminder_1_minutes) {
+      reminders.push(`${settings.whatsapp_reminder_1_minutes}min`);
+    }
+    if (settings?.whatsapp_reminder_2_enabled && settings?.whatsapp_reminder_2_minutes) {
+      reminders.push(`${settings.whatsapp_reminder_2_minutes}min`);
+    }
+    // Fallback para configuração antiga
+    if (reminders.length === 0 && settings?.whatsapp_reminder_enabled && settings?.whatsapp_reminder_minutes) {
+      reminders.push(`${settings.whatsapp_reminder_minutes}min`);
+    }
+    
+    if (reminders.length === 0) return 'Configure nas configurações da agenda';
+    if (reminders.length === 1) return `Enviado ${reminders[0]} antes`;
+    return `${reminders.length} lembretes: ${reminders.join(' e ')} antes`;
+  };
 
   return (
     <div className="space-y-6">
@@ -90,25 +134,22 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
                 <div>
                   <CardTitle className="text-base">Lembrete por E-mail</CardTitle>
                   <CardDescription>
-                    {settings?.email_reminder_enabled && settings?.email_reminder_minutes
-                      ? `Enviado ${settings.email_reminder_minutes} minutos antes`
-                      : 'Configure nas configurações da agenda'
-                    }
+                    {getEmailReminderDescription()}
                   </CardDescription>
                 </div>
               </div>
               <Switch
                 checked={formData.send_email_reminder}
                 onCheckedChange={(checked) => updateFormData({ send_email_reminder: checked })}
-                disabled={!settings?.email_reminder_enabled || !formData.patient_email}
+                disabled={!hasEmailRemindersEnabled || !formData.patient_email}
               />
             </div>
           </CardHeader>
           
-          {(!settings?.email_reminder_enabled || !formData.patient_email) && (
+          {(!hasEmailRemindersEnabled || !formData.patient_email) && (
             <CardContent className="pt-0">
               <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                {!settings?.email_reminder_enabled && (
+                {!hasEmailRemindersEnabled && (
                   <p>• Configure os lembretes por e-mail nas configurações da agenda</p>
                 )}
                 {!formData.patient_email && (
@@ -137,25 +178,22 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
                 <div>
                   <CardTitle className="text-base">Lembrete por WhatsApp</CardTitle>
                   <CardDescription>
-                    {settings?.whatsapp_reminder_enabled && settings?.whatsapp_reminder_minutes
-                      ? `Enviado ${settings.whatsapp_reminder_minutes} minutos antes`
-                      : 'Configure nas configurações da agenda'
-                    }
+                    {getWhatsAppReminderDescription()}
                   </CardDescription>
                 </div>
               </div>
               <Switch
                 checked={formData.send_whatsapp_reminder}
                 onCheckedChange={(checked) => updateFormData({ send_whatsapp_reminder: checked })}
-                disabled={!settings?.whatsapp_reminder_enabled || !formData.patient_phone}
+                disabled={!hasWhatsAppRemindersEnabled || !formData.patient_phone}
               />
             </div>
           </CardHeader>
           
-          {(!settings?.whatsapp_reminder_enabled || !formData.patient_phone) && (
+          {(!hasWhatsAppRemindersEnabled || !formData.patient_phone) && (
             <CardContent className="pt-0">
               <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                {!settings?.whatsapp_reminder_enabled && (
+                {!hasWhatsAppRemindersEnabled && (
                   <p>• Configure os lembretes por WhatsApp nas configurações da agenda</p>
                 )}
                 {!formData.patient_phone && (
@@ -166,7 +204,7 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
           )}
         </Card>
 
-        {(!settings?.email_reminder_enabled && !settings?.whatsapp_reminder_enabled) && (
+        {(!hasEmailRemindersEnabled && !hasWhatsAppRemindersEnabled) && (
           <Card className="bg-muted/50 border-dashed border-2">
             <CardContent className="p-6 text-center">
               <Settings className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
