@@ -31,6 +31,15 @@ const WORKING_DAYS = [
   { id: 0, label: 'Domingo' },
 ];
 
+const REMINDER_MINUTES_OPTIONS = [
+  { value: 5, label: '5 minutos antes' },
+  { value: 15, label: '15 minutos antes' },
+  { value: 30, label: '30 minutos antes' },
+  { value: 60, label: '1 hora antes' },
+  { value: 120, label: '2 horas antes' },
+  { value: 1440, label: '1 dia antes' },
+];
+
 export default function AgendaConfiguracoes() {
   const { user } = useSecureAuth();
   const { settings, saveSettings, isSaving } = useAgendaSettings();
@@ -212,17 +221,23 @@ export default function AgendaConfiguracoes() {
                   <Label htmlFor="email_reminder_1_enabled">Ativado</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10080"
-                    placeholder="60"
-                    className="w-20"
-                    value={formData.email_reminder_1_minutes || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email_reminder_1_minutes: parseInt(e.target.value) || 60 }))}
+                  <Label className="text-sm text-muted-foreground">Enviar</Label>
+                  <Select
+                    value={formData.email_reminder_1_minutes?.toString() || '60'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_1_minutes: parseInt(value) }))}
                     disabled={!formData.email_reminder_1_enabled}
-                  />
-                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Selecione o tempo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_MINUTES_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -239,17 +254,23 @@ export default function AgendaConfiguracoes() {
                   <Label htmlFor="email_reminder_2_enabled">Ativado</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10080"
-                    placeholder="15"
-                    className="w-20"
-                    value={formData.email_reminder_2_minutes || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email_reminder_2_minutes: parseInt(e.target.value) || 15 }))}
+                  <Label className="text-sm text-muted-foreground">Enviar</Label>
+                  <Select
+                    value={formData.email_reminder_2_minutes?.toString() || '15'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_2_minutes: parseInt(value) }))}
                     disabled={!formData.email_reminder_2_enabled}
-                  />
-                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Selecione o tempo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_MINUTES_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -279,17 +300,23 @@ export default function AgendaConfiguracoes() {
                   <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10080"
-                    placeholder="60"
-                    className="w-20"
-                    value={formData.whatsapp_reminder_1_minutes || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(e.target.value) || 60 }))}
+                  <Label className="text-sm text-muted-foreground">Enviar</Label>
+                  <Select
+                    value={formData.whatsapp_reminder_1_minutes?.toString() || '60'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(value) }))}
                     disabled={!formData.whatsapp_reminder_1_enabled}
-                  />
-                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Selecione o tempo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_MINUTES_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -306,17 +333,23 @@ export default function AgendaConfiguracoes() {
                   <Label htmlFor="whatsapp_reminder_2_enabled">Ativado</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10080"
-                    placeholder="15"
-                    className="w-20"
-                    value={formData.whatsapp_reminder_2_minutes || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_minutes: parseInt(e.target.value) || 15 }))}
+                  <Label className="text-sm text-muted-foreground">Enviar</Label>
+                  <Select
+                    value={formData.whatsapp_reminder_2_minutes?.toString() || '15'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_minutes: parseInt(value) }))}
                     disabled={!formData.whatsapp_reminder_2_enabled}
-                  />
-                  <Label className="text-sm text-muted-foreground">minutos antes</Label>
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Selecione o tempo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_MINUTES_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
