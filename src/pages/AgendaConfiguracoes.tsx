@@ -177,47 +177,6 @@ export default function AgendaConfiguracoes() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CalendarIcon className="mr-2 h-5 w-5" />
-              Integração Google Calendar
-            </CardTitle>
-            <CardDescription>
-              Sincronize seus agendamentos com o Google Calendar
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label>Ativar Integração</Label>
-                <p className="text-sm text-muted-foreground">
-                  Sincronizar agendamentos automaticamente
-                </p>
-              </div>
-              <Switch
-                checked={formData.google_calendar_integration}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, google_calendar_integration: checked }))}
-              />
-            </div>
-
-            {formData.google_calendar_integration && (
-              <div className="space-y-2">
-                <Label htmlFor="google_calendar_id">ID do Calendário</Label>
-                <Input
-                  id="google_calendar_id"
-                  type="text"
-                  placeholder="seu-calendario@gmail.com"
-                  value={formData.google_calendar_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, google_calendar_id: e.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Encontre o ID nas configurações do seu calendário no Google Calendar
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
 
         <div className="flex justify-end">
