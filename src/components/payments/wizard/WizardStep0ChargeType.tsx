@@ -14,12 +14,6 @@ export function WizardStep0ChargeType({ selectedType, onSelect }: WizardStep0Pro
   const { canPerformAdminAction } = useSecureAuth();
   const isAdmin = canPerformAdminAction();
 
-  const handleLinkOptionClick = () => {
-    if (isAdmin) {
-      onSelect('link');
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -28,67 +22,45 @@ export function WizardStep0ChargeType({ selectedType, onSelect }: WizardStep0Pro
           Escolha como deseja criar sua cobrança
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card 
-            className={`transition-all hover:shadow-md relative ${
-              !isAdmin 
-                ? 'opacity-50 cursor-not-allowed' 
-                : `cursor-pointer ${selectedType === 'link' ? 'ring-2 ring-primary' : ''}`
-            }`}
-            onClick={handleLinkOptionClick}
-          >
-            {!isAdmin && (
-              <div className="absolute top-2 right-2 z-10">
-                <div className="bg-gray-600 text-white p-1 rounded">
-                  <Lock className="h-4 w-4" />
+        <div className={`grid grid-cols-1 gap-4 ${isAdmin ? 'md:grid-cols-2' : ''}`}>
+          {isAdmin && (
+            <Card 
+              className={`cursor-pointer transition-all hover:shadow-md ${
+                selectedType === 'link' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => onSelect('link')}
+            >
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 p-3 rounded-full bg-blue-100 w-fit">
+                  <CreditCard className="h-6 w-6 text-blue-600" />
                 </div>
-              </div>
-            )}
-            <CardHeader className="text-center">
-              <div className={`mx-auto mb-4 p-3 rounded-full w-fit ${
-                isAdmin ? 'bg-blue-100' : 'bg-gray-100'
-              }`}>
-                <CreditCard className={`h-6 w-6 ${
-                  isAdmin ? 'text-blue-600' : 'text-gray-400'
-                }`} />
-              </div>
-              <CardTitle className={`text-lg ${!isAdmin ? 'text-gray-400' : ''}`}>
-                Enviar link de pagamento
-              </CardTitle>
-              <CardDescription className={!isAdmin ? 'text-gray-400' : ''}>
-                Cria uma cobrança com link para o cliente pagar online
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className={`text-sm space-y-1 ${
-                isAdmin ? 'text-muted-foreground' : 'text-gray-400'
-              }`}>
-                <li>• Gera link de pagamento automático</li>
-                <li>• Permite pagamento por cartão ou boleto</li>
-                <li>• Envio de lembretes</li>
-                <li>• Confirmação de pagamento em tempo real</li>
-              </ul>
-              {!isAdmin && (
-                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                  <Lock className="h-3 w-3 inline mr-1" />
-                  Funcionalidade disponível apenas para administradores
-                </div>
-              )}
-              <Button 
-                variant={selectedType === 'link' ? 'default' : 'outline'} 
-                className="w-full mt-4"
-                disabled={!isAdmin}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isAdmin) {
+                <CardTitle className="text-lg">
+                  Enviar link de pagamento
+                </CardTitle>
+                <CardDescription>
+                  Cria uma cobrança com link para o cliente pagar online
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Gera link de pagamento automático</li>
+                  <li>• Permite pagamento por cartão ou boleto</li>
+                  <li>• Envio de lembretes</li>
+                  <li>• Confirmação de pagamento em tempo real</li>
+                </ul>
+                <Button 
+                  variant={selectedType === 'link' ? 'default' : 'outline'} 
+                  className="w-full mt-4"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onSelect('link');
-                  }
-                }}
-              >
-                {!isAdmin ? 'Não Disponível' : (selectedType === 'link' ? 'Selecionado' : 'Selecionar')}
-              </Button>
-            </CardContent>
-          </Card>
+                  }}
+                >
+                  {selectedType === 'link' ? 'Selecionado' : 'Selecionar'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card 
             className={`cursor-pointer transition-all hover:shadow-md ${
