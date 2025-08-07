@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { formatInTimeZone } from "npm:date-fns-tz@3.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +79,13 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', appointment.user_id)
       .single();
 
+    // Buscar configurações de agenda para obter o timezone
+    const { data: agendaSettings } = await supabaseClient
+      .from('agenda_settings')
+      .select('timezone')
+      .eq('user_id', appointment.user_id)
+      .single();
+
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
       return new Response(
@@ -96,18 +104,21 @@ const handler = async (req: Request): Promise<Response> => {
     const patientEmail = appointment.patient_email || appointment.patients?.email;
     const patientPhone = appointment.patient_phone || appointment.patients?.phone;
 
-    // Formatar data e hora do agendamento
+    // Obter timezone do usuário (padrão: America/Sao_Paulo)
+    const userTimezone = agendaSettings?.timezone || 'America/Sao_Paulo';
+
+    // Formatar data e hora do agendamento com timezone correto
     const appointmentDate = new Date(appointment.start_datetime);
-    const formattedDate = appointmentDate.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    
+    const formattedDate = formatInTimeZone(appointmentDate, userTimezone, 'EEEE, dd \'de\' MMMM \'de\' yyyy', {
+      locale: { code: 'pt-BR' }
     });
-    const formattedTime = appointmentDate.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    
+    const formattedTime = formatInTimeZone(appointmentDate, userTimezone, 'HH:mm');
+    
+    // Obter informação do timezone para exibição
+    const timezoneDisplay = formatInTimeZone(appointmentDate, userTimezone, 'xxx (zzzz)');
+    const timeWithTimezone = `${formattedTime} (${timezoneDisplay})`;
 
     let emailSent = false;
     let whatsappSent = false;
@@ -152,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #666; font-weight: bold;">Horário:</td>
-                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${formattedTime}</td>
+                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${timeWithTimezone}</td>
                 </tr>
                 ${appointment.notes ? `
                 <tr>
@@ -242,7 +253,7 @@ ${reminderType === 'immediate'
 }
 
 📅 *Data:* ${formattedDate}
-🕐 *Horário:* ${formattedTime}
+🕐 *Horário:* ${timeWithTimezone}
 👨‍⚕️ *Terapeuta:* ${therapistName}
 📝 *Título:* ${appointment.title}
 
@@ -318,7 +329,7 @@ _Mensagem automática do Psiclo_`;
           title: appointment.title,
           patientName,
           date: formattedDate,
-          time: formattedTime
+          time: timeWithTimezone
         }
       }),
       {
