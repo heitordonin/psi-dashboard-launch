@@ -85,12 +85,21 @@ export const CourtesyPlansManager = () => {
           body: { searchTerm: term }
         });
         
-        if (error) throw error;
-        return data?.users || [];
+        if (error) {
+          console.error('Search function error:', error);
+          throw new Error(`Erro na busca: ${error.message || 'Erro desconhecido'}`);
+        }
+        
+        if (!data || !data.users) {
+          console.warn('No data returned from search function');
+          return [];
+        }
+        
+        return data.users;
       } catch (err) {
         console.error('Search error:', err);
         toast.error('Erro ao buscar usuários. Tente novamente.');
-        return [];
+        throw err; // Re-throw to let React Query handle it
       }
     }, 300),
     []
@@ -106,7 +115,8 @@ export const CourtesyPlansManager = () => {
     queryFn: () => debouncedSearch(searchTerm),
     enabled: searchTerm.length >= 1,
     staleTime: 30000, // 30 seconds
-    retry: 1
+    retry: 2, // Retry twice on failure
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   // Load initial list of eligible users (users with paid plans, no active overrides)
@@ -160,15 +170,24 @@ export const CourtesyPlansManager = () => {
 
         if (profileError) throw profileError;
         
-        // Get emails from auth
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        // Get emails from search users function (fallback)
         const authUsersMap = new Map<string, string>();
-        if (authUsers?.users) {
-          authUsers.users.forEach((u: any) => {
-            if (u.id && u.email) {
-              authUsersMap.set(u.id, u.email);
-            }
+        try {
+          const { data: searchData } = await supabase.functions.invoke('search-users', {
+            body: { searchTerm: '' }, // Empty search to get all users
+            method: 'POST'
           });
+          
+          if (searchData?.users) {
+            searchData.users.forEach((user: any) => {
+              if (user.id && user.email) {
+                authUsersMap.set(user.id, user.email);
+              }
+            });
+          }
+        } catch (error) {
+          console.warn('Could not fetch user emails:', error);
+          // Continue without emails - not critical for functionality
         }
         
         return profiles?.map(profile => ({
@@ -192,7 +211,9 @@ export const CourtesyPlansManager = () => {
       console.log('Fetching subscription overrides...');
       try {
         // Try edge function first
-        const { data, error } = await supabase.functions.invoke('get-subscription-overrides');
+        const { data, error } = await supabase.functions.invoke('get-subscription-overrides', {
+          method: 'GET'
+        });
         
         if (error) {
           console.error('Edge function failed, trying direct query:', error);

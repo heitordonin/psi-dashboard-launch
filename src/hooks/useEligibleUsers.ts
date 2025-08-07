@@ -69,15 +69,24 @@ export const useEligibleUsers = (searchTerm: string = "", showOnlyEligible: bool
 
         if (profileError) throw profileError;
 
-        // Get emails from auth
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        // Get emails from search users function (fallback)
         const authUsersMap = new Map<string, string>();
-        if (authUsers?.users) {
-          authUsers.users.forEach((u: any) => {
-            if (u.id && u.email) {
-              authUsersMap.set(u.id, u.email);
-            }
+        try {
+          const { data: searchData } = await supabase.functions.invoke('search-users', {
+            body: { searchTerm: '' }, // Empty search to get all users
+            method: 'POST'
           });
+          
+          if (searchData?.users) {
+            searchData.users.forEach((user: any) => {
+              if (user.id && user.email) {
+                authUsersMap.set(user.id, user.email);
+              }
+            });
+          }
+        } catch (error) {
+          console.warn('Could not fetch user emails:', error);
+          // Continue without emails - not critical for functionality
         }
 
         // Get current plans for each user
@@ -108,7 +117,7 @@ export const useEligibleUsers = (searchTerm: string = "", showOnlyEligible: bool
         throw error;
       }
     },
-    enabled: !showOnlyEligible || searchTerm.length >= 1 || searchTerm === "",
+    enabled: !showOnlyEligible || searchTerm.length >= 0,
     staleTime: 30000, // 30 seconds
     retry: 1
   });
