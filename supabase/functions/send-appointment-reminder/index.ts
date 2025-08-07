@@ -16,6 +16,8 @@ interface AppointmentReminderRequest {
 const handler = async (req: Request): Promise<Response> => {
   console.log('🚀 Appointment reminder function started');
   console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -30,9 +32,20 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    
+    if (!Deno.env.get("RESEND_API_KEY")) {
+      console.error('❌ RESEND_API_KEY not found');
+      throw new Error('RESEND_API_KEY not configured');
+    }
 
     console.log('📧 Parsing request body...');
-    const requestBody = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      throw new Error('Invalid JSON in request body');
+    }
     console.log('Request body received:', requestBody);
 
     const { appointmentId, reminderType }: AppointmentReminderRequest = requestBody;
@@ -334,11 +347,15 @@ _Mensagem automática do Psiclo_`;
           body: {
             to: patientPhone,
             message: whatsappMessage,
-            messageType: 'appointment_reminder'
+            messageType: 'appointment_reminder',
+            appointmentId: appointmentId
           }
         });
 
+        console.log('📱 WhatsApp function response:', { data: whatsappResponse, error: whatsappError });
+
         if (whatsappError) {
+          console.error('❌ WhatsApp function returned error:', whatsappError);
           throw whatsappError;
         }
 
@@ -417,12 +434,23 @@ _Mensagem automática do Psiclo_`;
 
   } catch (error: any) {
     console.error("💥 Error in send-appointment-reminder function:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
+    
+    // Log mais detalhado do erro
+    if (error.code) console.error("Error code:", error.code);
+    if (error.details) console.error("Error details:", error.details);
+    if (error.hint) console.error("Error hint:", error.hint);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
+        errorCode: error.code || 'UNKNOWN_ERROR',
+        errorName: error.name || 'Error',
         stack: error.stack,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        function: 'send-appointment-reminder'
       }),
       {
         status: 500,

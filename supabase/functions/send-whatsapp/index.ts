@@ -80,8 +80,13 @@ const formatBrazilianPhoneNumber = (phoneNumber: string): { formatted: string; i
 };
 
 serve(async (req) => {
+  console.log('🚀 WhatsApp function started');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('✅ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -92,7 +97,17 @@ serve(async (req) => {
     )
 
     // Get request data
+    console.log('📧 Parsing request body...');
     const { to, message, templateSid, templateVariables, paymentId, messageType = 'payment_reminder' }: WhatsAppRequest = await req.json()
+    
+    console.log('📋 WhatsApp request details:', { 
+      to, 
+      message: message ? 'present' : 'not provided',
+      templateSid, 
+      templateVariables: templateVariables ? Object.keys(templateVariables) : 'not provided',
+      paymentId, 
+      messageType 
+    });
 
     // Get Twilio credentials from Supabase secrets
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
