@@ -251,8 +251,18 @@ const handler = async (req: Request): Promise<Response> => {
     const results: any[] = [];
 
     // Respeitar o tipo de lembrete solicitado
-    const shouldSendEmail = (reminderType === 'email' || reminderType === 'both') && patientEmail && patientEmail.includes('@');
-    const shouldSendWhatsApp = (reminderType === 'whatsapp' || reminderType === 'both') && patientPhone;
+    let shouldSendEmail = false;
+    let shouldSendWhatsApp = false;
+
+    if (reminderType === 'immediate') {
+      // Para lembretes imediatos, usar as configurações do agendamento
+      shouldSendEmail = appointment.send_email_reminder && patientEmail && patientEmail.includes('@');
+      shouldSendWhatsApp = appointment.send_whatsapp_reminder && patientPhone;
+    } else {
+      // Para lembretes específicos por canal
+      shouldSendEmail = (reminderType === 'email' || reminderType === 'both') && patientEmail && patientEmail.includes('@');
+      shouldSendWhatsApp = (reminderType === 'whatsapp' || reminderType === 'both') && patientPhone;
+    }
 
     console.log('📋 Reminder settings:', { 
       reminderType, 

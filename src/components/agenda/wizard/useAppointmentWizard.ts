@@ -203,8 +203,14 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
             console.error('❌ Erro ao enviar lembrete imediato:', reminderError);
             toast.error(`Agendamento criado, mas falha no lembrete: ${reminderError.message}`);
           } else {
-            console.log('✅ Lembrete imediato enviado com sucesso:', reminderResult);
+            console.log('✅ Resultado do lembrete imediato:', reminderResult);
             const { emailSent, whatsappSent } = reminderResult;
+            
+            // Logs detalhados para debug
+            console.log('📧 Email configurado:', formData.send_email_reminder);
+            console.log('📱 WhatsApp configurado:', formData.send_whatsapp_reminder);
+            console.log('📧 Email enviado:', emailSent);
+            console.log('📱 WhatsApp enviado:', whatsappSent);
             
             if (emailSent && whatsappSent) {
               toast.success('Agendamento criado e lembretes enviados por email e WhatsApp!');
@@ -213,7 +219,21 @@ export const useAppointmentWizard = (editingAppointment?: Appointment | null) =>
             } else if (whatsappSent) {
               toast.success('Agendamento criado e lembrete enviado por WhatsApp!');
             } else {
-              toast.warning('Agendamento criado, mas nenhum lembrete foi enviado');
+              // Dar feedback mais específico sobre por que não foi enviado
+              const reasons = [];
+              if (!formData.send_email_reminder && !formData.send_whatsapp_reminder) {
+                reasons.push('nenhum tipo de lembrete foi habilitado');
+              } else {
+                if (formData.send_email_reminder && !emailSent) {
+                  reasons.push('email não configurado ou inválido');
+                }
+                if (formData.send_whatsapp_reminder && !whatsappSent) {
+                  reasons.push('telefone não configurado');
+                }
+              }
+              
+              const reasonText = reasons.length > 0 ? ` (${reasons.join(', ')})` : '';
+              toast.warning(`Agendamento criado, mas nenhum lembrete foi enviado${reasonText}`);
             }
           }
         } catch (reminderError: any) {
