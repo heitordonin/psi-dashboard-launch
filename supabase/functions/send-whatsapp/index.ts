@@ -128,14 +128,44 @@ serve(async (req) => {
       resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_LEMBRETE')
     } else if (templateSid === 'TWILIO_TEMPLATE_SID_OTP') {
       resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_OTP')
+    } else if (templateSid === 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER') {
+      resolvedTemplateSid = Deno.env.get('TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER')
     }
 
     if (!resolvedTemplateSid && templateSid) {
       console.error('Template SID not found:', templateSid)
-      return new Response(
-        JSON.stringify({ error: 'Template SID not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.log('⚠️ Template not configured, will try fallback message if available')
+      
+      // Se é lembrete de agendamento e template não está configurado, usar fallback
+      if (templateSid === 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER' && !message) {
+        console.log('🔄 Creating fallback message for appointment reminder')
+        // Criar mensagem de fallback usando as variáveis do template
+        const fallbackMessage = `🗓️ *Lembrete de Consulta*
+
+Olá ${templateVariables?.["1"] || "Paciente"}!
+
+Sua consulta se aproxima:
+
+📅 *Data:* ${templateVariables?.["2"] || "Data não informada"}
+🕐 *Horário:* ${templateVariables?.["3"] || "Horário não informado"}
+👨‍⚕️ *Terapeuta:* ${templateVariables?.["4"] || "Terapeuta não informado"}
+📝 *Título:* ${templateVariables?.["5"] || "Consulta"}
+
+${templateVariables?.["6"] && templateVariables["6"] !== "Nenhuma observação" ? `📋 *Observações:* ${templateVariables["6"]}\n\n` : ''}💡 Caso precise remarcar ou cancelar, entre em contato com antecedência.
+
+_Mensagem automática do Psiclo_`;
+        
+        // Usar a mensagem de fallback
+        resolvedTemplateSid = null;
+        templateVariables = null;
+        message = fallbackMessage;
+        console.log('✅ Fallback message created successfully');
+      } else if (!message) {
+        return new Response(
+          JSON.stringify({ error: 'Template SID not configured and no fallback message provided' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     // Format phone number for WhatsApp (must include country code)
@@ -180,9 +210,11 @@ serve(async (req) => {
 
     // Use template if provided, otherwise use plain text message
     if (resolvedTemplateSid && templateVariables) {
+      console.log('📤 Using Twilio template:', resolvedTemplateSid, 'with variables:', templateVariables);
       formData.append('ContentSid', resolvedTemplateSid)
       formData.append('ContentVariables', JSON.stringify(templateVariables))
     } else if (message) {
+      console.log('📤 Using plain text message (fallback or direct)');
       formData.append('Body', message)
     } else {
       throw new Error('Either templateSid with templateVariables or message must be provided')

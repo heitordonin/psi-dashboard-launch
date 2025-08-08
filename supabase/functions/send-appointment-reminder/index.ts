@@ -324,29 +324,23 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('📱 Sending WhatsApp reminder...');
       
       try {
-        // Chamar a função send-whatsapp existente
-        const whatsappMessage = `🗓️ *Lembrete de Consulta*
+        // Usar template aprovado do Twilio para lembretes de agendamento
+        const templateVariables = {
+          "1": patientName,                    // Nome do paciente
+          "2": formattedDate,                  // Data formatada
+          "3": formattedTime,                  // Horário formatado
+          "4": therapistName,                  // Nome do terapeuta
+          "5": appointment.title,              // Título da consulta
+          "6": appointment.notes || "Nenhuma observação" // Observações
+        };
 
-Olá ${patientName}!
-
-${reminderType === 'immediate' 
-  ? 'Sua consulta foi agendada com sucesso:'
-  : 'Sua consulta se aproxima:'
-}
-
-📅 *Data:* ${formattedDate}
-🕐 *Horário:* ${timeWithTimezone}
-👨‍⚕️ *Terapeuta:* ${therapistName}
-📝 *Título:* ${appointment.title}
-
-${appointment.notes ? `📋 *Observações:* ${appointment.notes}\n\n` : ''}💡 Caso precise remarcar ou cancelar, entre em contato com antecedência.
-
-_Mensagem automática do Psiclo_`;
+        console.log('📋 Template variables for WhatsApp:', templateVariables);
 
         const { data: whatsappResponse, error: whatsappError } = await supabaseClient.functions.invoke('send-whatsapp', {
           body: {
             to: patientPhone,
-            message: whatsappMessage,
+            templateSid: 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER',
+            templateVariables: templateVariables,
             messageType: 'appointment_reminder',
             appointmentId: appointmentId
           }
