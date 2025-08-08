@@ -179,6 +179,42 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_reminder_deliveries: {
+        Row: {
+          appointment_id: string
+          content_hash: string | null
+          created_at: string
+          delivery_status: string
+          error_message: string | null
+          id: string
+          recipient_contact: string
+          reminder_type: string
+          time_bucket: string
+        }
+        Insert: {
+          appointment_id: string
+          content_hash?: string | null
+          created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          id?: string
+          recipient_contact: string
+          reminder_type: string
+          time_bucket: string
+        }
+        Update: {
+          appointment_id?: string
+          content_hash?: string | null
+          created_at?: string
+          delivery_status?: string
+          error_message?: string | null
+          id?: string
+          recipient_contact?: string
+          reminder_type?: string
+          time_bucket?: string
+        }
+        Relationships: []
+      }
       appointment_reminder_logs: {
         Row: {
           appointment_id: string | null
@@ -1432,6 +1468,10 @@ export type Database = {
           mrr_growth_rate: number
         }[]
       }
+      get_time_bucket_5min: {
+        Args: { input_time: string }
+        Returns: string
+      }
       get_top_earning_users: {
         Args: { limit_count: number }
         Returns: {
@@ -1454,6 +1494,14 @@ export type Database = {
       }
       is_admin: {
         Args: { user_id?: string }
+        Returns: boolean
+      }
+      is_reminder_already_sent: {
+        Args: {
+          p_appointment_id: string
+          p_reminder_type: string
+          p_current_time?: string
+        }
         Returns: boolean
       }
       log_reminder_event: {
@@ -1480,6 +1528,18 @@ export type Database = {
           p_rate_limited_reminders?: number
           p_error_message?: string
           p_performance_data?: Json
+        }
+        Returns: string
+      }
+      register_reminder_delivery: {
+        Args: {
+          p_appointment_id: string
+          p_reminder_type: string
+          p_recipient_contact: string
+          p_delivery_status?: string
+          p_error_message?: string
+          p_content_hash?: string
+          p_current_time?: string
         }
         Returns: string
       }

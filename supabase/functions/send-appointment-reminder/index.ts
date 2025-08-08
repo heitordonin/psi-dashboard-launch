@@ -200,7 +200,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar email se disponível
     if (patientEmail && patientEmail.includes('@')) {
-      console.log('📧 Sending email reminder...');
+      // Verificar idempotência antes de enviar
+      const { data: alreadySent } = await supabaseClient.rpc('is_reminder_already_sent', {
+        p_appointment_id: appointmentId,
+        p_reminder_type: 'email'
+      });
+
+      if (alreadySent) {
+        console.log('⏭️ Email reminder already sent for this time window, skipping...');
+        results.push({
+          type: 'email',
+          success: true,
+          recipient: patientEmail,
+          skipped: true,
+          message: 'Email já enviado nesta janela de tempo'
+        });
+      } else {
+        console.log('📧 Sending email reminder...');
       
       const emailSubject = `Lembrete: Consulta com ${therapistName}`;
       const emailContent = `
@@ -272,6 +288,14 @@ const handler = async (req: Request): Promise<Response> => {
           html: emailContent,
         });
 
+        // Registrar entrega idempotente
+        await supabaseClient.rpc('register_reminder_delivery', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: 'email',
+          p_recipient_contact: patientEmail,
+          p_delivery_status: 'sent'
+        });
+
         console.log('✅ Email sent successfully:', emailResponse);
         emailSent = true;
         results.push({
@@ -312,6 +336,15 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
       } catch (emailError) {
+        // Registrar falha idempotente
+        await supabaseClient.rpc('register_reminder_delivery', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: 'email',
+          p_recipient_contact: patientEmail,
+          p_delivery_status: 'failed',
+          p_error_message: emailError.message
+        });
+
         console.error('❌ Email sending failed:', emailError);
         results.push({
           type: 'email',
@@ -352,10 +385,27 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
     }
+    }
 
     // Enviar WhatsApp se disponível
     if (patientPhone) {
-      console.log('📱 Sending WhatsApp reminder...');
+      // Verificar idempotência antes de enviar
+      const { data: alreadySentWA } = await supabaseClient.rpc('is_reminder_already_sent', {
+        p_appointment_id: appointmentId,
+        p_reminder_type: 'whatsapp'
+      });
+
+      if (alreadySentWA) {
+        console.log('⏭️ WhatsApp reminder already sent for this time window, skipping...');
+        results.push({
+          type: 'whatsapp',
+          success: true,
+          recipient: patientPhone,
+          skipped: true,
+          message: 'WhatsApp já enviado nesta janela de tempo'
+        });
+      } else {
+        console.log('📱 Sending WhatsApp reminder...');
       
       try {
         // Usar template aprovado do Twilio para lembretes de agendamento
@@ -387,6 +437,14 @@ const handler = async (req: Request): Promise<Response> => {
           throw whatsappError;
         }
 
+        // Registrar entrega idempotente
+        await supabaseClient.rpc('register_reminder_delivery', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: 'whatsapp',
+          p_recipient_contact: patientPhone,
+          p_delivery_status: 'sent'
+        });
+
         console.log('✅ WhatsApp sent successfully:', whatsappResponse);
         whatsappSent = true;
         results.push({
@@ -410,6 +468,15 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
       } catch (whatsappError: any) {
+        // Registrar falha idempotente
+        await supabaseClient.rpc('register_reminder_delivery', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: 'whatsapp',
+          p_recipient_contact: patientPhone,
+          p_delivery_status: 'failed',
+          p_error_message: whatsappError.message
+        });
+
         console.error('❌ WhatsApp sending failed:', whatsappError);
         results.push({
           type: 'whatsapp',
@@ -431,6 +498,7 @@ const handler = async (req: Request): Promise<Response> => {
         } catch (logError: any) {
           console.warn('⚠️ Failed to log WhatsApp error:', logError);
         }
+      }
       }
     }
 
