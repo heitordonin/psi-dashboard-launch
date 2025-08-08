@@ -1,30 +1,39 @@
 
 import { useState } from "react";
-import { CheckCircle, Pencil, Trash2, Undo2 } from "lucide-react";
+import { CheckCircle, Pencil, Trash2, Undo2, MoreVertical, Mail, MessageCircle, Link as LinkIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
+import { PaymentLinkModal } from "./PaymentLinkModal";
 import { PaymentLinkButton } from "./PaymentLinkButton";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { PaymentDateModal } from "./PaymentDateModal";
 import { toast } from "sonner";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentActionsProps {
   payment: PaymentWithPatient;
   onEdit: (payment: Payment) => void;
   onDelete: (paymentId: string) => void;
+  layout?: 'default' | 'compact';
 }
 
-export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProps) {
+export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }: PaymentActionsProps) {
   const queryClient = useQueryClient();
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-
+  const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
+  const { sendWhatsApp, isLoading: isSendingWhatsApp } = useWhatsApp();
+  const { user } = useAuth();
   // Calculate display status for overdue payments
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize today's date to the beginning of the day
@@ -105,6 +114,189 @@ export function PaymentActions({ payment, onEdit, onDelete }: PaymentActionsProp
     markAsUnpaidMutation.mutate();
   };
 
+  // Email reminder handler (compact mode)
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const handleSendEmail = async () => {
+    if (!payment.patients || !payment.patients.full_name) {
+      toast.error('Paciente não encontrado');
+      return;
+    }
+    const recipientEmail = payment.patients.email;
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      toast.error('Email não está cadastrado para este paciente. Por favor, atualize o cadastro do paciente para incluir um email válido.');
+      return;
+    }
+    setIsSendingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-email-reminder', {
+        body: {
+          paymentId: payment.id,
+          recipientEmail,
+          amount: payment.amount,
+          patientName: payment.patients.full_name,
+          dueDate: payment.due_date,
+          description: payment.description
+        }
+      });
+      if (error) {
+        console.error('Error sending email reminder:', error);
+        toast.error('Erro ao enviar lembrete por email');
+      } else {
+        await supabase
+          .from('payments')
+          .update({ email_reminder_sent_at: new Date().toISOString() })
+          .eq('id', payment.id);
+        toast.success('Lembrete enviado por email com sucesso!');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao enviar lembrete por email');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const canMarkPaid = payment.status !== 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude;
+  const canMarkUnpaid = payment.status === 'paid' && !isBlockedByReceitaSaude;
+  const canEdit = !(payment.has_payment_link || isBlockedByReceitaSaude);
+  const canDelete = !(payment.status === 'paid' || isBlockedByReceitaSaude);
+  const canOpenLink = payment.has_payment_link && payment.status === 'pending';
+  const canSendEmail = payment.status === 'pending' && !!payment.patients?.email && payment.patients.email.includes('@');
+  const canSendWhatsApp = payment.status === 'pending' && !!payment.patients?.phone;
+
+  // Compact layout: CTA + menu
+  if (layout === 'compact') {
+    const patientName = payment.patients?.full_name || 'Paciente';
+    const patientPhone = payment.patients?.phone;
+
+    const formatCurrency = (amount: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(amount));
+    const formatDate = (dateString: string) => {
+      const [y, m, d] = dateString.split('-').map(Number);
+      return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+    };
+
+    const handleSendWhatsApp = () => {
+      if (!patientPhone) return;
+      const psychologistName = user?.user_metadata?.full_name || "seu psicólogo(a)";
+      const templateVariables = {
+        "1": patientName,
+        "2": psychologistName,
+        "3": formatCurrency(Number(payment.amount)),
+        "4": formatDate(payment.due_date)
+      } as Record<string, string>;
+      sendWhatsApp({
+        to: patientPhone,
+        templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE',
+        templateVariables,
+        paymentId: payment.id,
+        messageType: 'payment_reminder'
+      });
+      setIsWhatsAppOpen(false);
+    };
+
+    return (
+      <div className="flex items-center gap-2">
+        {canMarkPaid && (
+          <Button size="sm" onClick={handleMarkAsPaid} disabled={isMarkingAsPaid}>
+            {isMarkingAsPaid ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                Processando
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Marcar como Pago
+              </>
+            )}
+          </Button>
+        )}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="touch-target">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+            {canOpenLink && (
+              <DropdownMenuItem onClick={() => setIsLinkOpen(true)} className="min-h-[40px]">
+                <LinkIcon className="h-4 w-4 mr-2" /> Ver Link
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={handleSendEmail} disabled={!canSendEmail || isSendingEmail} className="min-h-[40px]">
+              {isSendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />} Lembrete Email
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsWhatsAppOpen(true)} disabled={!canSendWhatsApp} className="min-h-[40px]">
+              <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(payment)} disabled={!canEdit} className="min-h-[40px]">
+              <Pencil className="h-4 w-4 mr-2" /> Editar
+            </DropdownMenuItem>
+            {canMarkUnpaid && (
+              <DropdownMenuItem onClick={handleMarkAsUnpaid} className="min-h-[40px]">
+                <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => onDelete(payment.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
+              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Dialogs used by compact actions */}
+        {/* Payment Link */}
+        <Dialog open={isLinkOpen} onOpenChange={setIsLinkOpen}>
+          <DialogContent>
+            <PaymentLinkModal
+              isOpen={isLinkOpen}
+              onClose={() => setIsLinkOpen(false)}
+              paymentUrl={payment.payment_url}
+              pixQrCode={payment.pix_qr_code}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* WhatsApp confirm */}
+        <Dialog open={isWhatsAppOpen} onOpenChange={setIsWhatsAppOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirmar Envio</DialogTitle>
+              <DialogDescription>
+                Um lembrete será enviado ao WhatsApp de <strong>{patientName}</strong> ({payment.patients?.phone}).
+              </DialogDescription>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
+              <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsWhatsAppOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSendWhatsApp} disabled={isSendingWhatsApp}>
+                {isSendingWhatsApp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  'Enviar Lembrete'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <PaymentDateModal
+          isOpen={isDateModalOpen}
+          onClose={() => setIsDateModalOpen(false)}
+          onConfirm={handleConfirmPayment}
+          isLoading={isMarkingAsPaid}
+        />
+      </div>
+    );
+  }
+
+  // Default (existing) layout
   return (
     <div className="space-y-4">
       {/* Status and badges row */}
