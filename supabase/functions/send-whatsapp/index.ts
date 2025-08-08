@@ -16,6 +16,49 @@ interface WhatsAppRequest {
   messageType?: string
 }
 
+// Função utilitária para retry com backoff exponencial
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<{ success: boolean; result?: T; error?: any; attempts: number }> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await operation();
+      return { success: true, result, attempts: attempt };
+    } catch (error: any) {
+      lastError = error;
+      
+      // Verificar se é um erro que vale a pena tentar novamente
+      const isRetryableError = 
+        // Erros 5xx do servidor
+        (error.status >= 500 && error.status < 600) ||
+        // Timeout
+        error.name === 'TimeoutError' ||
+        error.code === 'TIMEOUT' ||
+        // Erros de rede
+        error.name === 'NetworkError' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('network') ||
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ENOTFOUND');
+      
+      if (!isRetryableError || attempt === maxRetries) {
+        break;
+      }
+      
+      // Backoff exponencial com jitter
+      const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      console.log(`⏱️ WhatsApp retry attempt ${attempt}/${maxRetries} after ${delay}ms for error:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return { success: false, error: lastError, attempts: maxRetries };
+}
+
 // Função para validar e formatar números de telefone brasileiros
 const formatBrazilianPhoneNumber = (phoneNumber: string): { formatted: string; isValid: boolean; error?: string } => {
   console.log('🔍 Formatando número original:', phoneNumber);
@@ -201,35 +244,59 @@ _Mensagem automática do Psiclo_`;
       paymentId
     });
 
-    // Send message via Twilio API
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
-    
-    const formData = new URLSearchParams()
-    formData.append('From', formattedFrom)
-    formData.append('To', formattedTo)
+    // Send message via Twilio API with retry logic
+    const twilioResult = await retryWithBackoff(async () => {
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
+      
+      const formData = new URLSearchParams()
+      formData.append('From', formattedFrom)
+      formData.append('To', formattedTo)
 
-    // Use template if provided, otherwise use plain text message
-    if (resolvedTemplateSid && templateVariables) {
-      console.log('📤 Using Twilio template:', resolvedTemplateSid, 'with variables:', templateVariables);
-      formData.append('ContentSid', resolvedTemplateSid)
-      formData.append('ContentVariables', JSON.stringify(templateVariables))
-    } else if (message) {
-      console.log('📤 Using plain text message (fallback or direct)');
-      formData.append('Body', message)
-    } else {
-      throw new Error('Either templateSid with templateVariables or message must be provided')
+      // Use template if provided, otherwise use plain text message
+      if (resolvedTemplateSid && templateVariables) {
+        console.log('📤 Using Twilio template:', resolvedTemplateSid, 'with variables:', templateVariables);
+        formData.append('ContentSid', resolvedTemplateSid)
+        formData.append('ContentVariables', JSON.stringify(templateVariables))
+      } else if (message) {
+        console.log('📤 Using plain text message (fallback or direct)');
+        formData.append('Body', message)
+      } else {
+        throw new Error('Either templateSid with templateVariables or message must be provided')
+      }
+
+      const twilioResponse = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData
+      })
+
+      const twilioData = await twilioResponse.json()
+      
+      if (!twilioResponse.ok) {
+        console.error('❌ Erro da API do Twilio:', {
+          status: twilioResponse.status,
+          statusText: twilioResponse.statusText,
+          errorData: twilioData,
+          formDataSent: Object.fromEntries(formData.entries())
+        });
+        
+        // Criar um erro com status para que o retry possa detectar se é retryable
+        const error = new Error(twilioData.message || `Falha ao enviar mensagem WhatsApp: ${twilioResponse.status} ${twilioResponse.statusText}`)
+        error.status = twilioResponse.status
+        throw error
+      }
+      
+      return { twilioResponse, twilioData }
+    });
+
+    if (!twilioResult.success) {
+      throw twilioResult.error;
     }
 
-    const twilioResponse = await fetch(twilioUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData
-    })
-
-    const twilioData = await twilioResponse.json()
+    const { twilioResponse, twilioData } = twilioResult.result;
     
     console.log('📨 Resposta completa do Twilio:', {
       status: twilioResponse.status,
@@ -237,18 +304,8 @@ _Mensagem automática do Psiclo_`;
       headers: Object.fromEntries(twilioResponse.headers.entries()),
       data: twilioData
     });
-    
-    if (!twilioResponse.ok) {
-      console.error('❌ Erro da API do Twilio:', {
-        status: twilioResponse.status,
-        statusText: twilioResponse.statusText,
-        errorData: twilioData,
-        formDataSent: Object.fromEntries(formData.entries())
-      });
-      throw new Error(twilioData.message || `Falha ao enviar mensagem WhatsApp: ${twilioResponse.status} ${twilioResponse.statusText}`)
-    }
 
-    console.log('✅ Mensagem WhatsApp enviada com sucesso!', {
+    console.log(`✅ Mensagem WhatsApp enviada com sucesso após ${twilioResult.attempts} tentativa(s)!`, {
       messageId: twilioData.sid,
       status: twilioData.status,
       to: twilioData.to,

@@ -13,6 +13,47 @@ interface AppointmentReminderRequest {
   reminderType: 'immediate' | 'scheduled';
 }
 
+// Função utilitária para retry com backoff exponencial
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<{ success: boolean; result?: T; error?: any; attempts: number }> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await operation();
+      return { success: true, result, attempts: attempt };
+    } catch (error: any) {
+      lastError = error;
+      
+      // Verificar se é um erro que vale a pena tentar novamente
+      const isRetryableError = 
+        // Erros 5xx do servidor
+        (error.status >= 500 && error.status < 600) ||
+        // Timeout
+        error.name === 'TimeoutError' ||
+        error.code === 'TIMEOUT' ||
+        // Erros de rede
+        error.name === 'NetworkError' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('network');
+      
+      if (!isRetryableError || attempt === maxRetries) {
+        break;
+      }
+      
+      // Backoff exponencial com jitter
+      const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      console.log(`⏱️ Retry attempt ${attempt}/${maxRetries} after ${delay}ms for error:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return { success: false, error: lastError, attempts: maxRetries };
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log('🚀 Appointment reminder function started');
   console.log('Request method:', req.method);
@@ -281,12 +322,21 @@ const handler = async (req: Request): Promise<Response> => {
       `;
 
       try {
-        const emailResponse = await resend.emails.send({
-          from: "Agenda Psiclo <agenda@psiclo.com.br>",
-          to: [patientEmail],
-          subject: emailSubject,
-          html: emailContent,
+        const emailResult = await retryWithBackoff(async () => {
+          return await resend.emails.send({
+            from: "Agenda Psiclo <agenda@psiclo.com.br>",
+            to: [patientEmail],
+            subject: emailSubject,
+            html: emailContent,
+          });
         });
+
+        if (!emailResult.success) {
+          throw emailResult.error;
+        }
+
+        const emailResponse = emailResult.result;
+        console.log(`✅ Email sent successfully after ${emailResult.attempts} attempt(s):`, emailResponse);
 
         // Registrar entrega idempotente
         await supabaseClient.rpc('register_reminder_delivery', {
@@ -420,22 +470,27 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log('📋 Template variables for WhatsApp:', templateVariables);
 
-        const { data: whatsappResponse, error: whatsappError } = await supabaseClient.functions.invoke('send-whatsapp', {
-          body: {
-            to: patientPhone,
-            templateSid: 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER',
-            templateVariables: templateVariables,
-            messageType: 'appointment_reminder',
-            appointmentId: appointmentId
-          }
+        const whatsappResult = await retryWithBackoff(async () => {
+          const { data, error } = await supabaseClient.functions.invoke('send-whatsapp', {
+            body: {
+              to: patientPhone,
+              templateSid: 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER',
+              templateVariables: templateVariables,
+              messageType: 'appointment_reminder',
+              appointmentId: appointmentId
+            }
+          });
+          
+          if (error) throw error;
+          return data;
         });
 
-        console.log('📱 WhatsApp function response:', { data: whatsappResponse, error: whatsappError });
-
-        if (whatsappError) {
-          console.error('❌ WhatsApp function returned error:', whatsappError);
-          throw whatsappError;
+        if (!whatsappResult.success) {
+          throw whatsappResult.error;
         }
+
+        const whatsappResponse = whatsappResult.result;
+        console.log(`✅ WhatsApp sent successfully after ${whatsappResult.attempts} attempt(s):`, whatsappResponse);
 
         // Registrar entrega idempotente
         await supabaseClient.rpc('register_reminder_delivery', {

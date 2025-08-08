@@ -18,6 +18,52 @@ interface EmailReminderRequest {
   description?: string;
 }
 
+// Função utilitária para retry com backoff exponencial
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<{ success: boolean; result?: T; error?: any; attempts: number }> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await operation();
+      return { success: true, result, attempts: attempt };
+    } catch (error: any) {
+      lastError = error;
+      
+      // Verificar se é um erro que vale a pena tentar novamente
+      const isRetryableError = 
+        // Erros 5xx do servidor
+        (error.status >= 500 && error.status < 600) ||
+        // Timeout
+        error.name === 'TimeoutError' ||
+        error.code === 'TIMEOUT' ||
+        // Erros de rede
+        error.name === 'NetworkError' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('network') ||
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ENOTFOUND') ||
+        // Erros específicos do Resend que podem ser temporários
+        error.message?.includes('rate limit') ||
+        error.message?.includes('server error');
+      
+      if (!isRetryableError || attempt === maxRetries) {
+        break;
+      }
+      
+      // Backoff exponencial com jitter
+      const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+      console.log(`⏱️ Email retry attempt ${attempt}/${maxRetries} after ${delay}ms for error:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return { success: false, error: lastError, attempts: maxRetries };
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log('🚀 Email reminder function started - v3.0 (with Resend)');
   console.log('Request method:', req.method);
@@ -185,17 +231,50 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    console.log('📧 Sending email via Resend...');
+    console.log('📧 Sending email via Resend with retry logic...');
     
-    // Enviar email usando Resend
-    const emailResponse = await resend.emails.send({
-      from: "Cobrança Psiclo <cobranca@psiclo.com.br>",
-      to: [recipientEmail],
-      subject: emailSubject,
-      html: emailContent,
+    // Enviar email usando Resend com retry
+    const emailResult = await retryWithBackoff(async () => {
+      return await resend.emails.send({
+        from: "Cobrança Psiclo <cobranca@psiclo.com.br>",
+        to: [recipientEmail],
+        subject: emailSubject,
+        html: emailContent,
+      });
     });
 
-    console.log('✅ Resend response:', emailResponse);
+    if (!emailResult.success) {
+      console.error('❌ Email sending failed after retries:', emailResult.error);
+      
+      // Log do erro no banco
+      await supabaseClient
+        .from('email_logs')
+        .insert({
+          owner_id: payment.owner_id,
+          payment_id: paymentId,
+          recipient_email: recipientEmail,
+          email_type: 'payment_reminder',
+          subject: emailSubject,
+          content: emailContent,
+          status: 'failed',
+          error_message: `Failed after ${emailResult.attempts} attempts: ${emailResult.error.message}`
+        });
+
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to send email after retries",
+          attempts: emailResult.attempts,
+          details: emailResult.error
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const emailResponse = emailResult.result;
+    console.log(`✅ Resend response after ${emailResult.attempts} attempt(s):`, emailResponse);
 
     if (emailResponse.error) {
       console.error('❌ Resend error:', emailResponse.error);
