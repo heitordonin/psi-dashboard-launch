@@ -250,8 +250,20 @@ const handler = async (req: Request): Promise<Response> => {
     let whatsappSent = false;
     const results: any[] = [];
 
-    // Enviar email se disponível
-    if (patientEmail && patientEmail.includes('@')) {
+    // Respeitar o tipo de lembrete solicitado
+    const shouldSendEmail = (reminderType === 'email' || reminderType === 'both') && patientEmail && patientEmail.includes('@');
+    const shouldSendWhatsApp = (reminderType === 'whatsapp' || reminderType === 'both') && patientPhone;
+
+    console.log('📋 Reminder settings:', { 
+      reminderType, 
+      shouldSendEmail, 
+      shouldSendWhatsApp,
+      patientEmail: patientEmail ? '✅' : '❌',
+      patientPhone: patientPhone ? '✅' : '❌'
+    });
+
+    // Enviar email se solicitado e disponível
+    if (shouldSendEmail) {
       // Verificar idempotência antes de enviar
       const { data: alreadySent } = await supabaseClient.rpc('is_reminder_already_sent', {
         p_appointment_id: appointmentId,
@@ -448,8 +460,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
     }
 
-    // Enviar WhatsApp se disponível
-    if (patientPhone) {
+    // Enviar WhatsApp se solicitado e disponível
+    if (shouldSendWhatsApp) {
       // Verificar idempotência antes de enviar
       const { data: alreadySentWA } = await supabaseClient.rpc('is_reminder_already_sent', {
         p_appointment_id: appointmentId,
