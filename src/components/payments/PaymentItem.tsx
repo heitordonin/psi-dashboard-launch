@@ -19,8 +19,8 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
         payment.receita_saude_receipt_issued && "bg-green-50 border-green-200"
       )}
     >
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row lg:justify-between gap-6">
+      <CardContent className="p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Main info section */}
           <div className="flex-1 min-w-0">
             <PaymentMainInfo payment={payment} />
@@ -32,6 +32,7 @@ export function PaymentItem({ payment, onEdit, onDelete }: PaymentItemProps) {
               payment={payment}
               onEdit={onEdit}
               onDelete={onDelete}
+              layout="compact"
             />
           </div>
         </div>
