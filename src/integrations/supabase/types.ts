@@ -564,6 +564,7 @@ export type Database = {
           payment_date: string
           penalty_interest: number
           residential_adjusted_amount: number | null
+          updated_at: string
         }
         Insert: {
           amount: number
@@ -577,6 +578,7 @@ export type Database = {
           payment_date: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
+          updated_at?: string
         }
         Update: {
           amount?: number
@@ -590,6 +592,7 @@ export type Database = {
           payment_date?: string
           penalty_interest?: number
           residential_adjusted_amount?: number | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -742,6 +745,7 @@ export type Database = {
           pix_qr_code: string | null
           receita_saude_receipt_issued: boolean
           status: Database["public"]["Enums"]["payment_status"]
+          updated_at: string
         }
         Insert: {
           amount: number
@@ -760,6 +764,7 @@ export type Database = {
           pix_qr_code?: string | null
           receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
         }
         Update: {
           amount?: number
@@ -778,6 +783,7 @@ export type Database = {
           pix_qr_code?: string | null
           receita_saude_receipt_issued?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
         }
         Relationships: [
           {
