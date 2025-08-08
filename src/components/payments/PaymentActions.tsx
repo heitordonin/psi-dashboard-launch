@@ -227,7 +227,15 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             <DropdownMenuItem onClick={handleSendEmail} disabled={!canSendEmail || isSendingEmail} className="min-h-[40px]">
               {isSendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />} Lembrete Email
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setIsWhatsAppOpen(true)} disabled={!canSendWhatsApp} className="min-h-[40px]">
+            <DropdownMenuItem
+              onClick={() => {
+                if (canSendWhatsApp) setIsWhatsAppOpen(true);
+                else {
+                  toast.error('Telefone não cadastrado para este paciente. Edite o paciente para incluir um número.');
+                }
+              }}
+              className="min-h-[40px]"
+            >
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(payment)} disabled={!canEdit} className="min-h-[40px]">
