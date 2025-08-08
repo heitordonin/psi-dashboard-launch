@@ -96,21 +96,15 @@ const handler = async (req: Request): Promise<Response> => {
       reminderType 
     });
 
-    // Buscar informações do agendamento
+    // Buscar informações do agendamento (sem embed para evitar ambiguidade)
     console.log('🔍 Fetching appointment information...');
     let appointment;
+    let patientDetails = null;
+    
     try {
       const { data, error } = await supabaseClient
         .from('appointments')
-        .select(`
-          *,
-          patients (
-            id,
-            full_name,
-            email,
-            phone
-          )
-        `)
+        .select('*')
         .eq('id', appointmentId)
         .single();
 
@@ -124,6 +118,23 @@ const handler = async (req: Request): Promise<Response> => {
 
       appointment = data;
       console.log('✅ Appointment data retrieved:', appointment);
+
+      // Se há patient_id mas faltam dados de contato no appointment, buscar do paciente
+      if (appointment.patient_id && (!appointment.patient_email || !appointment.patient_phone)) {
+        console.log('🔍 Fetching additional patient details...');
+        const { data: patientData, error: patientError } = await supabaseClient
+          .from('patients')
+          .select('full_name, email, phone')
+          .eq('id', appointment.patient_id)
+          .single();
+
+        if (!patientError && patientData) {
+          patientDetails = patientData;
+          console.log('✅ Patient details retrieved:', patientDetails);
+        } else {
+          console.warn('⚠️ Could not fetch patient details:', patientError);
+        }
+      }
 
     } catch (appointmentError: any) {
       console.error('❌ Error fetching appointment:', appointmentError);
@@ -181,9 +192,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const therapistName = profile?.display_name || profile?.full_name || "Seu terapeuta";
-    const patientName = appointment.patient_name || appointment.patients?.full_name || "Paciente";
-    const patientEmail = appointment.patient_email || appointment.patients?.email;
-    const patientPhone = appointment.patient_phone || appointment.patients?.phone;
+    const patientName = appointment.patient_name || patientDetails?.full_name || "Paciente";
+    const patientEmail = appointment.patient_email || patientDetails?.email;
+    const patientPhone = appointment.patient_phone || patientDetails?.phone;
 
     // Obter timezone do usuário (padrão: America/Sao_Paulo)
     const userTimezone = agendaSettings?.timezone || 'America/Sao_Paulo';

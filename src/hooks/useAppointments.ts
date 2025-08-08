@@ -14,15 +14,7 @@ export const useAppointments = (filters?: CalendarFilters) => {
 
       let query = supabase
         .from('appointments')
-        .select(`
-          *,
-          patients (
-            id,
-            full_name,
-            email,
-            phone
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('start_datetime', { ascending: true });
 
@@ -66,7 +58,10 @@ export const useAppointments = (filters?: CalendarFilters) => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching appointments:', error);
+        throw error;
+      }
       
       return data as Appointment[];
     },
