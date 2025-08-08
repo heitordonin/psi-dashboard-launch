@@ -294,6 +294,23 @@ const handler = async (req: Request): Promise<Response> => {
           console.warn('⚠️ Failed to log email success:', logError);
         }
 
+        // Log do email para aparecer na interface de logs
+        try {
+          await supabaseClient
+            .from('email_logs')
+            .insert({
+              owner_id: appointment.user_id,
+              recipient_email: patientEmail,
+              email_type: 'appointment_reminder',
+              subject: emailSubject,
+              content: emailContent,
+              status: 'sent',
+              sent_at: new Date().toISOString()
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log email in email_logs:', logError);
+        }
+
       } catch (emailError) {
         console.error('❌ Email sending failed:', emailError);
         results.push({
@@ -315,6 +332,23 @@ const handler = async (req: Request): Promise<Response> => {
             });
         } catch (logError: any) {
           console.warn('⚠️ Failed to log email error:', logError);
+        }
+
+        // Log do erro de email para aparecer na interface de logs
+        try {
+          await supabaseClient
+            .from('email_logs')
+            .insert({
+              owner_id: appointment.user_id,
+              recipient_email: patientEmail,
+              email_type: 'appointment_reminder',
+              subject: emailSubject,
+              content: emailContent,
+              status: 'failed',
+              error_message: emailError.message
+            });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log email error in email_logs:', logError);
         }
       }
     }
