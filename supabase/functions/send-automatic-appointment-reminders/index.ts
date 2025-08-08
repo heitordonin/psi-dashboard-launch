@@ -131,9 +131,9 @@ const handler = async (req: Request): Promise<Response> => {
       window_end: windowEnd.toISOString()
     });
 
-    // Get all pending reminders using optimized query
+    // Get all pending reminders (no implicit JOINs)
     const queryStartTime = Date.now();
-    const remindersToSend = await getPendingRemindersOptimized(supabase, now, windowEnd);
+    const remindersToSend = await getPendingReminders(supabase, now, windowEnd);
     const queryDuration = Date.now() - queryStartTime;
     
     console.log(`📋 Found ${remindersToSend.length} reminders to process`);
@@ -386,12 +386,11 @@ function setCachedSettings(userId: string, data: any): void {
   });
 }
 
-// Optimized query with single JOIN
-async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd: Date): Promise<AppointmentReminderData[]> {
-  console.log('🔍 Querying pending reminders with optimized query...');
-  
-  // Single optimized query with JOIN
-  const { data: appointmentsWithSettings, error } = await supabase
+// Query without implicit JOINs; fetch related data separately to avoid FK requirements
+async function getPendingReminders(supabase: any, now: Date, windowEnd: Date): Promise<AppointmentReminderData[]> {
+  console.log('🔍 Querying pending reminders (separate fetches)...');
+
+  const { data: appointments, error: apptError } = await supabase
     .from('appointments')
     .select(`
       id,
@@ -405,54 +404,71 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
       whatsapp_reminder_sent_at,
       send_email_reminder,
       send_whatsapp_reminder,
-      profiles!inner(
-        full_name,
-        display_name
-      ),
-      agenda_settings!inner(
-        timezone,
-        email_reminder_1_enabled,
-        email_reminder_1_minutes,
-        email_reminder_2_enabled,
-        email_reminder_2_minutes,
-        whatsapp_reminder_1_enabled,
-        whatsapp_reminder_1_minutes,
-        whatsapp_reminder_2_enabled,
-        whatsapp_reminder_2_minutes
-      )
+      status
     `)
     .eq('status', 'scheduled')
     .gte('start_datetime', now.toISOString())
     .lte('start_datetime', new Date(now.getTime() + (24 * 60 * 60 * 1000)).toISOString())
-    .limit(500); // Pagination limit
+    .limit(500);
 
-  if (error) {
-    console.error('❌ Error fetching appointments with settings:', error);
-    throw error;
+  if (apptError) {
+    console.error('❌ Error fetching appointments:', apptError);
+    throw apptError;
   }
 
-  console.log(`📅 Found ${appointmentsWithSettings?.length || 0} scheduled appointments with settings`);
-
-  if (!appointmentsWithSettings || appointmentsWithSettings.length === 0) {
+  if (!appointments || appointments.length === 0) {
+    console.log('📭 No scheduled appointments found in window');
     return [];
   }
 
+  const userIds = Array.from(new Set(appointments.map((a: any) => a.user_id).filter(Boolean)));
+
+  // Fetch agenda settings for these users
+  const { data: settings, error: settingsErr } = await supabase
+    .from('agenda_settings')
+    .select(`
+      user_id,
+      timezone,
+      email_reminder_1_enabled,
+      email_reminder_1_minutes,
+      email_reminder_2_enabled,
+      email_reminder_2_minutes,
+      whatsapp_reminder_1_enabled,
+      whatsapp_reminder_1_minutes,
+      whatsapp_reminder_2_enabled,
+      whatsapp_reminder_2_minutes
+    `)
+    .in('user_id', userIds);
+
+  if (settingsErr) {
+    console.warn('⚠️ Warning fetching agenda_settings:', settingsErr);
+  }
+  const settingsMap = new Map<string, any>((settings || []).map((s: any) => [s.user_id, s]));
+
+  // Fetch profiles for therapist names
+  const { data: profiles, error: profilesErr } = await supabase
+    .from('profiles')
+    .select('id, full_name, display_name')
+    .in('id', userIds);
+  if (profilesErr) {
+    console.warn('⚠️ Warning fetching profiles:', profilesErr);
+  }
+  const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
+
   const reminders: AppointmentReminderData[] = [];
 
-  // Process appointments and generate reminders
-  for (const appointment of appointmentsWithSettings) {
-    const settings = appointment.agenda_settings;
+  for (const appointment of appointments) {
+    const settings = settingsMap.get(appointment.user_id) || {};
+    const profile = profileMap.get(appointment.user_id) || {};
     const appointmentStart = new Date(appointment.start_datetime);
-    const therapistName = appointment.profiles?.full_name || appointment.profiles?.display_name || 'Terapeuta';
+    const therapistName = profile.full_name || profile.display_name || 'Terapeuta';
+    const timezone = settings.timezone || 'America/Sao_Paulo';
 
-    // Check email reminders
+    // Email reminders
     if (appointment.send_email_reminder && appointment.patient_email) {
-      // First email reminder
       if (settings.email_reminder_1_enabled && settings.email_reminder_1_minutes) {
         const sendTime = new Date(appointmentStart.getTime() - (settings.email_reminder_1_minutes * 60 * 1000));
-        
-        if (sendTime >= now && sendTime <= windowEnd && 
-            (!appointment.email_reminder_sent_at || new Date(appointment.email_reminder_sent_at) < sendTime)) {
+        if (sendTime >= now && sendTime <= windowEnd && (!appointment.email_reminder_sent_at || new Date(appointment.email_reminder_sent_at) < sendTime)) {
           reminders.push({
             appointment_id: appointment.id,
             user_id: appointment.user_id,
@@ -461,19 +477,16 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
             patient_phone: appointment.patient_phone,
             title: appointment.title,
             start_datetime: appointment.start_datetime,
-            therapist_name,
-            timezone: settings.timezone || 'America/Sao_Paulo',
+            therapist_name: therapistName,
+            timezone,
             reminder_type: 'email',
             reminder_number: 1,
             minutes_before: settings.email_reminder_1_minutes
           });
         }
       }
-
-      // Second email reminder
       if (settings.email_reminder_2_enabled && settings.email_reminder_2_minutes) {
         const sendTime = new Date(appointmentStart.getTime() - (settings.email_reminder_2_minutes * 60 * 1000));
-        
         if (sendTime >= now && sendTime <= windowEnd) {
           reminders.push({
             appointment_id: appointment.id,
@@ -483,8 +496,8 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
             patient_phone: appointment.patient_phone,
             title: appointment.title,
             start_datetime: appointment.start_datetime,
-            therapist_name,
-            timezone: settings.timezone || 'America/Sao_Paulo',
+            therapist_name: therapistName,
+            timezone,
             reminder_type: 'email',
             reminder_number: 2,
             minutes_before: settings.email_reminder_2_minutes
@@ -493,14 +506,11 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
       }
     }
 
-    // Check WhatsApp reminders
+    // WhatsApp reminders
     if (appointment.send_whatsapp_reminder && appointment.patient_phone) {
-      // First WhatsApp reminder
       if (settings.whatsapp_reminder_1_enabled && settings.whatsapp_reminder_1_minutes) {
         const sendTime = new Date(appointmentStart.getTime() - (settings.whatsapp_reminder_1_minutes * 60 * 1000));
-        
-        if (sendTime >= now && sendTime <= windowEnd && 
-            (!appointment.whatsapp_reminder_sent_at || new Date(appointment.whatsapp_reminder_sent_at) < sendTime)) {
+        if (sendTime >= now && sendTime <= windowEnd && (!appointment.whatsapp_reminder_sent_at || new Date(appointment.whatsapp_reminder_sent_at) < sendTime)) {
           reminders.push({
             appointment_id: appointment.id,
             user_id: appointment.user_id,
@@ -509,19 +519,16 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
             patient_phone: appointment.patient_phone,
             title: appointment.title,
             start_datetime: appointment.start_datetime,
-            therapist_name,
-            timezone: settings.timezone || 'America/Sao_Paulo',
+            therapist_name: therapistName,
+            timezone,
             reminder_type: 'whatsapp',
             reminder_number: 1,
             minutes_before: settings.whatsapp_reminder_1_minutes
           });
         }
       }
-
-      // Second WhatsApp reminder
       if (settings.whatsapp_reminder_2_enabled && settings.whatsapp_reminder_2_minutes) {
         const sendTime = new Date(appointmentStart.getTime() - (settings.whatsapp_reminder_2_minutes * 60 * 1000));
-        
         if (sendTime >= now && sendTime <= windowEnd) {
           reminders.push({
             appointment_id: appointment.id,
@@ -531,8 +538,8 @@ async function getPendingRemindersOptimized(supabase: any, now: Date, windowEnd:
             patient_phone: appointment.patient_phone,
             title: appointment.title,
             start_datetime: appointment.start_datetime,
-            therapist_name,
-            timezone: settings.timezone || 'America/Sao_Paulo',
+            therapist_name: therapistName,
+            timezone,
             reminder_type: 'whatsapp',
             reminder_number: 2,
             minutes_before: settings.whatsapp_reminder_2_minutes
