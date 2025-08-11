@@ -2,6 +2,12 @@
 import { validateCPF, validateCNPJ, sanitizeTextInput, validateAmount } from '@/utils/securityValidation';
 import { validateDueDateReceitaSaude, validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
 import { isDemoUserByEmail } from '@/utils/demoUser';
+import type { SubscriptionPlan } from '@/types/subscription';
+
+// Função auxiliar para verificar se deve aplicar validação de Receita Saúde
+const shouldApplyReceitaSaudeValidation = (currentPlan?: SubscriptionPlan | null): boolean => {
+  return currentPlan?.slug === 'psi_regular';
+};
 
 export const validatePaymentForm = (
   formData: {
@@ -15,7 +21,8 @@ export const validatePaymentForm = (
   receivedDate: string,
   paymentTitular: 'patient' | 'other',
   selectedPatient?: any,
-  userEmail?: string
+  userEmail?: string,
+  currentPlan?: SubscriptionPlan | null
 ): string | null => {
   // Skip validation for demo user
   if (userEmail && isDemoUserByEmail(userEmail)) {
@@ -57,16 +64,16 @@ export const validatePaymentForm = (
     }
   }
 
-  // Validação Receita Saúde para data de vencimento retroativa
-  if (!isReceived && formData.due_date) {
+  // Validação Receita Saúde para data de vencimento retroativa (apenas Psi Regular)
+  if (!isReceived && formData.due_date && shouldApplyReceitaSaudeValidation(currentPlan)) {
     const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
     if (!dueDateValidation.isValid) {
       return dueDateValidation.errorMessage;
     }
   }
 
-  // Validação Receita Saúde para data de recebimento retroativa
-  if (isReceived && receivedDate) {
+  // Validação Receita Saúde para data de recebimento retroativa (apenas Psi Regular)
+  if (isReceived && receivedDate && shouldApplyReceitaSaudeValidation(currentPlan)) {
     const paymentDateValidation = validatePaymentDateReceitaSaude(receivedDate);
     if (!paymentDateValidation.isValid) {
       return paymentDateValidation.errorMessage;

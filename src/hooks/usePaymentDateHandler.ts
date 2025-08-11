@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface UsePaymentDateHandlerProps {
   onDateChange: (date: string) => void;
@@ -10,6 +11,7 @@ export function usePaymentDateHandler({ onDateChange, onSubmitWithRetroactiveDat
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState<string>('');
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
+  const { currentPlan } = useSubscription();
 
   const formatDateForDatabase = (date: Date): string => {
     const year = date.getFullYear();
@@ -28,13 +30,22 @@ export function usePaymentDateHandler({ onDateChange, onSubmitWithRetroactiveDat
     const formattedDate = formatDateForDatabase(date);
     
     console.log('🔄 usePaymentDateHandler - Validando data de recebimento:', {
-      formattedDate
+      formattedDate,
+      currentPlan: currentPlan?.slug
     });
+    
+    // Verificar se é plano Psi Regular - apenas eles recebem o aviso de mês fechado
+    if (currentPlan?.slug !== 'psi_regular') {
+      console.log('✅ usePaymentDateHandler - Plano não é Psi Regular, permitindo sem validação:', formattedDate);
+      onDateChange(formattedDate);
+      setHasRetroactiveWarning(false);
+      return;
+    }
     
     const validation = validatePaymentDateReceitaSaude(formattedDate);
     
     if (!validation.isValid) {
-      console.log('❌ usePaymentDateHandler - Data retroativa detectada');
+      console.log('❌ usePaymentDateHandler - Data retroativa detectada para Psi Regular');
       setPendingDate(formattedDate);
       setShowRetroactiveDialog(true);
       setHasRetroactiveWarning(true);

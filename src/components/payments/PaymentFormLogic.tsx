@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PaymentFormFields } from './PaymentFormFields';
@@ -25,6 +26,7 @@ interface PaymentFormLogicProps {
 
 export function PaymentFormLogic({ payment, patients, onSave, onCancel }: PaymentFormLogicProps) {
   const { user } = useAuth();
+  const { currentPlan } = useSubscription();
   
   const [formData, setFormData] = useState<FormData>({
     patient_id: payment?.patient_id || '',
@@ -64,7 +66,8 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
       receivedDate,
       paymentTitular,
       selectedPatient,
-      user?.email
+      user?.email,
+      currentPlan
     );
 
     if (validationError) {

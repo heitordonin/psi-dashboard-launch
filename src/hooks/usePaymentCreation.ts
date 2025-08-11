@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { validateAmount, sanitizeTextInput } from '@/utils/securityValidation';
 import { sanitizePaymentFormData } from '@/components/payments/PaymentFormValidation';
 import { validateDueDateReceitaSaude, validatePaymentDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { useSubscription } from '@/hooks/useSubscription';
 import type { WizardFormData } from '@/components/payments/wizard/types';
 import type { Patient } from '@/types/patient';
 import type { Payment } from '@/types/payment';
@@ -26,6 +27,7 @@ export function usePaymentCreation({
 }: UsePaymentCreationProps) {
   const queryClient = useQueryClient();
   const isEditMode = !!paymentToEdit;
+  const { currentPlan } = useSubscription();
 
   const createPaymentMutation = useMutation({
     mutationFn: async () => {
@@ -45,8 +47,8 @@ export function usePaymentCreation({
         throw new Error('Descrição deve ter no máximo 500 caracteres');
       }
 
-      // Validação Receita Saúde para data de vencimento
-      if (formData.due_date) {
+      // Validação Receita Saúde para data de vencimento (apenas Psi Regular)
+      if (formData.due_date && currentPlan?.slug === 'psi_regular') {
         const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
         if (!dueDateValidation.isValid) {
           throw new Error(dueDateValidation.errorMessage);
@@ -64,8 +66,8 @@ export function usePaymentCreation({
         }
       }
 
-      // Validação Receita Saúde para data de recebimento (se marcado como recebido)
-      if (formData.isReceived && formData.receivedDate) {
+      // Validação Receita Saúde para data de recebimento (apenas Psi Regular)
+      if (formData.isReceived && formData.receivedDate && currentPlan?.slug === 'psi_regular') {
         const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
         if (!paymentDateValidation.isValid) {
           throw new Error(paymentDateValidation.errorMessage);
@@ -188,8 +190,8 @@ export function usePaymentCreation({
         throw new Error('Descrição deve ter no máximo 500 caracteres');
       }
 
-      // Validação Receita Saúde para data de vencimento
-      if (formData.due_date) {
+      // Validação Receita Saúde para data de vencimento (apenas Psi Regular)
+      if (formData.due_date && currentPlan?.slug === 'psi_regular') {
         const dueDateValidation = validateDueDateReceitaSaude(formData.due_date);
         if (!dueDateValidation.isValid) {
           throw new Error(dueDateValidation.errorMessage);
@@ -207,8 +209,8 @@ export function usePaymentCreation({
         }
       }
 
-      // Validação Receita Saúde para data de recebimento (se marcado como recebido)
-      if (formData.isReceived && formData.receivedDate) {
+      // Validação Receita Saúde para data de recebimento (apenas Psi Regular)
+      if (formData.isReceived && formData.receivedDate && currentPlan?.slug === 'psi_regular') {
         const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
         if (!paymentDateValidation.isValid) {
           throw new Error(paymentDateValidation.errorMessage);

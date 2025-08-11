@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface ReceivedCheckboxProps {
   isAlreadyReceived: boolean;
@@ -23,6 +24,7 @@ export const ReceivedCheckbox = ({
   isEditing = false
 }: ReceivedCheckboxProps) => {
   const [receitaSaudeError, setReceitaSaudeError] = useState<string | null>(null);
+  const { currentPlan } = useSubscription();
 
   useEffect(() => {
     if (isAlreadyReceived && !receivedDate) {
@@ -31,15 +33,15 @@ export const ReceivedCheckbox = ({
     }
   }, [isAlreadyReceived, receivedDate, setReceivedDate]);
 
-  // Validar data de recebimento quando mudar
+  // Validar data de recebimento quando mudar (apenas para Psi Regular)
   useEffect(() => {
-    if (receivedDate) {
+    if (receivedDate && currentPlan?.slug === 'psi_regular') {
       const validation = validatePaymentDateReceitaSaude(receivedDate);
       setReceitaSaudeError(validation.isValid ? null : validation.errorMessage || null);
     } else {
       setReceitaSaudeError(null);
     }
-  }, [receivedDate]);
+  }, [receivedDate, currentPlan?.slug]);
 
   return (
     <div className="space-y-4">
