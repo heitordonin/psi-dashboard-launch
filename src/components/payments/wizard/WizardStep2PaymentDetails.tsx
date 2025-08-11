@@ -8,6 +8,7 @@ import { PaymentAmountField } from '@/components/payments/PaymentAmountField';
 import { PaymentDescriptionField } from '@/components/payments/PaymentDescriptionField';
 import { RetroactiveDateConfirmationDialog } from '@/components/payments/RetroactiveDateConfirmationDialog';
 import { validateDueDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { useSubscription } from '@/hooks/useSubscription';
 import type { WizardFormData } from './types';
 
 interface WizardStep2Props {
@@ -19,6 +20,7 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState('');
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
+  const { currentPlan } = useSubscription();
 
   const handlePaymentMethodChange = (method: 'boleto' | 'creditCard', checked: boolean) => {
     updateFormData({
@@ -31,6 +33,16 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
 
   const handleDateChange = (newDate: string) => {
     if (!newDate) {
+      updateFormData({ 
+        due_date: newDate, 
+        retroactiveDateConfirmed: false 
+      });
+      setHasRetroactiveWarning(false);
+      return;
+    }
+
+    // Apenas aplicar validação Receita Saúde para plano Psi Regular
+    if (currentPlan?.slug !== 'psi_regular') {
       updateFormData({ 
         due_date: newDate, 
         retroactiveDateConfirmed: false 
@@ -74,13 +86,13 @@ export function WizardStep2PaymentDetails({ formData, updateFormData }: WizardSt
 
   // Reset confirmation if date changes to a valid one
   useEffect(() => {
-    if (formData.due_date && formData.retroactiveDateConfirmed) {
+    if (formData.due_date && formData.retroactiveDateConfirmed && currentPlan?.slug === 'psi_regular') {
       const validation = validateDueDateReceitaSaude(formData.due_date);
       if (validation.isValid) {
         updateFormData({ retroactiveDateConfirmed: false });
       }
     }
-  }, [formData.due_date, formData.retroactiveDateConfirmed]);
+  }, [formData.due_date, formData.retroactiveDateConfirmed, currentPlan?.slug]);
 
   // Create input props conditionally to completely omit min attribute for manual charges
   const dateInputProps = {
