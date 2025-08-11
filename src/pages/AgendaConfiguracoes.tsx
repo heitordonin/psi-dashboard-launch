@@ -59,12 +59,8 @@ export default function AgendaConfiguracoes() {
     whatsapp_reminder_minutes: 60,
     email_reminder_1_enabled: false,
     email_reminder_1_minutes: 60,
-    email_reminder_2_enabled: false,
-    email_reminder_2_minutes: 15,
     whatsapp_reminder_1_enabled: false,
     whatsapp_reminder_1_minutes: 60,
-    whatsapp_reminder_2_enabled: false,
-    whatsapp_reminder_2_minutes: 15,
   });
 
   useEffect(() => {
@@ -205,73 +201,37 @@ export default function AgendaConfiguracoes() {
               Lembretes por E-mail
             </CardTitle>
             <CardDescription>
-              Configure até 2 lembretes automáticos por e-mail antes das consultas
+              Configure um lembrete automático por e-mail antes das consultas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Lembrete 1</h4>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="email_reminder_1_enabled"
-                    checked={formData.email_reminder_1_enabled}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_1_enabled: checked }))}
-                  />
-                  <Label htmlFor="email_reminder_1_enabled">Ativado</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm text-muted-foreground">Enviar</Label>
-                  <Select
-                    value={formData.email_reminder_1_minutes?.toString() || '60'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_1_minutes: parseInt(value) }))}
-                    disabled={!formData.email_reminder_1_enabled}
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="Selecione o tempo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REMINDER_MINUTES_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="email_reminder_1_enabled"
+                  checked={formData.email_reminder_1_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_1_enabled: checked }))}
+                />
+                <Label htmlFor="email_reminder_1_enabled">Ativado</Label>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Lembrete 2</h4>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="email_reminder_2_enabled"
-                    checked={formData.email_reminder_2_enabled}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, email_reminder_2_enabled: checked }))}
-                  />
-                  <Label htmlFor="email_reminder_2_enabled">Ativado</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm text-muted-foreground">Enviar</Label>
-                  <Select
-                    value={formData.email_reminder_2_minutes?.toString() || '15'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_2_minutes: parseInt(value) }))}
-                    disabled={!formData.email_reminder_2_enabled}
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="Selecione o tempo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REMINDER_MINUTES_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Label className="text-sm text-muted-foreground">Enviar</Label>
+                <Select
+                  value={formData.email_reminder_1_minutes?.toString() || '60'}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, email_reminder_1_minutes: parseInt(value) }))}
+                  disabled={!formData.email_reminder_1_enabled}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Selecione o tempo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_MINUTES_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -284,73 +244,37 @@ export default function AgendaConfiguracoes() {
               Lembretes por WhatsApp
             </CardTitle>
             <CardDescription>
-              Configure até 2 lembretes automáticos por WhatsApp antes das consultas
+              Configure um lembrete automático por WhatsApp antes das consultas
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Lembrete 1</h4>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="whatsapp_reminder_1_enabled"
-                    checked={formData.whatsapp_reminder_1_enabled}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_enabled: checked }))}
-                  />
-                  <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm text-muted-foreground">Enviar</Label>
-                  <Select
-                    value={formData.whatsapp_reminder_1_minutes?.toString() || '60'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(value) }))}
-                    disabled={!formData.whatsapp_reminder_1_enabled}
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="Selecione o tempo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REMINDER_MINUTES_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="whatsapp_reminder_1_enabled"
+                  checked={formData.whatsapp_reminder_1_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_enabled: checked }))}
+                />
+                <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Lembrete 2</h4>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="whatsapp_reminder_2_enabled"
-                    checked={formData.whatsapp_reminder_2_enabled}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_enabled: checked }))}
-                  />
-                  <Label htmlFor="whatsapp_reminder_2_enabled">Ativado</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm text-muted-foreground">Enviar</Label>
-                  <Select
-                    value={formData.whatsapp_reminder_2_minutes?.toString() || '15'}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_2_minutes: parseInt(value) }))}
-                    disabled={!formData.whatsapp_reminder_2_enabled}
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="Selecione o tempo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REMINDER_MINUTES_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Label className="text-sm text-muted-foreground">Enviar</Label>
+                <Select
+                  value={formData.whatsapp_reminder_1_minutes?.toString() || '60'}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(value) }))}
+                  disabled={!formData.whatsapp_reminder_1_enabled}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Selecione o tempo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_MINUTES_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
