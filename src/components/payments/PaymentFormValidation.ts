@@ -76,7 +76,8 @@ export const validatePaymentForm = (
   if (isReceived && receivedDate && shouldApplyReceitaSaudeValidation(currentPlan)) {
     const paymentDateValidation = validatePaymentDateReceitaSaude(receivedDate);
     if (!paymentDateValidation.isValid) {
-      return paymentDateValidation.errorMessage;
+      console.log('Receita Saúde validation warning for payment date:', paymentDateValidation.errorMessage);
+      // Not returning error - allowing registration to proceed after user confirmation
     }
   }
 
