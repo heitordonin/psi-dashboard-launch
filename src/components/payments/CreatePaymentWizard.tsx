@@ -1,9 +1,11 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { WizardHeader } from './wizard/WizardHeader';
 import { WizardStepRenderer } from './wizard/WizardStepRenderer';
 import { WizardNavigation } from './wizard/WizardNavigation';
 import { useCreatePaymentWizard } from './wizard/useCreatePaymentWizard';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   getTotalSteps, 
   getNextStep, 
@@ -16,6 +18,7 @@ import { isNextDisabled } from './wizard/wizardValidation';
 import type { CreatePaymentWizardProps } from './wizard/types';
 
 export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paymentToEdit }: CreatePaymentWizardProps) {
+  const isMobile = useIsMobile();
   const {
     currentStep,
     setCurrentStep,
@@ -44,40 +47,56 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     onClose();
   };
 
+  const content = (
+    <>
+      <WizardHeader
+        currentStep={getDisplayStepNumber(currentStep, formData, isEditMode)}
+        totalSteps={getDisplayTotalSteps(formData, isEditMode)}
+        stepTitle={getCurrentStepTitle(currentStep, formData, isEditMode)}
+        title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
+      />
+
+      <div className="py-6 px-6 overflow-y-auto flex-1 mobile-form-spacing">
+        <WizardStepRenderer
+          currentStep={currentStep}
+          formData={formData}
+          updateFormData={updateFormData}
+          patients={patients}
+          onNext={nextStep}
+          onPrevious={prevStep}
+          onSuccess={onSuccess}
+          onClose={handleClose}
+          paymentToEdit={paymentToEdit}
+        />
+      </div>
+
+      <div className="px-6 pb-6">
+        <WizardNavigation
+          currentStep={currentStep}
+          totalSteps={getTotalSteps()}
+          onPrevious={prevStep}
+          onNext={nextStep}
+          isNextDisabled={isNextDisabled(currentStep, formData, patients)}
+          onClose={handleClose}
+        />
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={isOpen} onOpenChange={handleClose}>
+        <DrawerContent className="max-h-[90vh]">
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
-        <WizardHeader
-          currentStep={getDisplayStepNumber(currentStep, formData, isEditMode)}
-          totalSteps={getDisplayTotalSteps(formData, isEditMode)}
-          stepTitle={getCurrentStepTitle(currentStep, formData, isEditMode)}
-          title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
-        />
-
-        <div className="py-6 px-6 overflow-y-auto flex-1 mobile-form-spacing">
-          <WizardStepRenderer
-            currentStep={currentStep}
-            formData={formData}
-            updateFormData={updateFormData}
-            patients={patients}
-            onNext={nextStep}
-            onPrevious={prevStep}
-            onSuccess={onSuccess}
-            onClose={handleClose}
-            paymentToEdit={paymentToEdit}
-          />
-        </div>
-
-        <div className="px-6 pb-6">
-          <WizardNavigation
-            currentStep={currentStep}
-            totalSteps={getTotalSteps()}
-            onPrevious={prevStep}
-            onNext={nextStep}
-            isNextDisabled={isNextDisabled(currentStep, formData, patients)}
-            onClose={handleClose}
-          />
-        </div>
+        {content}
       </DialogContent>
     </Dialog>
   );

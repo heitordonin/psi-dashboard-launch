@@ -23,6 +23,7 @@ interface PaymentsListProps {
   onAddPayment: () => void;
   onRefresh?: () => Promise<void>;
   hasFilters?: boolean;
+  isWizardOpen?: boolean;
 }
 
 export const PaymentsList = ({
@@ -32,7 +33,8 @@ export const PaymentsList = ({
   onEditPayment,
   onAddPayment,
   onRefresh,
-  hasFilters = false
+  hasFilters = false,
+  isWizardOpen = false
 }: PaymentsListProps) => {
   const isMobile = useIsMobile();
   const { triggerHaptic } = useHapticFeedback();
@@ -120,9 +122,11 @@ export const PaymentsList = ({
                 Criar primeira cobrança
               </Button>
             </ThumbZoneActions>
-            <FloatingActionButton onClick={handleAddPayment}>
-              <Plus className="w-5 h-5" />
-            </FloatingActionButton>
+            {!isWizardOpen && (
+              <FloatingActionButton onClick={handleAddPayment}>
+                <Plus className="w-5 h-5" />
+              </FloatingActionButton>
+            )}
           </>
         )}
       </>
@@ -198,7 +202,7 @@ export const PaymentsList = ({
         </div>
       )}
       
-      {isMobile && (
+      {isMobile && !isWizardOpen && (
         <FloatingActionButton onClick={handleAddPayment}>
           <Plus className="w-5 h-5" />
         </FloatingActionButton>

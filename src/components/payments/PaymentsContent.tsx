@@ -87,6 +87,7 @@ export const PaymentsContent = ({ userId }: PaymentsContentProps) => {
           onAddPayment={handleAddPayment}
           onRefresh={handleRefresh}
           hasFilters={hasFilters}
+          isWizardOpen={showCreateWizard}
         />
       </div>
 
