@@ -37,6 +37,9 @@ export const Step3_Address = ({
       <div className="text-center">
         <h3 className="text-lg font-semibold mb-2">Endereço</h3>
         <p className="text-gray-600">Preencha o endereço do paciente</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          ℹ️ Todos os campos de endereço são opcionais
+        </p>
       </div>
 
       <AddressForm 
