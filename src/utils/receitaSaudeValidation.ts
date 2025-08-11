@@ -105,8 +105,22 @@ export function validateExpenseDateReceitaSaude(expenseDate: string) {
  * Apenas para plano Psi Regular
  */
 export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?: any) {
-  // Se não há paid_date ou não é plano Psi Regular, permitir desmarcação
-  if (!paidDate || currentPlan?.slug !== 'psi_regular') {
+  console.log('🔍 Iniciando validação desmarcação:', { 
+    paidDate, 
+    planSlug: currentPlan?.slug,
+    hasPaidDate: !!paidDate 
+  });
+
+  // Se não há paid_date, significa que o pagamento nunca foi marcado como pago
+  // Neste caso, permitir a operação normalmente
+  if (!paidDate || paidDate === '') {
+    console.log('✅ Sem data de pagamento registrada - operação permitida');
+    return { isValid: true };
+  }
+
+  // Se não é plano Psi Regular, permitir desmarcação
+  if (currentPlan?.slug !== 'psi_regular') {
+    console.log('✅ Plano não é Psi Regular - operação permitida');
     return { isValid: true };
   }
 
@@ -125,10 +139,12 @@ export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?:
   // Calcular diferença em meses
   const monthsDifference = (currentYear - paymentYear) * 12 + (currentMonth - paymentMonth);
   
-  console.log('🔍 Validação desmarcação pagamento retroativo:', {
+  console.log('📅 Análise desmarcação:', {
     paidDate,
     paymentDate: paymentDate.toISOString(),
     today: today.toISOString(),
+    paymentMonth: paymentMonth + 1,
+    currentMonth: currentMonth + 1,
     monthsDifference,
     planSlug: currentPlan?.slug
   });
@@ -137,7 +153,7 @@ export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?:
   if (monthsDifference >= 1) {
     const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
     
-    console.log('❌ Tentativa de desmarcação de pagamento retroativo bloqueada');
+    console.log('❌ Desmarcação bloqueada - pagamento de mês anterior');
     return {
       isValid: false,
       errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. O mês já foi fechado e para alterações é necessário abrir um chamado.`

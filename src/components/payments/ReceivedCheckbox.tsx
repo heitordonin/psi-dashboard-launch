@@ -49,16 +49,28 @@ export const ReceivedCheckbox = ({
 
   // Função para lidar com mudança do checkbox
   const handleCheckboxChange = (checked: boolean) => {
+    console.log('🔄 Tentativa de mudança checkbox:', { 
+      checked, 
+      isAlreadyReceived, 
+      isEditing, 
+      originalPaidDate,
+      planSlug: currentPlan?.slug 
+    });
+    
     // Se está tentando desmarcar um pagamento já registrado
     if (!checked && isAlreadyReceived && isEditing && originalPaidDate) {
+      console.log('🔍 Verificando desmarcação de pagamento registrado...');
+      
       const validation = validatePaymentUnmarkRetroactive(originalPaidDate, currentPlan);
       
       if (!validation.isValid) {
+        console.log('❌ Desmarcação bloqueada:', validation.errorMessage);
         setShowUnmarkDialog(true);
         return; // Impedir a desmarcação
       }
     }
     
+    console.log('✅ Mudança do checkbox permitida');
     setIsAlreadyReceived(checked);
   };
 
