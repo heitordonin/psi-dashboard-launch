@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { validateExpenseDateReceitaSaude } from '@/utils/receitaSaudeValidation';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface UseExpenseDateHandlerProps {
   onDateChange: (date: string) => void;
@@ -10,6 +11,7 @@ export function useExpenseDateHandler({ onDateChange, onPopoverClose }: UseExpen
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState<string>('');
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
+  const { currentPlan } = useSubscription();
 
   const formatDateForDatabase = (date: Date): string => {
     // Use local timezone to avoid offset issues
@@ -39,13 +41,23 @@ export function useExpenseDateHandler({ onDateChange, onPopoverClose }: UseExpen
     
     console.log('🔄 useExpenseDateHandler - Data formatada para database:', {
       formattedDate,
-      originalDate: date
+      originalDate: date,
+      currentPlan: currentPlan?.slug
     });
+    
+    // Verificar se é plano Psi Regular - apenas eles recebem o aviso de mês fechado
+    if (currentPlan?.slug !== 'psi_regular') {
+      console.log('✅ useExpenseDateHandler - Plano não é Psi Regular, permitindo sem validação:', formattedDate);
+      onDateChange(formattedDate);
+      setHasRetroactiveWarning(false);
+      onPopoverClose?.();
+      return;
+    }
     
     const validation = validateExpenseDateReceitaSaude(formattedDate);
     
     if (!validation.isValid) {
-      console.log('❌ useExpenseDateHandler - Data retroativa detectada');
+      console.log('❌ useExpenseDateHandler - Data retroativa detectada para Psi Regular');
       setPendingDate(formattedDate);
       setShowRetroactiveDialog(true);
       setHasRetroactiveWarning(true);
