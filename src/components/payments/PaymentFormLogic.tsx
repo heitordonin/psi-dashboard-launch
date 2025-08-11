@@ -105,19 +105,18 @@ export function PaymentFormLogic({ payment, patients, onSave, onCancel }: Paymen
     <div className="form-step">
       <div className="form-step-content">
         <form onSubmit={handleSubmit} className="mobile-form-spacing">
-      <PaymentFormFields
-        patients={patients}
-        formData={formData}
-        setFormData={setFormData}
-        paymentTitular={paymentTitular}
-        setPaymentTitular={setPaymentTitular}
-        isReceived={isReceived}
-        setIsReceived={setIsReceived}
-        receivedDate={receivedDate}
-        setReceivedDate={setReceivedDate}
-        isEditing={!!payment}
-        originalPaidDate={payment?.paid_date}
-      />
+          <PaymentFormFields
+            patients={patients}
+            formData={formData}
+            setFormData={setFormData}
+            paymentTitular={paymentTitular}
+            setPaymentTitular={setPaymentTitular}
+            isReceived={isReceived}
+            setIsReceived={setIsReceived}
+            receivedDate={receivedDate}
+            setReceivedDate={setReceivedDate}
+            isEditing={!!payment}
+          />
         </form>
       </div>
 

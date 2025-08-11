@@ -81,12 +81,9 @@ export function validateReceitaSaudeDate(retroactiveDate: string, currentDate?: 
 
 /**
  * Valida data de vencimento considerando regras da Receita Saúde
- * Nota: Regra do dia 10 NÃO se aplica para datas de vencimento, apenas para pagamentos
- * @returns { isValid: boolean, errorMessage?: string }
  */
-export function validateDueDateReceitaSaude(dueDate: string): { isValid: boolean, errorMessage?: string } {
-  console.log('✅ Data de vencimento validada - sem restrição da regra do dia 10');
-  return { isValid: true };
+export function validateDueDateReceitaSaude(dueDate: string) {
+  return validateReceitaSaudeDate(dueDate);
 }
 
 /**
@@ -101,92 +98,4 @@ export function validatePaymentDateReceitaSaude(paymentDate: string) {
  */
 export function validateExpenseDateReceitaSaude(expenseDate: string) {
   return validateReceitaSaudeDate(expenseDate);
-}
-
-/**
- * Valida se é possível desmarcar um pagamento que foi registrado em mês anterior
- * Apenas para plano Psi Regular
- */
-export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?: any) {
-  console.log('🔍 Iniciando validação desmarcação:', { 
-    paidDate, 
-    planSlug: currentPlan?.slug,
-    hasPaidDate: !!paidDate 
-  });
-
-  // Se não há paid_date, significa que o pagamento nunca foi marcado como pago
-  // Neste caso, permitir a operação normalmente
-  if (!paidDate || paidDate === '') {
-    console.log('✅ Sem data de pagamento registrada - operação permitida');
-    return { isValid: true };
-  }
-
-  // Se não é plano Psi Regular, permitir desmarcação
-  if (currentPlan?.slug !== 'psi_regular') {
-    console.log('✅ Plano não é Psi Regular - operação permitida');
-    return { isValid: true };
-  }
-
-  const paymentDate = new Date(paidDate + 'T00:00:00');
-  const today = new Date();
-  
-  // Normalizar as datas
-  paymentDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const paymentMonth = paymentDate.getMonth();
-  const paymentYear = paymentDate.getFullYear();
-  
-  // Calcular diferença em meses
-  const monthsDifference = (currentYear - paymentYear) * 12 + (currentMonth - paymentMonth);
-  
-  console.log('📅 Análise desmarcação:', {
-    paidDate,
-    paymentDate: paymentDate.toISOString(),
-    today: today.toISOString(),
-    paymentMonth: paymentMonth + 1,
-    currentMonth: currentMonth + 1,
-    monthsDifference,
-    planSlug: currentPlan?.slug
-  });
-  
-  const currentDay = today.getDate();
-  
-  console.log('📅 Análise da regra do dia 10:', {
-    currentDay,
-    monthsDifference,
-    isAfterDay10: currentDay >= 10
-  });
-  
-  // Aplicar a mesma regra do dia 10 da Receita Saúde
-  if (currentDay >= 10) {
-    // Após o dia 10: não pode desmarcar pagamentos do mês anterior
-    if (monthsDifference >= 1) {
-      const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
-      const todayFormatted = today.toLocaleDateString('pt-BR');
-      
-      console.log('❌ Desmarcação bloqueada - após dia 10, mês anterior');
-      return {
-        isValid: false,
-        errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. Por impeditivo legal da legislação da Receita Saúde, após o dia 10 (hoje é ${todayFormatted}), não é permitido desmarcar recebimentos do mês anterior. O mês já foi fechado e para alterações é necessário abrir um chamado.`
-      };
-    }
-  } else {
-    // Antes do dia 10: não pode desmarcar pagamentos de 2 meses atrás ou mais
-    if (monthsDifference >= 2) {
-      const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
-      const todayFormatted = today.toLocaleDateString('pt-BR');
-      
-      console.log('❌ Desmarcação bloqueada - antes dia 10, 2+ meses atrás');
-      return {
-        isValid: false,
-        errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. Por impeditivo legal da legislação da Receita Saúde, antes do dia 10 (hoje é ${todayFormatted}), só é permitido desmarcar recebimentos do mês anterior. Para alterações é necessário abrir um chamado.`
-      };
-    }
-  }
-  
-  console.log('✅ Desmarcação permitida - dentro do prazo legal');
-  return { isValid: true };
 }
