@@ -70,7 +70,7 @@ export function usePaymentCreation({
       if (formData.isReceived && formData.receivedDate && currentPlan?.slug === 'psi_regular') {
         const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
         if (!paymentDateValidation.isValid) {
-          throw new Error(paymentDateValidation.errorMessage);
+          console.log('⚠️ Data retroativa detectada, mas prosseguindo após confirmação:', paymentDateValidation.errorMessage);
         }
       }
 
@@ -213,7 +213,7 @@ export function usePaymentCreation({
       if (formData.isReceived && formData.receivedDate && currentPlan?.slug === 'psi_regular') {
         const paymentDateValidation = validatePaymentDateReceitaSaude(formData.receivedDate);
         if (!paymentDateValidation.isValid) {
-          throw new Error(paymentDateValidation.errorMessage);
+          console.log('⚠️ Data retroativa detectada, mas prosseguindo após confirmação:', paymentDateValidation.errorMessage);
         }
       }
 
