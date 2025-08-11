@@ -4,8 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ExpenseCategory, ExpenseWithCategory } from "@/types/expense";
@@ -42,6 +45,7 @@ interface ExpenseFormProps {
 export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
+  const [categorySearchOpen, setCategorySearchOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -244,34 +248,65 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria *</FormLabel>
-                <Select onValueChange={handleCategoryChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categoriesLoading ? (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        Carregando categorias...
-                      </div>
-                    ) : categoriesError ? (
-                      <div className="p-2 text-sm text-red-500">
-                        Erro ao carregar categorias
-                      </div>
-                    ) : !categories || categories.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        Nenhuma categoria encontrada
-                      </div>
-                    ) : (
-                      categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={categorySearchOpen}
+                        className="w-full justify-between"
+                      >
+                        {field.value
+                          ? categories?.find((category) => category.id === field.value)?.name
+                          : "Buscar categoria..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar categoria..." />
+                      <CommandList>
+                        {categoriesLoading ? (
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Carregando categorias...
+                          </div>
+                        ) : categoriesError ? (
+                          <div className="p-2 text-sm text-red-500">
+                            Erro ao carregar categorias
+                          </div>
+                        ) : !categories || categories.length === 0 ? (
+                          <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                        ) : (
+                          <>
+                            <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                            <CommandGroup>
+                              {categories.map((category) => (
+                                <CommandItem
+                                  key={category.id}
+                                  value={category.name}
+                                  onSelect={() => {
+                                    handleCategoryChange(category.id);
+                                    setCategorySearchOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === category.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {category.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}

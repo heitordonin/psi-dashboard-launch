@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { WizardFormData } from './types';
 import type { Patient } from '@/types/patient';
 
@@ -15,6 +19,7 @@ interface WizardStep4Props {
 }
 
 export function WizardStep4PayerDetails({ formData, updateFormData, patients }: WizardStep4Props) {
+  const [patientSearchOpen, setPatientSearchOpen] = useState(false);
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
   const isCompanyPatient = selectedPatient?.patient_type === 'company';
   const isFromAbroad = selectedPatient?.is_payment_from_abroad;
@@ -94,20 +99,53 @@ export function WizardStep4PayerDetails({ formData, updateFormData, patients }: 
         <div className="space-y-4">
           <div>
             <Label htmlFor="patient">Paciente</Label>
-            <Select value={formData.patient_id} onValueChange={handlePatientChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um paciente" />
-              </SelectTrigger>
-              <SelectContent>
-                {patients.map((patient) => (
-                  <SelectItem key={patient.id} value={patient.id}>
-                    {patient.full_name}
-                    {patient.patient_type === 'company' && ' (PJ)'}
-                    {patient.is_payment_from_abroad && ' (Exterior)'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={patientSearchOpen}
+                  className="w-full justify-between"
+                >
+                  {formData.patient_id
+                    ? patients.find((patient) => patient.id === formData.patient_id)?.full_name +
+                      (patients.find((patient) => patient.id === formData.patient_id)?.patient_type === 'company' ? ' (PJ)' : '') +
+                      (patients.find((patient) => patient.id === formData.patient_id)?.is_payment_from_abroad ? ' (Exterior)' : '')
+                    : "Buscar paciente..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Buscar paciente..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {patients.map((patient) => (
+                        <CommandItem
+                          key={patient.id}
+                          value={patient.full_name}
+                          onSelect={() => {
+                            handlePatientChange(patient.id);
+                            setPatientSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.patient_id === patient.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {patient.full_name}
+                          {patient.patient_type === 'company' && ' (PJ)'}
+                          {patient.is_payment_from_abroad && ' (Exterior)'}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Para pacientes do exterior ou empresas, não mostra opções de titular */}
