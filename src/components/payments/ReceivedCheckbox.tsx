@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
+import { validatePaymentDateReceitaSaude, validatePaymentUnmarkRetroactive } from "@/utils/receitaSaudeValidation";
 import { useSubscription } from "@/hooks/useSubscription";
+import { UnmarkPaymentDialog } from "./UnmarkPaymentDialog";
 
 interface ReceivedCheckboxProps {
   isAlreadyReceived: boolean;
@@ -13,6 +14,7 @@ interface ReceivedCheckboxProps {
   setReceivedDate: (value: string) => void;
   errors: Record<string, string>;
   isEditing?: boolean;
+  originalPaidDate?: string;
 }
 
 export const ReceivedCheckbox = ({
@@ -21,9 +23,11 @@ export const ReceivedCheckbox = ({
   receivedDate,
   setReceivedDate,
   errors,
-  isEditing = false
+  isEditing = false,
+  originalPaidDate
 }: ReceivedCheckboxProps) => {
   const [receitaSaudeError, setReceitaSaudeError] = useState<string | null>(null);
+  const [showUnmarkDialog, setShowUnmarkDialog] = useState(false);
   const { currentPlan } = useSubscription();
 
   useEffect(() => {
@@ -43,13 +47,28 @@ export const ReceivedCheckbox = ({
     }
   }, [receivedDate, currentPlan?.slug]);
 
+  // Função para lidar com mudança do checkbox
+  const handleCheckboxChange = (checked: boolean) => {
+    // Se está tentando desmarcar um pagamento já registrado
+    if (!checked && isAlreadyReceived && isEditing && originalPaidDate) {
+      const validation = validatePaymentUnmarkRetroactive(originalPaidDate, currentPlan);
+      
+      if (!validation.isValid) {
+        setShowUnmarkDialog(true);
+        return; // Impedir a desmarcação
+      }
+    }
+    
+    setIsAlreadyReceived(checked);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
         <Checkbox
           id="already-received"
           checked={isAlreadyReceived}
-          onCheckedChange={(checked) => setIsAlreadyReceived(checked === true)}
+          onCheckedChange={(checked) => handleCheckboxChange(checked === true)}
         />
         <Label htmlFor="already-received">
           {isEditing ? "Pagamento foi recebido?" : "Valor já recebido?"}
@@ -71,6 +90,12 @@ export const ReceivedCheckbox = ({
           {receitaSaudeError && <p className="text-red-500 text-sm mt-1">{receitaSaudeError}</p>}
         </div>
       )}
+
+      <UnmarkPaymentDialog
+        isOpen={showUnmarkDialog}
+        onClose={() => setShowUnmarkDialog(false)}
+        paidDate={originalPaidDate || ""}
+      />
     </div>
   );
 };

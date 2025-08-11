@@ -28,6 +28,7 @@ interface PaymentFormFieldsProps {
   receivedDate: string;
   setReceivedDate: (value: string) => void;
   isEditing: boolean;
+  originalPaidDate?: string;
 }
 
 export function PaymentFormFields({
@@ -40,7 +41,8 @@ export function PaymentFormFields({
   setIsReceived,
   receivedDate,
   setReceivedDate,
-  isEditing
+  isEditing,
+  originalPaidDate
 }: PaymentFormFieldsProps) {
   const selectedPatient = patients.find(p => p.id === formData.patient_id);
   
@@ -78,6 +80,7 @@ export function PaymentFormFields({
         setReceivedDate={setReceivedDate}
         errors={{}}
         isEditing={isEditing}
+        originalPaidDate={originalPaidDate}
       />
       
       <PaymentDueDateField

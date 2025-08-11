@@ -99,3 +99,51 @@ export function validatePaymentDateReceitaSaude(paymentDate: string) {
 export function validateExpenseDateReceitaSaude(expenseDate: string) {
   return validateReceitaSaudeDate(expenseDate);
 }
+
+/**
+ * Valida se é possível desmarcar um pagamento que foi registrado em mês anterior
+ * Apenas para plano Psi Regular
+ */
+export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?: any) {
+  // Se não há paid_date ou não é plano Psi Regular, permitir desmarcação
+  if (!paidDate || currentPlan?.slug !== 'psi_regular') {
+    return { isValid: true };
+  }
+
+  const paymentDate = new Date(paidDate + 'T00:00:00');
+  const today = new Date();
+  
+  // Normalizar as datas
+  paymentDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const paymentMonth = paymentDate.getMonth();
+  const paymentYear = paymentDate.getFullYear();
+  
+  // Calcular diferença em meses
+  const monthsDifference = (currentYear - paymentYear) * 12 + (currentMonth - paymentMonth);
+  
+  console.log('🔍 Validação desmarcação pagamento retroativo:', {
+    paidDate,
+    paymentDate: paymentDate.toISOString(),
+    today: today.toISOString(),
+    monthsDifference,
+    planSlug: currentPlan?.slug
+  });
+  
+  // Se o pagamento foi registrado em mês anterior, não permitir desmarcação
+  if (monthsDifference >= 1) {
+    const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
+    
+    console.log('❌ Tentativa de desmarcação de pagamento retroativo bloqueada');
+    return {
+      isValid: false,
+      errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. O mês já foi fechado e para alterações é necessário abrir um chamado.`
+    };
+  }
+  
+  console.log('✅ Desmarcação permitida - pagamento do mês atual');
+  return { isValid: true };
+}
