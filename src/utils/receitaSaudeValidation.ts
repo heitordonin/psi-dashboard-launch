@@ -149,17 +149,41 @@ export function validatePaymentUnmarkRetroactive(paidDate: string, currentPlan?:
     planSlug: currentPlan?.slug
   });
   
-  // Se o pagamento foi registrado em mês anterior, não permitir desmarcação
-  if (monthsDifference >= 1) {
-    const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
-    
-    console.log('❌ Desmarcação bloqueada - pagamento de mês anterior');
-    return {
-      isValid: false,
-      errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. O mês já foi fechado e para alterações é necessário abrir um chamado.`
-    };
+  const currentDay = today.getDate();
+  
+  console.log('📅 Análise da regra do dia 10:', {
+    currentDay,
+    monthsDifference,
+    isAfterDay10: currentDay >= 10
+  });
+  
+  // Aplicar a mesma regra do dia 10 da Receita Saúde
+  if (currentDay >= 10) {
+    // Após o dia 10: não pode desmarcar pagamentos do mês anterior
+    if (monthsDifference >= 1) {
+      const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
+      const todayFormatted = today.toLocaleDateString('pt-BR');
+      
+      console.log('❌ Desmarcação bloqueada - após dia 10, mês anterior');
+      return {
+        isValid: false,
+        errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. Por impeditivo legal da legislação da Receita Saúde, após o dia 10 (hoje é ${todayFormatted}), não é permitido desmarcar recebimentos do mês anterior. O mês já foi fechado e para alterações é necessário abrir um chamado.`
+      };
+    }
+  } else {
+    // Antes do dia 10: não pode desmarcar pagamentos de 2 meses atrás ou mais
+    if (monthsDifference >= 2) {
+      const paymentFormatted = paymentDate.toLocaleDateString('pt-BR');
+      const todayFormatted = today.toLocaleDateString('pt-BR');
+      
+      console.log('❌ Desmarcação bloqueada - antes dia 10, 2+ meses atrás');
+      return {
+        isValid: false,
+        errorMessage: `Não é possível desmarcar um recebimento registrado em ${paymentFormatted}. Por impeditivo legal da legislação da Receita Saúde, antes do dia 10 (hoje é ${todayFormatted}), só é permitido desmarcar recebimentos do mês anterior. Para alterações é necessário abrir um chamado.`
+      };
+    }
   }
   
-  console.log('✅ Desmarcação permitida - pagamento do mês atual');
+  console.log('✅ Desmarcação permitida - dentro do prazo legal');
   return { isValid: true };
 }
