@@ -153,7 +153,7 @@ serve(async (req) => {
               
               if (amount <= 6900) { // R$ 69
                 planSlug = 'gestao';
-              } else if (amount <= 18900) { // R$ 189
+              } else if (amount <= 24900) { // R$ 249
                 planSlug = 'psi_regular';
               }
               

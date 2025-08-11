@@ -32,7 +32,7 @@ export const PlansPreviewSection = () => {
     },
     {
       name: "Psi Regular",
-      price: "R$ 189,00",
+      price: "R$ 249,00",
       period: "/mês",
       features: [
         "Nós lançamos o seu Receita Saúde",

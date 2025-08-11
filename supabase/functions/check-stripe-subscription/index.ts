@@ -106,7 +106,7 @@ serve(async (req) => {
             planSlug = "psi_regular";
           } else if (amount === 4900) {
             planSlug = "gestao";
-          } else if (amount === 18900) {
+          } else if (amount === 24900) {
             planSlug = "psi_regular";
           }
           
@@ -278,7 +278,7 @@ serve(async (req) => {
         // Fallback para mapear baseado no valor (em centavos BRL)
         if (amount === 4900) { // R$49,00
           planSlug = "gestao";
-        } else if (amount === 18900) { // R$189,00
+        } else if (amount === 24900) { // R$249,00
           planSlug = "psi_regular";
         }
         
