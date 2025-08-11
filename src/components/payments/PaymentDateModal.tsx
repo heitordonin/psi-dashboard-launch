@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
 import { RetroactiveDateConfirmationDialog } from "./RetroactiveDateConfirmationDialog";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface PaymentDateModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
+  
+  const { currentPlan } = useSubscription();
 
   const handleDateChange = (date: Date) => {
     if (!date) {
@@ -41,18 +44,23 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
     
     console.log('🔄 PaymentDateModal - Validando data:', {
       selectedDate: date.toISOString(),
-      formattedDate
+      formattedDate,
+      userPlan: currentPlan?.slug
     });
     
-    const validation = validatePaymentDateReceitaSaude(formattedDate);
+    // Aplicar validação de Receita Saúde apenas para usuários do plano psi_regular
+    const shouldApplyValidation = currentPlan?.slug === 'psi_regular';
+    const validation = shouldApplyValidation 
+      ? validatePaymentDateReceitaSaude(formattedDate)
+      : { isValid: true };
     
-    if (!validation.isValid) {
-      console.log('❌ PaymentDateModal - Data retroativa detectada');
+    if (!validation.isValid && shouldApplyValidation) {
+      console.log('❌ PaymentDateModal - Data retroativa detectada para usuário Psi Regular');
       setPendingDate(date);
       setShowRetroactiveDialog(true);
       setHasRetroactiveWarning(true);
     } else {
-      console.log('✅ PaymentDateModal - Data válida');
+      console.log('✅ PaymentDateModal - Data válida ou usuário não-Psi Regular');
       setSelectedDate(date);
       setHasRetroactiveWarning(false);
     }
