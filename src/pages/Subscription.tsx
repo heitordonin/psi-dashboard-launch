@@ -173,17 +173,6 @@ const Subscription = () => {
                           <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                           Atualizar
                         </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={forceSubscriptionSync}
-                          disabled={isForcingSyncSubscription}
-                          className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                        >
-                          <RefreshCw className={`w-4 h-4 mr-2 ${isForcingSyncSubscription ? 'animate-spin' : ''}`} />
-                          Sincronizar Stripe
-                        </Button>
                       </div>
                     </div>
                   </CardHeader>

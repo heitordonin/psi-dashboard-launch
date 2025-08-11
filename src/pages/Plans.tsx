@@ -38,20 +38,7 @@ const Plans = () => {
 
   // Usuário logado - interface administrativa
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          onClick={() => forceSyncMutation.mutate()}
-          disabled={forceSyncMutation.isPending}
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${forceSyncMutation.isPending ? 'animate-spin' : ''}`} />
-          {forceSyncMutation.isPending ? 'Sincronizando...' : 'Sincronizar Plano'}
-        </Button>
-      </div>
-      <AuthenticatedPlansView plans={plans || []} currentPlan={currentPlan} />
-    </div>
+    <AuthenticatedPlansView plans={plans || []} currentPlan={currentPlan} />
   );
 };
 
