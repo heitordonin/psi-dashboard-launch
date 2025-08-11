@@ -16,6 +16,7 @@ export const usePaymentData = (userId: string | undefined) => {
         .from('patients')
         .select('*')
         .eq('owner_id', userId)
+        .is('deleted_at', null)
         .order('full_name');
       
       if (error) throw error;
