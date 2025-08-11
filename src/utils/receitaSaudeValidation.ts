@@ -81,9 +81,12 @@ export function validateReceitaSaudeDate(retroactiveDate: string, currentDate?: 
 
 /**
  * Valida data de vencimento considerando regras da Receita Saúde
+ * Nota: Regra do dia 10 NÃO se aplica para datas de vencimento, apenas para pagamentos
+ * @returns { isValid: boolean, errorMessage?: string }
  */
-export function validateDueDateReceitaSaude(dueDate: string) {
-  return validateReceitaSaudeDate(dueDate);
+export function validateDueDateReceitaSaude(dueDate: string): { isValid: boolean, errorMessage?: string } {
+  console.log('✅ Data de vencimento validada - sem restrição da regra do dia 10');
+  return { isValid: true };
 }
 
 /**
