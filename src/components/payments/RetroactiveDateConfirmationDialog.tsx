@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 interface RetroactiveDateConfirmationDialogProps {
   isOpen: boolean;
@@ -30,17 +30,16 @@ export const RetroactiveDateConfirmationDialog: React.FC<RetroactiveDateConfirma
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
-            <Calendar className="w-5 h-5" />
-            Data Retroativa Detectada
+          <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="w-5 h-5" />
+            Mês Fechado - Carnê Leão
           </AlertDialogTitle>
           <AlertDialogDescription className="text-gray-600">
-            Você selecionou a data <strong>{formattedDate}</strong> que é anterior ao mês atual.
+            Você está registrando um recebimento com data <strong>{formattedDate}</strong>.
             <br /><br />
-            Por impeditivo legal da legislação da Receita Saúde, cobranças/pagamentos retroativos 
-            devem ser registrados até o dia 10 do mês seguinte ao vencimento.
+            <strong>O seu mês já foi fechado</strong>, tem certeza que deseja realizar esse lançamento retroativo?
             <br /><br />
-            Deseja prosseguir com esta data mesmo assim?
+            Para atualizar no seu Carnê Leão você deve abrir um chamado.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
@@ -49,9 +48,9 @@ export const RetroactiveDateConfirmationDialog: React.FC<RetroactiveDateConfirma
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            className="bg-amber-600 hover:bg-amber-700 text-white"
           >
-            Confirmar Operação
+            Ciente
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
