@@ -151,9 +151,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Buscar informações do perfil do usuário (terapeuta)
+    // Buscar informações do perfil do usuário (terapeuta) e email
     let profile;
     let agendaSettings;
+    let therapistEmail;
     
     try {
       const { data: profileData, error: profileError } = await supabaseClient
@@ -166,6 +167,20 @@ const handler = async (req: Request): Promise<Response> => {
         console.warn('⚠️ Warning fetching profile:', profileError);
       }
       profile = profileData;
+
+      // Buscar email do terapeuta através de uma consulta segura
+      try {
+        const { data: authUser, error: userError } = await supabaseClient.auth.admin.getUserById(appointment.user_id);
+        
+        if (userError) {
+          console.warn('⚠️ Warning fetching therapist email:', userError);
+        } else {
+          therapistEmail = authUser.user?.email;
+        }
+      } catch (authError) {
+        console.warn('⚠️ Could not fetch therapist email:', authError);
+        therapistEmail = null;
+      }
 
       // Buscar configurações de agenda para obter o timezone
       const { data: settingsData, error: settingsError } = await supabaseClient
@@ -181,6 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('✅ Profile and settings retrieved:', { 
         profile: profile ? 'found' : 'not found',
+        therapistEmail: therapistEmail ? 'found' : 'not found',
         agendaSettings: agendaSettings ? 'found' : 'using default'
       });
 
@@ -188,6 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.warn('⚠️ Non-critical error fetching profile/settings:', fetchError);
       // Continue execution with defaults
       profile = null;
+      therapistEmail = null;
       agendaSettings = null;
     }
 
@@ -195,6 +212,7 @@ const handler = async (req: Request): Promise<Response> => {
     const patientName = appointment.patient_name || patientDetails?.full_name || "Paciente";
     const patientEmail = appointment.patient_email || patientDetails?.email;
     const patientPhone = appointment.patient_phone || patientDetails?.phone;
+    const therapistPhone = profile?.phone;
 
     // Obter timezone do usuário (padrão: America/Sao_Paulo)
     const userTimezone = agendaSettings?.timezone || 'America/Sao_Paulo';
@@ -256,12 +274,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (reminderType === 'immediate') {
       // Para lembretes imediatos, usar as configurações do agendamento
-      shouldSendEmail = appointment.send_email_reminder && patientEmail && patientEmail.includes('@');
-      shouldSendWhatsApp = appointment.send_whatsapp_reminder && patientPhone;
+      shouldSendEmail = appointment.send_email_reminder;
+      shouldSendWhatsApp = appointment.send_whatsapp_reminder;
     } else {
       // Para lembretes específicos por canal
-      shouldSendEmail = (reminderType === 'email' || reminderType === 'both') && patientEmail && patientEmail.includes('@');
-      shouldSendWhatsApp = (reminderType === 'whatsapp' || reminderType === 'both') && patientPhone;
+      shouldSendEmail = (reminderType === 'email' || reminderType === 'both');
+      shouldSendWhatsApp = (reminderType === 'whatsapp' || reminderType === 'both');
     }
 
     console.log('📋 Reminder settings:', { 
@@ -269,324 +287,399 @@ const handler = async (req: Request): Promise<Response> => {
       shouldSendEmail, 
       shouldSendWhatsApp,
       patientEmail: patientEmail ? '✅' : '❌',
-      patientPhone: patientPhone ? '✅' : '❌'
+      patientPhone: patientPhone ? '✅' : '❌',
+      therapistEmail: therapistEmail ? '✅' : '❌',
+      therapistPhone: therapistPhone ? '✅' : '❌'
     });
 
     // Enviar email se solicitado e disponível
     if (shouldSendEmail) {
-      // Verificar idempotência antes de enviar
-      const { data: alreadySent } = await supabaseClient.rpc('is_reminder_already_sent', {
-        p_appointment_id: appointmentId,
-        p_reminder_type: 'email'
-      });
-
-      if (alreadySent) {
-        console.log('⏭️ Email reminder already sent for this time window, skipping...');
-        results.push({
-          type: 'email',
-          success: true,
-          recipient: patientEmail,
-          skipped: true,
-          message: 'Email já enviado nesta janela de tempo'
-        });
-      } else {
-        console.log('📧 Sending email reminder...');
+      console.log('📧 Sending email reminders to patient and therapist...');
       
-      const emailSubject = `Lembrete: Consulta com ${therapistName}`;
-      const emailContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">Psiclo</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Sistema de Gestão para Psicólogos</p>
-          </div>
+      // Helper para enviar email
+      const sendEmailReminder = async (recipientEmail: string, recipientType: 'patient' | 'therapist') => {
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+          console.log(`⏭️ Skipping ${recipientType} email: invalid email`);
+          return null;
+        }
+
+        // Verificar idempotência antes de enviar
+        const { data: alreadySent } = await supabaseClient.rpc('is_reminder_already_sent', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: `email_${recipientType}`
+        });
+
+        if (alreadySent) {
+          console.log(`⏭️ Email reminder already sent to ${recipientType} for this time window, skipping...`);
+          return {
+            type: `email_${recipientType}`,
+            success: true,
+            recipient: recipientEmail,
+            skipped: true,
+            message: `Email já enviado para ${recipientType} nesta janela de tempo`
+          };
+        }
+      
+        const emailSubject = recipientType === 'patient' 
+          ? `Lembrete: Consulta com ${therapistName}`
+          : `Lembrete: Consulta com ${patientName}`;
           
-          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <h2 style="color: #333; margin-top: 0; font-size: 20px;">Olá, ${patientName}!</h2>
-            
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              ${reminderType === 'immediate' 
-                ? 'Este é um lembrete sobre seu agendamento que acabou de ser criado:'
-                : 'Este é um lembrete sobre sua consulta que se aproxima:'
-              }
-            </p>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #333; margin-top: 0; font-size: 18px;">📅 Detalhes da Consulta</h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Terapeuta:</td>
-                  <td style="padding: 8px 0; color: #333;">${therapistName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Título:</td>
-                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${appointment.title}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Data:</td>
-                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${formattedDate}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Horário:</td>
-                  <td style="padding: 8px 0; color: #333; font-weight: bold;">${timeWithTimezone}</td>
-                </tr>
-                ${appointment.notes ? `
-                <tr>
-                  <td style="padding: 8px 0; color: #666; font-weight: bold;">Observações:</td>
-                  <td style="padding: 8px 0; color: #333;">${appointment.notes}</td>
-                </tr>
-                ` : ''}
-              </table>
+        const greeting = recipientType === 'patient' 
+          ? `Olá, ${patientName}!`
+          : `Olá, ${therapistName}!`;
+          
+        const messageText = recipientType === 'patient'
+          ? (reminderType === 'immediate' 
+              ? 'Este é um lembrete sobre seu agendamento que acabou de ser criado:'
+              : 'Este é um lembrete sobre sua consulta que se aproxima:')
+          : (reminderType === 'immediate'
+              ? 'Este é um lembrete sobre o agendamento que você acabou de criar:'
+              : 'Este é um lembrete sobre sua consulta que se aproxima:');
+
+        const emailContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Psiclo</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Sistema de Gestão para Psicólogos</p>
             </div>
             
-            <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0; color: #0c5460; font-size: 14px;">
-                <strong>💡 Importante:</strong> Caso precise remarcar ou cancelar, entre em contato com antecedência.
+            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-top: 0; font-size: 20px;">${greeting}</h2>
+              
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                ${messageText}
+              </p>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #333; margin-top: 0; font-size: 18px;">📅 Detalhes da Consulta</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  ${recipientType === 'patient' ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Terapeuta:</td>
+                    <td style="padding: 8px 0; color: #333;">${therapistName}</td>
+                  </tr>
+                  ` : `
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold; width: 40%;">Paciente:</td>
+                    <td style="padding: 8px 0; color: #333;">${patientName}</td>
+                  </tr>
+                  `}
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold;">Título:</td>
+                    <td style="padding: 8px 0; color: #333; font-weight: bold;">${appointment.title}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold;">Data:</td>
+                    <td style="padding: 8px 0; color: #333; font-weight: bold;">${formattedDate}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold;">Horário:</td>
+                    <td style="padding: 8px 0; color: #333; font-weight: bold;">${timeWithTimezone}</td>
+                  </tr>
+                  ${appointment.notes ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #666; font-weight: bold;">Observações:</td>
+                    <td style="padding: 8px 0; color: #333;">${appointment.notes}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+              
+              <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0; color: #0c5460; font-size: 14px;">
+                  <strong>💡 Importante:</strong> ${recipientType === 'patient' 
+                    ? 'Caso precise remarcar ou cancelar, entre em contato com antecedência.'
+                    : 'Lembre-se de se preparar para a consulta com antecedência.'
+                  }
+                </p>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+              
+              <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+                Este é um email automático do Psiclo. Não responda a este email.
               </p>
             </div>
-            
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            
-            <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
-              Este é um email automático do Psiclo. Não responda a este email.<br>
-              Entre em contato com ${therapistName} para esclarecimentos sobre este agendamento.
-            </p>
           </div>
-        </div>
-      `;
+        `;
 
-      try {
-        const emailResult = await retryWithBackoff(async () => {
-          return await resend.emails.send({
-            from: "Agenda Psiclo <agenda@psiclo.com.br>",
-            to: [patientEmail],
-            subject: emailSubject,
-            html: emailContent,
+        try {
+          const emailResult = await retryWithBackoff(async () => {
+            return await resend.emails.send({
+              from: "Agenda Psiclo <agenda@psiclo.com.br>",
+              to: [recipientEmail],
+              subject: emailSubject,
+              html: emailContent,
+            });
           });
-        });
 
-        if (!emailResult.success) {
-          throw emailResult.error;
+          if (!emailResult.success) {
+            throw emailResult.error;
+          }
+
+          const emailResponse = emailResult.result;
+          console.log(`✅ Email sent successfully to ${recipientType} after ${emailResult.attempts} attempt(s):`, emailResponse);
+
+          // Registrar entrega idempotente
+          await supabaseClient.rpc('register_reminder_delivery', {
+            p_appointment_id: appointmentId,
+            p_reminder_type: `email_${recipientType}`,
+            p_recipient_contact: recipientEmail,
+            p_delivery_status: 'sent'
+          });
+
+          // Log no banco de dados
+          try {
+            await supabaseClient
+              .from('appointment_reminders')
+              .insert({
+                appointment_id: appointmentId,
+                reminder_type: `email_${recipientType}`,
+                status: 'sent'
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} email success:`, logError);
+          }
+
+          // Log do email para aparecer na interface de logs
+          try {
+            await supabaseClient
+              .from('email_logs')
+              .insert({
+                owner_id: appointment.user_id,
+                recipient_email: recipientEmail,
+                email_type: 'appointment_reminder',
+                subject: emailSubject,
+                content: emailContent,
+                status: 'sent',
+                sent_at: new Date().toISOString()
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} email in email_logs:`, logError);
+          }
+
+          return {
+            type: `email_${recipientType}`,
+            success: true,
+            recipient: recipientEmail,
+            messageId: emailResponse.data?.id
+          };
+
+        } catch (emailError) {
+          // Registrar falha idempotente
+          await supabaseClient.rpc('register_reminder_delivery', {
+            p_appointment_id: appointmentId,
+            p_reminder_type: `email_${recipientType}`,
+            p_recipient_contact: recipientEmail,
+            p_delivery_status: 'failed',
+            p_error_message: emailError.message
+          });
+
+          console.error(`❌ Email sending to ${recipientType} failed:`, emailError);
+
+          // Log erro no banco
+          try {
+            await supabaseClient
+              .from('appointment_reminders')
+              .insert({
+                appointment_id: appointmentId,
+                reminder_type: `email_${recipientType}`,
+                status: 'failed',
+                error_message: emailError.message
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} email error:`, logError);
+          }
+
+          // Log do erro de email para aparecer na interface de logs
+          try {
+            await supabaseClient
+              .from('email_logs')
+              .insert({
+                owner_id: appointment.user_id,
+                recipient_email: recipientEmail,
+                email_type: 'appointment_reminder',
+                subject: emailSubject,
+                content: emailContent,
+                status: 'failed',
+                error_message: emailError.message
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} email error in email_logs:`, logError);
+          }
+
+          return {
+            type: `email_${recipientType}`,
+            success: false,
+            recipient: recipientEmail,
+            error: emailError.message
+          };
         }
+      };
 
-        const emailResponse = emailResult.result;
-        console.log(`✅ Email sent successfully after ${emailResult.attempts} attempt(s):`, emailResponse);
-
-        // Registrar entrega idempotente
-        await supabaseClient.rpc('register_reminder_delivery', {
-          p_appointment_id: appointmentId,
-          p_reminder_type: 'email',
-          p_recipient_contact: patientEmail,
-          p_delivery_status: 'sent'
-        });
-
-        console.log('✅ Email sent successfully:', emailResponse);
-        emailSent = true;
-        results.push({
-          type: 'email',
-          success: true,
-          recipient: patientEmail,
-          messageId: emailResponse.data?.id
-        });
-
-        // Log no banco de dados
-        try {
-          await supabaseClient
-            .from('appointment_reminders')
-            .insert({
-              appointment_id: appointmentId,
-              reminder_type: 'email',
-              status: 'sent'
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log email success:', logError);
-        }
-
-        // Log do email para aparecer na interface de logs
-        try {
-          await supabaseClient
-            .from('email_logs')
-            .insert({
-              owner_id: appointment.user_id,
-              recipient_email: patientEmail,
-              email_type: 'appointment_reminder',
-              subject: emailSubject,
-              content: emailContent,
-              status: 'sent',
-              sent_at: new Date().toISOString()
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log email in email_logs:', logError);
-        }
-
-      } catch (emailError) {
-        // Registrar falha idempotente
-        await supabaseClient.rpc('register_reminder_delivery', {
-          p_appointment_id: appointmentId,
-          p_reminder_type: 'email',
-          p_recipient_contact: patientEmail,
-          p_delivery_status: 'failed',
-          p_error_message: emailError.message
-        });
-
-        console.error('❌ Email sending failed:', emailError);
-        results.push({
-          type: 'email',
-          success: false,
-          recipient: patientEmail,
-          error: emailError.message
-        });
-
-        // Log erro no banco
-        try {
-          await supabaseClient
-            .from('appointment_reminders')
-            .insert({
-              appointment_id: appointmentId,
-              reminder_type: 'email',
-              status: 'failed',
-              error_message: emailError.message
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log email error:', logError);
-        }
-
-        // Log do erro de email para aparecer na interface de logs
-        try {
-          await supabaseClient
-            .from('email_logs')
-            .insert({
-              owner_id: appointment.user_id,
-              recipient_email: patientEmail,
-              email_type: 'appointment_reminder',
-              subject: emailSubject,
-              content: emailContent,
-              status: 'failed',
-              error_message: emailError.message
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log email error in email_logs:', logError);
+      // Enviar para o paciente
+      const patientEmailResult = await sendEmailReminder(patientEmail, 'patient');
+      if (patientEmailResult) {
+        results.push(patientEmailResult);
+        if (patientEmailResult.success && !patientEmailResult.skipped) {
+          emailSent = true;
         }
       }
-    }
+
+      // Enviar para o terapeuta
+      const therapistEmailResult = await sendEmailReminder(therapistEmail, 'therapist');
+      if (therapistEmailResult) {
+        results.push(therapistEmailResult);
+      }
     }
 
     // Enviar WhatsApp se solicitado e disponível
     if (shouldSendWhatsApp) {
-      // Verificar idempotência antes de enviar
-      const { data: alreadySentWA } = await supabaseClient.rpc('is_reminder_already_sent', {
-        p_appointment_id: appointmentId,
-        p_reminder_type: 'whatsapp'
-      });
-
-      if (alreadySentWA) {
-        console.log('⏭️ WhatsApp reminder already sent for this time window, skipping...');
-        results.push({
-          type: 'whatsapp',
-          success: true,
-          recipient: patientPhone,
-          skipped: true,
-          message: 'WhatsApp já enviado nesta janela de tempo'
-        });
-      } else {
-        console.log('📱 Sending WhatsApp reminder...');
+      console.log('📱 Sending WhatsApp reminders to patient and therapist...');
       
-      try {
-        // Usar template aprovado do Twilio para lembretes de agendamento
-        const templateVariables = {
-          "1": patientName,                    // Nome do paciente
-          "2": formattedDate,                  // Data formatada
-          "3": formattedTime,                  // Horário formatado
-          "4": therapistName,                  // Nome do terapeuta
-          "5": appointment.title,              // Título da consulta
-          "6": appointment.notes || "Nenhuma observação" // Observações
-        };
+      // Helper para enviar WhatsApp
+      const sendWhatsAppReminder = async (recipientPhone: string, recipientType: 'patient' | 'therapist') => {
+        if (!recipientPhone) {
+          console.log(`⏭️ Skipping ${recipientType} WhatsApp: no phone number`);
+          return null;
+        }
 
-        console.log('📋 Template variables for WhatsApp:', templateVariables);
+        // Verificar idempotência antes de enviar
+        const { data: alreadySentWA } = await supabaseClient.rpc('is_reminder_already_sent', {
+          p_appointment_id: appointmentId,
+          p_reminder_type: `whatsapp_${recipientType}`
+        });
 
-        const whatsappResult = await retryWithBackoff(async () => {
-          const { data, error } = await supabaseClient.functions.invoke('send-whatsapp', {
-            body: {
-              to: patientPhone,
-              templateSid: 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER',
-              templateVariables: templateVariables,
-              messageType: 'appointment_reminder',
-              appointmentId: appointmentId
-            }
+        if (alreadySentWA) {
+          console.log(`⏭️ WhatsApp reminder already sent to ${recipientType} for this time window, skipping...`);
+          return {
+            type: `whatsapp_${recipientType}`,
+            success: true,
+            recipient: recipientPhone,
+            skipped: true,
+            message: `WhatsApp já enviado para ${recipientType} nesta janela de tempo`
+          };
+        }
+      
+        try {
+          // Usar template aprovado do Twilio para lembretes de agendamento
+          const templateVariables = recipientType === 'patient' ? {
+            "1": patientName,                    // Nome do paciente
+            "2": formattedDate,                  // Data formatada
+            "3": formattedTime,                  // Horário formatado
+            "4": therapistName,                  // Nome do terapeuta
+            "5": appointment.title,              // Título da consulta
+            "6": appointment.notes || "Nenhuma observação" // Observações
+          } : {
+            "1": therapistName,                  // Nome do terapeuta
+            "2": formattedDate,                  // Data formatada
+            "3": formattedTime,                  // Horário formatado
+            "4": patientName,                    // Nome do paciente
+            "5": appointment.title,              // Título da consulta
+            "6": appointment.notes || "Nenhuma observação" // Observações
+          };
+
+          console.log(`📋 Template variables for ${recipientType} WhatsApp:`, templateVariables);
+
+          const whatsappResult = await retryWithBackoff(async () => {
+            const { data, error } = await supabaseClient.functions.invoke('send-whatsapp', {
+              body: {
+                to: recipientPhone,
+                templateSid: 'TWILIO_TEMPLATE_SID_APPOINTMENT_REMINDER',
+                templateVariables: templateVariables,
+                messageType: 'appointment_reminder',
+                appointmentId: appointmentId,
+                recipientType: recipientType
+              }
+            });
+            
+            if (error) throw error;
+            return data;
           });
-          
-          if (error) throw error;
-          return data;
-        });
 
-        if (!whatsappResult.success) {
-          throw whatsappResult.error;
+          if (!whatsappResult.success) {
+            throw whatsappResult.error;
+          }
+
+          const whatsappResponse = whatsappResult.result;
+          console.log(`✅ WhatsApp sent successfully to ${recipientType} after ${whatsappResult.attempts} attempt(s):`, whatsappResponse);
+
+          // Registrar entrega idempotente
+          await supabaseClient.rpc('register_reminder_delivery', {
+            p_appointment_id: appointmentId,
+            p_reminder_type: `whatsapp_${recipientType}`,
+            p_recipient_contact: recipientPhone,
+            p_delivery_status: 'sent'
+          });
+
+          // Log no banco de dados
+          try {
+            await supabaseClient
+              .from('appointment_reminders')
+              .insert({
+                appointment_id: appointmentId,
+                reminder_type: `whatsapp_${recipientType}`,
+                status: 'sent'
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} WhatsApp success:`, logError);
+          }
+
+          return {
+            type: `whatsapp_${recipientType}`,
+            success: true,
+            recipient: recipientPhone,
+            messageId: whatsappResponse?.messageId
+          };
+
+        } catch (whatsappError: any) {
+          // Registrar falha idempotente
+          await supabaseClient.rpc('register_reminder_delivery', {
+            p_appointment_id: appointmentId,
+            p_reminder_type: `whatsapp_${recipientType}`,
+            p_recipient_contact: recipientPhone,
+            p_delivery_status: 'failed',
+            p_error_message: whatsappError.message
+          });
+
+          console.error(`❌ WhatsApp sending to ${recipientType} failed:`, whatsappError);
+
+          // Log erro no banco
+          try {
+            await supabaseClient
+              .from('appointment_reminders')
+              .insert({
+                appointment_id: appointmentId,
+                reminder_type: `whatsapp_${recipientType}`,
+                status: 'failed',
+                error_message: whatsappError.message
+              });
+          } catch (logError: any) {
+            console.warn(`⚠️ Failed to log ${recipientType} WhatsApp error:`, logError);
+          }
+
+          return {
+            type: `whatsapp_${recipientType}`,
+            success: false,
+            recipient: recipientPhone,
+            error: whatsappError.message
+          };
         }
+      };
 
-        const whatsappResponse = whatsappResult.result;
-        console.log(`✅ WhatsApp sent successfully after ${whatsappResult.attempts} attempt(s):`, whatsappResponse);
-
-        // Registrar entrega idempotente
-        await supabaseClient.rpc('register_reminder_delivery', {
-          p_appointment_id: appointmentId,
-          p_reminder_type: 'whatsapp',
-          p_recipient_contact: patientPhone,
-          p_delivery_status: 'sent'
-        });
-
-        console.log('✅ WhatsApp sent successfully:', whatsappResponse);
-        whatsappSent = true;
-        results.push({
-          type: 'whatsapp',
-          success: true,
-          recipient: patientPhone,
-          messageId: whatsappResponse?.messageId
-        });
-
-        // Log no banco de dados
-        try {
-          await supabaseClient
-            .from('appointment_reminders')
-            .insert({
-              appointment_id: appointmentId,
-              reminder_type: 'whatsapp',
-              status: 'sent'
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log WhatsApp success:', logError);
-        }
-
-      } catch (whatsappError: any) {
-        // Registrar falha idempotente
-        await supabaseClient.rpc('register_reminder_delivery', {
-          p_appointment_id: appointmentId,
-          p_reminder_type: 'whatsapp',
-          p_recipient_contact: patientPhone,
-          p_delivery_status: 'failed',
-          p_error_message: whatsappError.message
-        });
-
-        console.error('❌ WhatsApp sending failed:', whatsappError);
-        results.push({
-          type: 'whatsapp',
-          success: false,
-          recipient: patientPhone,
-          error: whatsappError.message
-        });
-
-        // Log erro no banco
-        try {
-          await supabaseClient
-            .from('appointment_reminders')
-            .insert({
-              appointment_id: appointmentId,
-              reminder_type: 'whatsapp',
-              status: 'failed',
-              error_message: whatsappError.message
-            });
-        } catch (logError: any) {
-          console.warn('⚠️ Failed to log WhatsApp error:', logError);
+      // Enviar para o paciente
+      const patientWhatsAppResult = await sendWhatsAppReminder(patientPhone, 'patient');
+      if (patientWhatsAppResult) {
+        results.push(patientWhatsAppResult);
+        if (patientWhatsAppResult.success && !patientWhatsAppResult.skipped) {
+          whatsappSent = true;
         }
       }
+
+      // Enviar para o terapeuta
+      const therapistWhatsAppResult = await sendWhatsAppReminder(therapistPhone, 'therapist');
+      if (therapistWhatsAppResult) {
+        results.push(therapistWhatsAppResult);
       }
     }
 
