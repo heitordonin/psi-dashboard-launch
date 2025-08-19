@@ -1,12 +1,12 @@
 
 import { useState } from "react";
-import { MessageCircle, Loader2, AlertTriangle, Crown } from "lucide-react";
+import { MessageCircle, AlertTriangle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { WhatsAppConfirmationDialog } from "./WhatsAppConfirmationDialog";
 import type { PaymentWithPatient } from "@/types/payment";
 import { format } from "date-fns";
 
@@ -120,31 +120,24 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
     );
   }
 
-  const buttonContent = (
-    <Button 
-      variant="outline" 
-      size="sm" 
-      disabled={isLoading || !canSend}
-    >
-      <MessageCircle className="w-4 h-4" />
-      {planSlug === 'gestao' && !isUnlimited && (
-        <span className="ml-1 text-xs text-muted-foreground">
-          {messagesRemaining}
-        </span>
-      )}
-    </Button>
-  );
-
   // Mostrar tooltip informativo para plano Gestão
   if (planSlug === 'gestao' && !isUnlimited) {
     return (
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <DialogTrigger asChild>
-                {buttonContent}
-              </DialogTrigger>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={isLoading || !canSend}
+                onClick={() => setIsOpen(true)}
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="ml-1 text-xs text-muted-foreground">
+                  {messagesRemaining}
+                </span>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>
               <div className="space-y-1">
@@ -156,90 +149,43 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmar Envio</DialogTitle>
-            <DialogDescription>
-              Um lembrete de cobrança será enviado para o WhatsApp de <strong>{patientName}</strong> ({patientPhone}).
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
-              <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
-            </div>
-            
-            {planSlug === 'gestao' && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Plano Gestão:</strong> {messagesRemaining} mensagens restantes este mês
-                </p>
-              </div>
-            )}
-            
-            <p className="text-sm text-gray-600">
-              Será enviado um lembrete padronizado sobre esta cobrança.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSend} disabled={isLoading || !canSend}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                'Enviar Lembrete'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        
+        <WhatsAppConfirmationDialog
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          onConfirm={handleSend}
+          payment={payment}
+          isLoading={isLoading}
+          planSlug={planSlug}
+          messagesRemaining={messagesRemaining}
+          isUnlimited={isUnlimited}
+        />
+      </>
     );
   }
 
   // Para plano Psi Regular (ilimitado) - comportamento simples
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {buttonContent}
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Confirmar Envio</DialogTitle>
-          <DialogDescription>
-            Um lembrete de cobrança será enviado para o WhatsApp de <strong>{patientName}</strong> ({patientPhone}).
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
-            <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
-          </div>
-          
-          <p className="text-sm text-gray-600">
-            Será enviado um lembrete padronizado sobre esta cobrança.
-          </p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSend} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              'Enviar Lembrete'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        disabled={isLoading || !canSend}
+        onClick={() => setIsOpen(true)}
+      >
+        <MessageCircle className="w-4 h-4" />
+      </Button>
+      
+      <WhatsAppConfirmationDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onConfirm={handleSend}
+        payment={payment}
+        isLoading={isLoading}
+        planSlug={planSlug}
+        messagesRemaining={messagesRemaining}
+        isUnlimited={isUnlimited}
+      />
+    </>
   );
 }
