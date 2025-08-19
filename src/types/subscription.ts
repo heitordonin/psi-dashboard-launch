@@ -38,5 +38,5 @@ export type PlanFeature =
   | 'carne_leao_tracking'
   | 'monthly_darf'
   | 'radar_pj'
-  | 'whatsapp_limit_100'
+  | 'whatsapp_limit_40'
   | 'unlimited_whatsapp';

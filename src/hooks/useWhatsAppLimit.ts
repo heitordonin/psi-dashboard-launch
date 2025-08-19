@@ -39,7 +39,7 @@ export const useWhatsAppLimit = () => {
     
     // Verificar se tem acesso ao WhatsApp baseado nas features do plano
     const hasUnlimitedWhatsApp = hasFeature('unlimited_whatsapp');
-    const hasLimitedWhatsApp = hasFeature('whatsapp_limit_100');
+    const hasLimitedWhatsApp = hasFeature('whatsapp_limit_40');
     const hasWhatsAppAccess = hasUnlimitedWhatsApp || hasLimitedWhatsApp;
     
     if (!hasWhatsAppAccess) {
@@ -64,8 +64,8 @@ export const useWhatsAppLimit = () => {
       };
     }
 
-    // Plano Gestão: limite de 100 mensagens por mês
-    const MONTHLY_LIMIT = 100;
+    // Plano Gestão: limite de 40 mensagens por mês
+    const MONTHLY_LIMIT = 40;
     const messagesRemaining = Math.max(0, MONTHLY_LIMIT - messagesUsed);
     const canSend = messagesRemaining > 0;
 
