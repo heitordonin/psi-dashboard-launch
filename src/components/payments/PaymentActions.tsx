@@ -11,10 +11,15 @@ import { PaymentLinkModal } from "./PaymentLinkModal";
 import { PaymentLinkButton } from "./PaymentLinkButton";
 import { EmailReminderButton } from "./EmailReminderButton";
 import { WhatsAppButton } from "./WhatsAppButton";
+import { WhatsAppConfirmationDialog } from "./WhatsAppConfirmationDialog";
 import { PaymentDateModal } from "./PaymentDateModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useWhatsApp } from "@/hooks/useWhatsApp";
+import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
+import { formatCurrency } from "@/utils/priceFormatter";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentActionsProps {
@@ -29,6 +34,13 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
+  
+  // WhatsApp hooks
+  const { user } = useAuth();
+  const { sendWhatsApp, isLoading: isSendingWhatsApp } = useWhatsApp();
+  const { canSend: canSendWhatsApp, hasWhatsAppAccess, messagesRemaining, planSlug } = useWhatsAppLimit();
+  
   // Calculate display status for overdue payments
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize today's date to the beginning of the day
@@ -151,6 +163,42 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
     }
   };
 
+  // WhatsApp handler (compact mode)
+  const handleSendWhatsApp = () => {
+    if (!payment.patients?.phone) {
+      toast.error('Paciente não tem telefone cadastrado');
+      return;
+    }
+
+    if (!hasWhatsAppAccess) {
+      toast.error('Acesso ao WhatsApp não disponível no seu plano');
+      return;
+    }
+
+    if (!canSendWhatsApp) {
+      toast.error('Limite de mensagens WhatsApp atingido');
+      return;
+    }
+
+    const formatDate = (dateStr: string) => {
+      return new Date(dateStr).toLocaleDateString('pt-BR');
+    };
+
+    const templateVariables = {
+      patient_name: payment.patients.full_name,
+      amount: formatCurrency(payment.amount),
+      due_date: formatDate(payment.due_date),
+      description: payment.description || ''
+    };
+
+    sendWhatsApp({
+      to: payment.patients.phone,
+      templateSid: 'payment_reminder',
+      templateVariables,
+      paymentId: payment.id
+    });
+  };
+
   const canMarkPaid = payment.status !== 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude;
   const canMarkUnpaid = payment.status === 'paid' && !isBlockedByReceitaSaude;
   const canEdit = !(payment.has_payment_link || isBlockedByReceitaSaude);
@@ -193,6 +241,13 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             <DropdownMenuItem onClick={handleSendEmail} disabled={!canSendEmail || isSendingEmail} className="min-h-[40px]">
               {isSendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />} Lembrete Email
             </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setIsWhatsAppDialogOpen(true)} 
+              disabled={!hasWhatsAppAccess || !payment.patients?.phone || payment.status !== 'pending' || !canSendWhatsApp || isSendingWhatsApp} 
+              className="min-h-[40px]"
+            >
+              {isSendingWhatsApp ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-2" />} Lembrete WhatsApp
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(payment)} disabled={!canEdit} className="min-h-[40px]">
               <Pencil className="h-4 w-4 mr-2" /> Editar
             </DropdownMenuItem>
@@ -224,6 +279,16 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
           onClose={() => setIsDateModalOpen(false)}
           onConfirm={handleConfirmPayment}
           isLoading={isMarkingAsPaid}
+        />
+
+        {/* WhatsApp Confirmation Dialog */}
+        <WhatsAppConfirmationDialog
+          isOpen={isWhatsAppDialogOpen}
+          onClose={() => setIsWhatsAppDialogOpen(false)}
+          onConfirm={handleSendWhatsApp}
+          payment={payment}
+          planSlug={planSlug}
+          messagesRemaining={messagesRemaining}
         />
       </div>
     );
