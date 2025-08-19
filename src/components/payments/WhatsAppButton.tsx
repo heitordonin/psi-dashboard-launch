@@ -1,9 +1,11 @@
 
 import { useState } from "react";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { MessageCircle, Loader2, AlertTriangle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
+import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import type { PaymentWithPatient } from "@/types/payment";
 import { format } from "date-fns";
@@ -15,6 +17,15 @@ interface WhatsAppButtonProps {
 export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { sendWhatsApp, isLoading } = useWhatsApp();
+  const { 
+    canSend, 
+    messagesUsed, 
+    messagesRemaining, 
+    totalAllowed, 
+    hasWhatsAppAccess, 
+    isUnlimited, 
+    planSlug 
+  } = useWhatsAppLimit();
   const { user } = useAuth();
 
   const patientName = payment.patients?.full_name || 'Paciente';
@@ -32,7 +43,7 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
   };
 
   const handleSend = () => {
-    if (!patientPhone) {
+    if (!patientPhone || !canSend) {
       return;
     }
 
@@ -63,12 +74,138 @@ export function WhatsAppButton({ payment }: WhatsAppButtonProps) {
     return null;
   }
 
+  // Verificar se tem acesso ao WhatsApp baseado no plano
+  if (!hasWhatsAppAccess) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" disabled>
+              <MessageCircle className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              <span>WhatsApp disponível nos planos Gestão e Psi Regular</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // Verificar se atingiu o limite (apenas para plano Gestão)
+  if (!canSend && planSlug === 'gestao') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" disabled>
+              <MessageCircle className="w-4 h-4 opacity-50" />
+              <AlertTriangle className="w-3 h-3 text-amber-500 ml-1" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="space-y-1">
+              <p className="font-medium">Limite de mensagens atingido</p>
+              <p className="text-xs">Você utilizou {messagesUsed}/{totalAllowed} mensagens este mês</p>
+              <p className="text-xs text-muted-foreground">
+                Renovação no próximo mês ou upgrade para Psi Regular
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  const buttonContent = (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      disabled={isLoading || !canSend}
+    >
+      <MessageCircle className="w-4 h-4" />
+      {planSlug === 'gestao' && !isUnlimited && (
+        <span className="ml-1 text-xs text-muted-foreground">
+          {messagesRemaining}
+        </span>
+      )}
+    </Button>
+  );
+
+  // Mostrar tooltip informativo para plano Gestão
+  if (planSlug === 'gestao' && !isUnlimited) {
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                {buttonContent}
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-1">
+                <p>Enviar lembrete WhatsApp</p>
+                <p className="text-xs text-muted-foreground">
+                  {messagesUsed}/{totalAllowed} mensagens utilizadas este mês
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Envio</DialogTitle>
+            <DialogDescription>
+              Um lembrete de cobrança será enviado para o WhatsApp de <strong>{patientName}</strong> ({patientPhone}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
+              <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
+            </div>
+            
+            {planSlug === 'gestao' && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Plano Gestão:</strong> {messagesRemaining} mensagens restantes este mês
+                </p>
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-600">
+              Será enviado um lembrete padronizado sobre esta cobrança.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSend} disabled={isLoading || !canSend}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                'Enviar Lembrete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Para plano Psi Regular (ilimitado) - comportamento simples
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <MessageCircle className="w-4 h-4" />
-        </Button>
+        {buttonContent}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
