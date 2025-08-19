@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1258,38 +1258,38 @@ export type Database = {
     Functions: {
       atomic_cancel_and_insert_subscription: {
         Args: {
-          p_user_id: string
           p_new_plan_id: string
           p_stripe_customer_id?: string
-          p_subscription_tier?: string
-          p_subscription_end?: string
           p_subscribed?: boolean
+          p_subscription_end?: string
+          p_subscription_tier?: string
+          p_user_id: string
         }
         Returns: Json
       }
       atomic_cancel_subscription: {
-        Args: { p_user_id: string; p_immediate?: boolean }
+        Args: { p_immediate?: boolean; p_user_id: string }
         Returns: Json
       }
       atomic_force_sync_subscription: {
         Args: {
-          p_user_id: string
           p_plan_slug: string
           p_stripe_customer_id?: string
-          p_subscription_tier?: string
-          p_subscription_end?: string
           p_subscribed?: boolean
+          p_subscription_end?: string
+          p_subscription_tier?: string
+          p_user_id: string
         }
         Returns: Json
       }
       atomic_upsert_subscription: {
         Args: {
-          p_user_id: string
           p_plan_slug: string
           p_stripe_customer_id?: string
-          p_subscription_tier?: string
-          p_subscription_end?: string
           p_subscribed?: boolean
+          p_subscription_end?: string
+          p_subscription_tier?: string
+          p_user_id: string
         }
         Returns: Json
       }
@@ -1308,11 +1308,11 @@ export type Database = {
       create_system_alert: {
         Args: {
           p_alert_type: string
-          p_severity: string
-          p_title: string
-          p_message: string
           p_details?: Json
           p_execution_id?: string
+          p_message: string
+          p_severity: string
+          p_title: string
         }
         Returns: string
       }
@@ -1327,53 +1327,53 @@ export type Database = {
       get_active_subscription_override: {
         Args: { p_user_id: string }
         Returns: {
-          plan_slug: string
           expires_at: string
+          plan_slug: string
           reason: string
         }[]
       }
       get_admin_financial_overview: {
-        Args: { start_date: string; end_date: string }
+        Args: { end_date: string; start_date: string }
         Returns: {
           total_issued: number
-          total_paid: number
           total_overdue: number
+          total_paid: number
         }[]
       }
       get_admin_user_kpis: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_users: number
-          new_users_last_30_days: number
           inactive_users: number
+          new_users_last_30_days: number
+          total_users: number
         }[]
       }
       get_admin_user_kpis_by_plan: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_users_free: number
-          total_users_gestao: number
-          total_users_psi_regular: number
           new_users_free_30_days: number
           new_users_gestao_30_days: number
           new_users_psi_regular_30_days: number
+          total_users_free: number
+          total_users_gestao: number
+          total_users_psi_regular: number
         }[]
       }
       get_churn_metrics: {
         Args:
           | Record<PropertyKey, never>
-          | { start_date?: string; end_date?: string }
+          | { end_date?: string; start_date?: string }
         Returns: {
-          monthly_churn_rate: number
-          total_cancellations_30_days: number
-          retention_rate: number
           active_subscribers: number
+          monthly_churn_rate: number
+          retention_rate: number
+          total_cancellations_30_days: number
         }[]
       }
       get_conversion_metrics: {
         Args:
           | Record<PropertyKey, never>
-          | { start_date?: string; end_date?: string }
+          | { end_date?: string; start_date?: string }
         Returns: {
           free_to_paid_rate: number
           gestao_to_psi_regular_rate: number
@@ -1381,14 +1381,14 @@ export type Database = {
         }[]
       }
       get_daily_user_growth: {
-        Args: { start_date: string; end_date: string }
+        Args: { end_date: string; start_date: string }
         Returns: {
-          date: string
           count: number
+          date: string
         }[]
       }
       get_daily_user_growth_by_plan: {
-        Args: { start_date: string; end_date: string }
+        Args: { end_date: string; start_date: string }
         Returns: {
           date: string
           free_count: number
@@ -1399,11 +1399,11 @@ export type Database = {
       get_darf_completion_stats: {
         Args: { due_month: string }
         Returns: {
+          completion_percentage: number
           total_psi_regular_users: number
-          users_with_darf_sent: number
           users_manually_completed: number
           users_pending: number
-          completion_percentage: number
+          users_with_darf_sent: number
         }[]
       }
       get_decrypted_profile: {
@@ -1443,7 +1443,7 @@ export type Database = {
       get_ltv_metrics: {
         Args:
           | Record<PropertyKey, never>
-          | { start_date?: string; end_date?: string }
+          | { end_date?: string; start_date?: string }
         Returns: {
           avg_ltv_gestao: number
           avg_ltv_psi_regular: number
@@ -1458,14 +1458,18 @@ export type Database = {
           mrr_growth_rate: number
         }[]
       }
+      get_monthly_whatsapp_count: {
+        Args: { p_month?: string; p_user_id: string }
+        Returns: number
+      }
       get_mrr_metrics: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_mrr: number
           mrr_free: number
           mrr_gestao: number
-          mrr_psi_regular: number
           mrr_growth_rate: number
+          mrr_psi_regular: number
+          total_mrr: number
         }[]
       }
       get_time_bucket_5min: {
@@ -1475,9 +1479,9 @@ export type Database = {
       get_top_earning_users: {
         Args: { limit_count: number }
         Returns: {
+          total_revenue: number
           user_id: string
           user_name: string
-          total_revenue: number
         }[]
       }
       get_user_patient_limit: {
@@ -1499,47 +1503,47 @@ export type Database = {
       is_reminder_already_sent: {
         Args: {
           p_appointment_id: string
-          p_reminder_type: string
           p_current_time?: string
+          p_reminder_type: string
         }
         Returns: boolean
       }
       log_reminder_event: {
         Args: {
+          p_appointment_id?: string
+          p_context?: Json
+          p_error_details?: Json
           p_execution_id: string
           p_level: string
           p_message: string
-          p_context?: Json
-          p_appointment_id?: string
-          p_user_id?: string
           p_reminder_type?: string
-          p_error_details?: Json
+          p_user_id?: string
         }
         Returns: string
       }
       log_reminder_execution_metrics: {
         Args: {
-          p_execution_id: string
-          p_status: string
           p_duration_ms?: number
-          p_total_reminders?: number
-          p_successful_reminders?: number
-          p_failed_reminders?: number
-          p_rate_limited_reminders?: number
           p_error_message?: string
+          p_execution_id: string
+          p_failed_reminders?: number
           p_performance_data?: Json
+          p_rate_limited_reminders?: number
+          p_status: string
+          p_successful_reminders?: number
+          p_total_reminders?: number
         }
         Returns: string
       }
       register_reminder_delivery: {
         Args: {
           p_appointment_id: string
-          p_reminder_type: string
-          p_recipient_contact: string
-          p_delivery_status?: string
-          p_error_message?: string
           p_content_hash?: string
           p_current_time?: string
+          p_delivery_status?: string
+          p_error_message?: string
+          p_recipient_contact: string
+          p_reminder_type: string
         }
         Returns: string
       }

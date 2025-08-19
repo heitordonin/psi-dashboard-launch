@@ -37,4 +37,6 @@ export type PlanFeature =
   | 'receita_saude_receipts'
   | 'carne_leao_tracking'
   | 'monthly_darf'
-  | 'radar_pj';
+  | 'radar_pj'
+  | 'whatsapp_limit_100'
+  | 'unlimited_whatsapp';
