@@ -28,7 +28,7 @@ export const useWhatsApp = () => {
 
       // Verificar limite para plano Gestão
       if (planSlug === 'gestao' && !canSend) {
-        throw new Error(`Limite de mensagens WhatsApp atingido. Você pode enviar até 100 mensagens por mês. Restam: ${messagesRemaining} mensagens.`);
+        throw new Error(`Limite de mensagens WhatsApp atingido. Você pode enviar até 40 mensagens por mês. Restam: ${messagesRemaining} mensagens.`);
       }
 
       const { data, error } = await supabase.functions.invoke('send-whatsapp', {
