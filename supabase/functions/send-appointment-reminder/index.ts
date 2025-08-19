@@ -589,7 +589,8 @@ const handler = async (req: Request): Promise<Response> => {
                 templateVariables: templateVariables,
                 messageType: 'appointment_reminder',
                 appointmentId: appointmentId,
-                recipientType: recipientType
+                recipientType: recipientType,
+                userId: appointment.user_id // Passar explicitamente o user_id
               }
             });
             

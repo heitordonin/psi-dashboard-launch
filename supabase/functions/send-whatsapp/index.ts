@@ -19,6 +19,7 @@ interface WhatsAppRequest {
   messageType?: MessageType
   priority?: 'low' | 'normal' | 'high'
   retryCount?: number
+  userId?: string
 }
 
 // Performance metrics tracking
@@ -187,7 +188,8 @@ serve(async (req) => {
       paymentId, 
       messageType = 'payment_reminder',
       priority = 'normal',
-      retryCount = 3
+      retryCount = 3,
+      userId: explicitUserId // Aceitar userId explícito
     }: WhatsAppRequest = await req.json();
 
     // Validate messageType
@@ -378,17 +380,25 @@ _Mensagem automática do Psiclo_`;
       attempts: twilioResult.attempts
     });
 
-    // Get user ID from auth header
-    const authHeader = req.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    // Get user ID from multiple sources
+    let userId = explicitUserId; // Primeiro, usar userId explícito se fornecido
     
-    let userId = null
-    if (token) {
-      const { data: { user } } = await supabaseClient.auth.getUser(token)
-      userId = user?.id
+    // Se não foi fornecido explicitamente, tentar extrair do token de auth
+    if (!userId) {
+      const authHeader = req.headers.get('Authorization')
+      const token = authHeader?.replace('Bearer ', '')
+      
+      if (token) {
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser(token)
+          userId = user?.id
+        } catch (authError) {
+          log('warn', 'Could not extract user from token', { error: authError });
+        }
+      }
     }
 
-    // If no userId from auth, try to get it from payment
+    // Se ainda não encontrou userId, tentar extrair do payment
     if (!userId && paymentId) {
       const { data: payment } = await supabaseClient
         .from('payments')
