@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { PersonalInfoCard } from "@/components/profile/PersonalInfoCard";
 import { AddressCard } from "@/components/profile/AddressCard";
+import { WhatsAppLimitCard } from "@/components/profile/WhatsAppLimitCard";
 import { Button } from "@/components/ui/button";
 
 
@@ -126,6 +127,8 @@ const Profile = () => {
                   profile={profile}
                   setProfile={setProfile}
                 />
+
+                <WhatsAppLimitCard />
 
                 <div className="flex justify-center pt-6">
                   <Button 
