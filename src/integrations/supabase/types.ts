@@ -116,6 +116,7 @@ export type Database = {
           id: string
           session_duration: number
           start_time: string
+          therapist_whatsapp_notifications: boolean
           timezone: string
           updated_at: string
           user_id: string
@@ -141,6 +142,7 @@ export type Database = {
           id?: string
           session_duration?: number
           start_time?: string
+          therapist_whatsapp_notifications?: boolean
           timezone?: string
           updated_at?: string
           user_id: string
@@ -166,6 +168,7 @@ export type Database = {
           id?: string
           session_duration?: number
           start_time?: string
+          therapist_whatsapp_notifications?: boolean
           timezone?: string
           updated_at?: string
           user_id?: string

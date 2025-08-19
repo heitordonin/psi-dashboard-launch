@@ -185,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Buscar configurações de agenda para obter o timezone
       const { data: settingsData, error: settingsError } = await supabaseClient
         .from('agenda_settings')
-        .select('timezone')
+        .select('timezone, therapist_whatsapp_notifications')
         .eq('user_id', appointment.user_id)
         .maybeSingle();
 
@@ -677,8 +677,25 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // Enviar para o terapeuta
-      const therapistWhatsAppResult = await sendWhatsAppReminder(therapistPhone, 'therapist');
+      // Enviar para o terapeuta (verificar configuração first)
+      let therapistWhatsAppResult = null;
+      
+      // Verificar se o terapeuta quer receber notificações no WhatsApp
+      const shouldSendToTherapist = agendaSettings?.therapist_whatsapp_notifications !== false; // Default true se não configurado
+      
+      if (shouldSendToTherapist) {
+        therapistWhatsAppResult = await sendWhatsAppReminder(therapistPhone, 'therapist');
+      } else {
+        console.log('⏭️ Skipping therapist WhatsApp: disabled in settings');
+        therapistWhatsAppResult = {
+          type: 'whatsapp_therapist',
+          success: true,
+          recipient: therapistPhone || 'N/A',
+          skipped: true,
+          message: 'Notificações desabilitadas nas configurações'
+        };
+      }
+      
       if (therapistWhatsAppResult) {
         results.push(therapistWhatsAppResult);
       }
