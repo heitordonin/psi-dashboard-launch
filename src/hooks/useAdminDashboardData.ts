@@ -117,17 +117,31 @@ export const useAdminDashboardData = (startDate?: string, endDate?: string) => {
     }
   });
 
+  const { data: topWhatsAppUsers, isLoading: topWhatsAppUsersLoading } = useQuery({
+    queryKey: ['admin-top-whatsapp-users', finalStartDate, finalEndDate],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_top_whatsapp_users', {
+        start_date: finalStartDate,
+        end_date: finalEndDate,
+        limit_count: 10
+      });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   return {
     userKpis,
     userKpisByPlan,
     userGrowth,
     userGrowthByPlan,
     topEarners,
+    topWhatsAppUsers,
     mrrMetrics,
     churnMetrics,
     ltvMetrics,
     conversionMetrics,
     isLoading: userKpisLoading || userKpisByPlanLoading || userGrowthLoading || userGrowthByPlanLoading || 
-               topEarnersLoading || mrrMetricsLoading || churnMetricsLoading || ltvMetricsLoading || conversionMetricsLoading
+               topEarnersLoading || topWhatsAppUsersLoading || mrrMetricsLoading || churnMetricsLoading || ltvMetricsLoading || conversionMetricsLoading
   };
 };

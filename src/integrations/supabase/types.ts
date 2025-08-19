@@ -1491,6 +1491,14 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_top_whatsapp_users: {
+        Args: { end_date?: string; limit_count?: number; start_date?: string }
+        Returns: {
+          total_messages: number
+          user_id: string
+          user_name: string
+        }[]
+      }
       get_user_patient_limit: {
         Args: { user_id?: string }
         Returns: number
