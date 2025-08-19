@@ -7,13 +7,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Valid message types from the enum
+type MessageType = 'text' | 'template' | 'payment_reminder' | 'appointment_reminder' | 'phone_verification' | 'invoice_receipt' | 'system_notification';
+
 interface WhatsAppRequest {
   to: string
   message?: string
   templateSid?: string
-  templateVariables?: { [key: string]: string } // CORREÇÃO: objeto em vez de array
+  templateVariables?: { [key: string]: string }
   paymentId?: string
-  messageType?: string
+  messageType?: MessageType
+  priority?: 'low' | 'normal' | 'high'
+  retryCount?: number
+}
+
+// Performance metrics tracking
+interface PerformanceMetrics {
+  startTime: number
+  twilioLatency?: number
+  dbInsertLatency?: number
+  totalLatency: number
+  retryAttempts: number
+  success: boolean
+  errorType?: string
 }
 
 // Função utilitária para retry com backoff exponencial
@@ -123,15 +139,38 @@ const formatBrazilianPhoneNumber = (phoneNumber: string): { formatted: string; i
 };
 
 serve(async (req) => {
-  console.log('🚀 WhatsApp function started');
-  console.log('Request method:', req.method);
-  console.log('Request URL:', req.url);
+  const startTime = performance.now();
+  const requestId = crypto.randomUUID();
+  
+  // Structured logging
+  const log = (level: 'info' | 'warn' | 'error', message: string, context?: any) => {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      requestId,
+      message,
+      ...context
+    }));
+  };
+  
+  log('info', 'WhatsApp function started', { 
+    method: req.method, 
+    url: req.url,
+    userAgent: req.headers.get('User-Agent')
+  });
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling CORS preflight request');
+    log('info', 'Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders })
   }
+
+  const metrics: PerformanceMetrics = {
+    startTime,
+    totalLatency: 0,
+    retryAttempts: 0,
+    success: false
+  };
 
   try {
     const supabaseClient = createClient(
@@ -139,17 +178,36 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Get request data
-    console.log('📧 Parsing request body...');
-    const { to, message, templateSid, templateVariables, paymentId, messageType = 'payment_reminder' }: WhatsAppRequest = await req.json()
-    
-    console.log('📋 WhatsApp request details:', { 
+    // Parse and validate request data
+    const { 
       to, 
-      message: message ? 'present' : 'not provided',
+      message, 
       templateSid, 
-      templateVariables: templateVariables ? Object.keys(templateVariables) : 'not provided',
+      templateVariables, 
       paymentId, 
-      messageType 
+      messageType = 'payment_reminder',
+      priority = 'normal',
+      retryCount = 3
+    }: WhatsAppRequest = await req.json();
+
+    // Validate messageType
+    const validMessageTypes: MessageType[] = ['text', 'template', 'payment_reminder', 'appointment_reminder', 'phone_verification', 'invoice_receipt', 'system_notification'];
+    if (!validMessageTypes.includes(messageType as MessageType)) {
+      log('error', 'Invalid message type', { messageType, validTypes: validMessageTypes });
+      return new Response(
+        JSON.stringify({ error: `Invalid messageType. Must be one of: ${validMessageTypes.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    log('info', 'Request parsed successfully', { 
+      to: to.replace(/\d{4}$/, '****'), // Mask phone number for security
+      hasMessage: !!message,
+      templateSid, 
+      hasTemplateVariables: !!templateVariables,
+      paymentId, 
+      messageType,
+      priority
     });
 
     // Get Twilio credentials from Supabase secrets
@@ -244,7 +302,8 @@ _Mensagem automática do Psiclo_`;
       paymentId
     });
 
-    // Send message via Twilio API with retry logic
+    // Send message via Twilio API with retry logic and metrics
+    const twilioStartTime = performance.now();
     const twilioResult = await retryWithBackoff(async () => {
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`
       
@@ -276,12 +335,13 @@ _Mensagem automática do Psiclo_`;
       const twilioData = await twilioResponse.json()
       
       if (!twilioResponse.ok) {
-        console.error('❌ Erro da API do Twilio:', {
+        const errorContext = {
           status: twilioResponse.status,
           statusText: twilioResponse.statusText,
           errorData: twilioData,
-          formDataSent: Object.fromEntries(formData.entries())
-        });
+          requestId
+        };
+        log('error', 'Twilio API error', errorContext);
         
         // Criar um erro com status para que o retry possa detectar se é retryable
         const error = new Error(twilioData.message || `Falha ao enviar mensagem WhatsApp: ${twilioResponse.status} ${twilioResponse.statusText}`)
@@ -290,27 +350,32 @@ _Mensagem automática do Psiclo_`;
       }
       
       return { twilioResponse, twilioData }
-    });
+    }, retryCount);
 
     if (!twilioResult.success) {
+      metrics.errorType = 'twilio_api_failure';
+      metrics.retryAttempts = twilioResult.attempts;
       throw twilioResult.error;
     }
 
     const { twilioResponse, twilioData } = twilioResult.result;
+    metrics.twilioLatency = performance.now() - twilioStartTime;
+    metrics.retryAttempts = twilioResult.attempts;
     
-    console.log('📨 Resposta completa do Twilio:', {
+    log('info', 'Twilio response received', {
       status: twilioResponse.status,
-      statusText: twilioResponse.statusText,
-      headers: Object.fromEntries(twilioResponse.headers.entries()),
-      data: twilioData
+      messageId: twilioData.sid,
+      messageStatus: twilioData.status,
+      latencyMs: metrics.twilioLatency,
+      retryAttempts: metrics.retryAttempts
     });
 
-    console.log(`✅ Mensagem WhatsApp enviada com sucesso após ${twilioResult.attempts} tentativa(s)!`, {
+    log('info', 'WhatsApp message sent successfully', {
       messageId: twilioData.sid,
       status: twilioData.status,
-      to: twilioData.to,
+      to: twilioData.to?.replace(/\d{4}$/, '****'), // Mask phone for security
       from: twilioData.from,
-      accountSid: twilioData.account_sid
+      attempts: twilioResult.attempts
     });
 
     // Get user ID from auth header
@@ -334,33 +399,72 @@ _Mensagem automática do Psiclo_`;
       userId = payment?.owner_id
     }
 
-    // Always log the message in the database (required for counter)
+    // Always log the message in the database with performance tracking
+    const dbStartTime = performance.now();
     if (userId) {
-      const { error: logError } = await supabaseClient
-        .from('whatsapp_logs')
-        .insert({
-          owner_id: userId,
-          phone_number: to,
-          message_content: message || `Template: ${resolvedTemplateSid}`,
-          message_type: messageType,
-          payment_id: paymentId,
-          status: 'sent',
-          evolution_message_id: twilioData.sid,
-          sent_at: new Date().toISOString()
-        })
+      try {
+        const { error: logError } = await supabaseClient
+          .from('whatsapp_logs')
+          .insert({
+            owner_id: userId,
+            phone_number: to,
+            message_content: message || `Template: ${resolvedTemplateSid}`,
+            message_type: messageType as MessageType,
+            payment_id: paymentId,
+            status: 'sent',
+            evolution_message_id: twilioData.sid,
+            sent_at: new Date().toISOString()
+          });
 
-      if (logError) {
-        console.error('Error logging WhatsApp message:', logError)
+        metrics.dbInsertLatency = performance.now() - dbStartTime;
+
+        if (logError) {
+          log('error', 'Error logging WhatsApp message', { error: logError, userId, messageId: twilioData.sid });
+          // Don't fail the request if logging fails, but track it
+          metrics.errorType = 'db_log_failure';
+        } else {
+          log('info', 'Message logged successfully', { 
+            userId, 
+            messageId: twilioData.sid, 
+            dbLatencyMs: metrics.dbInsertLatency 
+          });
+        }
+      } catch (dbError) {
+        metrics.dbInsertLatency = performance.now() - dbStartTime;
+        metrics.errorType = 'db_log_exception';
+        log('error', 'Exception logging WhatsApp message', { error: dbError, userId, messageId: twilioData.sid });
       }
     } else {
-      console.warn('⚠️ WhatsApp message sent but not logged - no user ID found')
+      log('warn', 'WhatsApp message sent but not logged - no user ID found', { 
+        messageId: twilioData.sid,
+        hasAuthHeader: !!req.headers.get('Authorization'),
+        paymentId 
+      });
     }
+
+    metrics.success = true;
+    metrics.totalLatency = performance.now() - startTime;
+
+    // Log final metrics for observability
+    log('info', 'Request completed successfully', {
+      totalLatencyMs: metrics.totalLatency,
+      twilioLatencyMs: metrics.twilioLatency,
+      dbInsertLatencyMs: metrics.dbInsertLatency,
+      retryAttempts: metrics.retryAttempts,
+      messageType,
+      priority
+    });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         messageId: twilioData.sid,
-        status: twilioData.status 
+        status: twilioData.status,
+        requestId,
+        metrics: {
+          totalLatency: Math.round(metrics.totalLatency),
+          retryAttempts: metrics.retryAttempts
+        }
       }),
       { 
         status: 200, 
@@ -369,11 +473,38 @@ _Mensagem automática do Psiclo_`;
     )
 
   } catch (error) {
-    console.error('Error sending WhatsApp message:', error)
+    metrics.totalLatency = performance.now() - startTime;
+    metrics.success = false;
+    
+    // Determine error category
+    if (!metrics.errorType) {
+      if (error.message?.includes('phone')) {
+        metrics.errorType = 'phone_validation_error';
+      } else if (error.message?.includes('Twilio')) {
+        metrics.errorType = 'twilio_error';
+      } else if (error.message?.includes('auth')) {
+        metrics.errorType = 'auth_error';
+      } else {
+        metrics.errorType = 'unknown_error';
+      }
+    }
+
+    log('error', 'WhatsApp function failed', {
+      error: error.message,
+      stack: error.stack,
+      errorType: metrics.errorType,
+      totalLatencyMs: metrics.totalLatency,
+      retryAttempts: metrics.retryAttempts
+    });
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        requestId,
+        errorType: metrics.errorType
+      }),
       { 
-        status: 500, 
+        status: error.status || 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
