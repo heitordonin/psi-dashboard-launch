@@ -184,18 +184,23 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
       return new Date(dateStr).toLocaleDateString('pt-BR');
     };
 
+    // Garante que temos um nome de psicólogo para a mensagem
+    const psychologistName = user?.user_metadata?.full_name || "seu psicólogo(a)";
+
+    // Usar formato de variáveis numeradas como no WhatsAppButton
     const templateVariables = {
-      patient_name: payment.patients.full_name,
-      amount: formatCurrency(payment.amount),
-      due_date: formatDate(payment.due_date),
-      description: payment.description || ''
+      "1": payment.patients.full_name,
+      "2": psychologistName,
+      "3": formatCurrency(payment.amount),
+      "4": formatDate(payment.due_date)
     };
 
     sendWhatsApp({
       to: payment.patients.phone,
-      templateSid: 'payment_reminder',
+      templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE',
       templateVariables,
-      paymentId: payment.id
+      paymentId: payment.id,
+      messageType: 'payment_reminder'
     });
   };
 
