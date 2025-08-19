@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWhatsAppLimit } from "./useWhatsAppLimit";
+import { useAuth } from "@/contexts/SupabaseAuthContext";
 
 interface WhatsAppMessage {
   to: string;
@@ -15,6 +16,7 @@ interface WhatsAppMessage {
 
 export const useWhatsApp = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { canSend, messagesRemaining, hasWhatsAppAccess, planSlug } = useWhatsAppLimit();
 
   const sendWhatsApp = useMutation({
@@ -44,7 +46,7 @@ export const useWhatsApp = () => {
     },
     onSuccess: () => {
       // Invalidar a query do contador de mensagens para atualizar os dados
-      queryClient.invalidateQueries({ queryKey: ['monthly-whatsapp-count'] });
+      queryClient.invalidateQueries({ queryKey: ['monthly-whatsapp-count', user?.id] });
       toast.success('Mensagem WhatsApp enviada com sucesso!');
     },
     onError: (error: any) => {

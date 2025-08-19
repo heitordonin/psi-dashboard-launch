@@ -323,7 +323,18 @@ _Mensagem automática do Psiclo_`;
       userId = user?.id
     }
 
-    // Log the message in the database
+    // If no userId from auth, try to get it from payment
+    if (!userId && paymentId) {
+      const { data: payment } = await supabaseClient
+        .from('payments')
+        .select('owner_id')
+        .eq('id', paymentId)
+        .single()
+      
+      userId = payment?.owner_id
+    }
+
+    // Always log the message in the database (required for counter)
     if (userId) {
       const { error: logError } = await supabaseClient
         .from('whatsapp_logs')
@@ -341,6 +352,8 @@ _Mensagem automática do Psiclo_`;
       if (logError) {
         console.error('Error logging WhatsApp message:', logError)
       }
+    } else {
+      console.warn('⚠️ WhatsApp message sent but not logged - no user ID found')
     }
 
     return new Response(
