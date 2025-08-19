@@ -14,9 +14,7 @@ import { WhatsAppButton } from "./WhatsAppButton";
 import { PaymentDateModal } from "./PaymentDateModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useWhatsApp } from "@/hooks/useWhatsApp";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentActionsProps {
@@ -31,9 +29,6 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
-  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
-  const { sendWhatsApp, isLoading: isSendingWhatsApp } = useWhatsApp();
-  const { user } = useAuth();
   // Calculate display status for overdue payments
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize today's date to the beginning of the day
@@ -162,38 +157,9 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   const canDelete = !(payment.status === 'paid' || isBlockedByReceitaSaude);
   const canOpenLink = payment.has_payment_link && payment.status === 'pending';
   const canSendEmail = payment.status === 'pending' && !!payment.patients?.email && payment.patients.email.includes('@');
-  const canSendWhatsApp = payment.status === 'pending' && !!payment.patients?.phone;
 
   // Compact layout: CTA + menu
   if (layout === 'compact') {
-    const patientName = payment.patients?.full_name || 'Paciente';
-    const patientPhone = payment.patients?.phone;
-
-    const formatCurrency = (amount: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(amount));
-    const formatDate = (dateString: string) => {
-      const [y, m, d] = dateString.split('-').map(Number);
-      return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
-    };
-
-    const handleSendWhatsApp = () => {
-      if (!patientPhone) return;
-      const psychologistName = user?.user_metadata?.full_name || "seu psicólogo(a)";
-      const templateVariables = {
-        "1": patientName,
-        "2": psychologistName,
-        "3": formatCurrency(Number(payment.amount)),
-        "4": formatDate(payment.due_date)
-      } as Record<string, string>;
-      sendWhatsApp({
-        to: patientPhone,
-        templateSid: 'TWILIO_TEMPLATE_SID_LEMBRETE',
-        templateVariables,
-        paymentId: payment.id,
-        messageType: 'payment_reminder'
-      });
-      setIsWhatsAppOpen(false);
-    };
-
     return (
       <div className="flex items-center gap-2">
         {canMarkPaid && (
@@ -227,17 +193,6 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             <DropdownMenuItem onClick={handleSendEmail} disabled={!canSendEmail || isSendingEmail} className="min-h-[40px]">
               {isSendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />} Lembrete Email
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                if (canSendWhatsApp) setIsWhatsAppOpen(true);
-                else {
-                  toast.error('Telefone não cadastrado para este paciente. Edite o paciente para incluir um número.');
-                }
-              }}
-              className="min-h-[40px]"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(payment)} disabled={!canEdit} className="min-h-[40px]">
               <Pencil className="h-4 w-4 mr-2" /> Editar
             </DropdownMenuItem>
@@ -252,8 +207,7 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Dialogs used by compact actions */}
-        {/* Payment Link */}
+        {/* Payment Link Dialog */}
         <Dialog open={isLinkOpen} onOpenChange={setIsLinkOpen}>
           <DialogContent>
             <PaymentLinkModal
@@ -262,35 +216,6 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
               paymentUrl={payment.payment_url}
               pixQrCode={payment.pix_qr_code}
             />
-          </DialogContent>
-        </Dialog>
-
-        {/* WhatsApp confirm */}
-        <Dialog open={isWhatsAppOpen} onOpenChange={setIsWhatsAppOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Confirmar Envio</DialogTitle>
-              <DialogDescription>
-                Um lembrete será enviado ao WhatsApp de <strong>{patientName}</strong> ({payment.patients?.phone}).
-              </DialogDescription>
-            </DialogHeader>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p><strong>Valor:</strong> {formatCurrency(Number(payment.amount))}</p>
-              <p><strong>Vencimento:</strong> {formatDate(payment.due_date)}</p>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsWhatsAppOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSendWhatsApp} disabled={isSendingWhatsApp}>
-                {isSendingWhatsApp ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar Lembrete'
-                )}
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
