@@ -66,6 +66,8 @@ export interface AgendaSettings {
   whatsapp_reminder_1_minutes?: number;
   whatsapp_reminder_2_enabled: boolean;
   whatsapp_reminder_2_minutes?: number;
+  // Lembretes para o terapeuta
+  therapist_whatsapp_notifications: boolean;
   created_at?: string;
   updated_at?: string;
 }

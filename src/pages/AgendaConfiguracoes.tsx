@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ArrowLeft, Clock, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Calendar as CalendarIcon, MessageCircle } from "lucide-react";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { AgendaSettings } from "@/types/appointment";
@@ -61,6 +61,7 @@ export default function AgendaConfiguracoes() {
     email_reminder_1_minutes: 60,
     whatsapp_reminder_1_enabled: false,
     whatsapp_reminder_1_minutes: 60,
+    therapist_whatsapp_notifications: true,
   });
 
   useEffect(() => {
@@ -276,6 +277,34 @@ export default function AgendaConfiguracoes() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MessageCircle className="mr-2 h-5 w-5" />
+              Notificações para o Terapeuta
+            </CardTitle>
+            <CardDescription>
+              Configure se você deseja receber lembretes no seu WhatsApp quando enviar lembretes para pacientes
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="therapist_whatsapp_notifications"
+                checked={formData.therapist_whatsapp_notifications}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, therapist_whatsapp_notifications: checked }))}
+              />
+              <Label htmlFor="therapist_whatsapp_notifications">
+                Receber lembretes de agendamentos no meu WhatsApp
+              </Label>
+            </div>
+            <div className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 rounded-md p-3">
+              <strong>Nota:</strong> Ativando esta opção, você receberá uma mensagem WhatsApp sempre que um lembrete for enviado para um paciente. 
+              Isso aumentará o consumo da sua franquia de mensagens WhatsApp.
             </div>
           </CardContent>
         </Card>
