@@ -1147,7 +1147,7 @@ export type Database = {
           evolution_message_id: string | null
           id: string
           message_content: string
-          message_type: string
+          message_type: Database["public"]["Enums"]["whatsapp_message_type"]
           owner_id: string
           payment_id: string | null
           phone_number: string
@@ -1163,7 +1163,7 @@ export type Database = {
           evolution_message_id?: string | null
           id?: string
           message_content: string
-          message_type?: string
+          message_type?: Database["public"]["Enums"]["whatsapp_message_type"]
           owner_id: string
           payment_id?: string | null
           phone_number: string
@@ -1179,7 +1179,7 @@ export type Database = {
           evolution_message_id?: string | null
           id?: string
           message_content?: string
-          message_type?: string
+          message_type?: Database["public"]["Enums"]["whatsapp_message_type"]
           owner_id?: string
           payment_id?: string | null
           phone_number?: string
@@ -1562,6 +1562,11 @@ export type Database = {
       payment_status: "draft" | "pending" | "paid" | "failed"
       reminder_status: "sent" | "failed"
       reminder_type: "email" | "whatsapp"
+      whatsapp_message_type:
+        | "text"
+        | "payment_reminder"
+        | "appointment_reminder"
+        | "otp"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1694,6 +1699,12 @@ export const Constants = {
       payment_status: ["draft", "pending", "paid", "failed"],
       reminder_status: ["sent", "failed"],
       reminder_type: ["email", "whatsapp"],
+      whatsapp_message_type: [
+        "text",
+        "payment_reminder",
+        "appointment_reminder",
+        "otp",
+      ],
     },
   },
 } as const
