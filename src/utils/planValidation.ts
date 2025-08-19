@@ -9,7 +9,7 @@ export const PLAN_INFO = {
   },
   psi_regular: {
     name: 'Plano Psi Regular', 
-    price: 'R$ 249,00/mês',
+    price: 'R$ 269,00/mês',
     description: 'Para psicólogos que precisam de recursos avançados'
   }
 } as const;

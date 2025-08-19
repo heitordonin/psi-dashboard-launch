@@ -32,7 +32,7 @@ export const formatPagarmeCurrency = (amountInCents: number): string => {
 export const PLAN_PRICES = {
   free: 0,
   gestao: 49.00,
-  psi_regular: 249.00
+  psi_regular: 269.00
 } as const;
 
 /**
