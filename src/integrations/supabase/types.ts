@@ -1459,7 +1459,7 @@ export type Database = {
         }[]
       }
       get_monthly_whatsapp_count: {
-        Args: { p_month?: string; p_user_id: string }
+        Args: { p_month?: string; p_user_id: string } | { p_user_id: string }
         Returns: number
       }
       get_mrr_metrics: {
