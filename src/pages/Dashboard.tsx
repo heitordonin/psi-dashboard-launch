@@ -11,6 +11,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ModulesGrid } from "@/components/dashboard/ModulesGrid";
 import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
+import { WhatsAppLimitCard } from "@/components/profile/WhatsAppLimitCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -93,6 +94,8 @@ const Dashboard = () => {
               />
 
               <SummaryCard data={summaryData} isLoading={isLoadingSummary} />
+
+              <WhatsAppLimitCard />
 
               <ModulesGrid />
             </div>

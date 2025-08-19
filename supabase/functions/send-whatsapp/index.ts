@@ -403,11 +403,16 @@ _Mensagem automática do Psiclo_`;
     const dbStartTime = performance.now();
     if (userId) {
       try {
+        // Extract only digits from phone number for database storage (constraint compliance)
+        const phoneForDatabase = to.replace(/\D/g, '');
+        // Ensure it has the Brazilian country code (55) for consistency
+        const normalizedPhoneForDb = phoneForDatabase.startsWith('55') ? phoneForDatabase : `55${phoneForDatabase}`;
+        
         const { error: logError } = await supabaseClient
           .from('whatsapp_logs')
           .insert({
             owner_id: userId,
-            phone_number: to,
+            phone_number: normalizedPhoneForDb,
             message_content: message || `Template: ${resolvedTemplateSid}`,
             message_type: messageType as MessageType,
             payment_id: paymentId,
