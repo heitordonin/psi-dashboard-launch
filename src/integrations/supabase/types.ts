@@ -1551,7 +1551,14 @@ export type Database = {
         Returns: string
       }
       log_security_event: {
-        Args: { p_details?: Json; p_event_type: string; p_user_id?: string }
+        Args:
+          | {
+              p_details?: Json
+              p_event_type: string
+              p_severity?: string
+              p_user_id: string
+            }
+          | { p_details?: Json; p_event_type: string; p_user_id?: string }
         Returns: string
       }
       register_reminder_delivery: {
