@@ -723,7 +723,7 @@ export type Database = {
           id: string
           is_payment_from_abroad: boolean
           neighborhood: string | null
-          owner_id: string | null
+          owner_id: string
           patient_type: string
           phone: string | null
           state: string | null
@@ -746,7 +746,7 @@ export type Database = {
           id?: string
           is_payment_from_abroad?: boolean
           neighborhood?: string | null
-          owner_id?: string | null
+          owner_id: string
           patient_type?: string
           phone?: string | null
           state?: string | null
@@ -769,7 +769,7 @@ export type Database = {
           id?: string
           is_payment_from_abroad?: boolean
           neighborhood?: string | null
-          owner_id?: string | null
+          owner_id?: string
           patient_type?: string
           phone?: string | null
           state?: string | null
