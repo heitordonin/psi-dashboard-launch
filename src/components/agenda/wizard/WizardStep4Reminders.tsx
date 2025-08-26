@@ -3,13 +3,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, MessageCircle, Bell, Settings, Send } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Mail, MessageCircle, Bell, Settings, Send, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppointmentWizardStepProps } from "./types";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
+import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
 
 export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWizardStepProps) => {
   const { settings } = useAgendaSettings();
+  const { hasWhatsAppAccess, messagesRemaining, isLoading } = useWhatsAppLimit();
 
   const hasPatientContact = formData.patient_email || formData.patient_phone;
   
@@ -160,49 +163,83 @@ export const WizardStep4Reminders = ({ formData, updateFormData }: AppointmentWi
           )}
         </Card>
 
-        <Card className={cn(
-          "transition-all duration-200",
-          formData.send_whatsapp_reminder && hasPatientContact ? "border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800" : ""
-        )}>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  formData.send_whatsapp_reminder && hasPatientContact 
-                    ? "bg-green-100 text-green-600" 
-                    : "bg-gray-100 text-gray-500"
-                )}>
-                  <MessageCircle className="w-5 h-5" />
+        <TooltipProvider>
+          <Card className={cn(
+            "transition-all duration-200",
+            formData.send_whatsapp_reminder && hasPatientContact ? "border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800" : "",
+            !hasWhatsAppAccess ? "opacity-60" : ""
+          )}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    formData.send_whatsapp_reminder && hasPatientContact && hasWhatsAppAccess
+                      ? "bg-green-100 text-green-600" 
+                      : "bg-gray-100 text-gray-500"
+                  )}>
+                    <MessageCircle className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base">Lembrete por WhatsApp</CardTitle>
+                      {!hasWhatsAppAccess && !isLoading && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Disponível apenas nos planos pagos</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    <CardDescription>
+                      {!hasWhatsAppAccess 
+                        ? "Disponível nos planos Gestão e Psi Regular" 
+                        : getWhatsAppReminderDescription()
+                      }
+                    </CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base">Lembrete por WhatsApp</CardTitle>
-                  <CardDescription>
-                    {getWhatsAppReminderDescription()}
-                  </CardDescription>
+                <Switch
+                  checked={formData.send_whatsapp_reminder}
+                  onCheckedChange={(checked) => updateFormData({ send_whatsapp_reminder: checked })}
+                  disabled={!hasWhatsAppAccess || !hasWhatsAppRemindersEnabled || !formData.patient_phone}
+                />
+              </div>
+            </CardHeader>
+            
+            {(!hasWhatsAppAccess || !hasWhatsAppRemindersEnabled || !formData.patient_phone) && (
+              <CardContent className="pt-0">
+                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg space-y-1">
+                  {!hasWhatsAppAccess && (
+                    <p>• <strong>Faça upgrade para um plano pago</strong> para habilitar lembretes WhatsApp</p>
+                  )}
+                  {hasWhatsAppAccess && !hasWhatsAppRemindersEnabled && (
+                    <p>• Configure os lembretes por WhatsApp nas configurações da agenda</p>
+                  )}
+                  {hasWhatsAppAccess && !formData.patient_phone && (
+                    <p>• Telefone do paciente necessário para enviar lembretes</p>
+                  )}
                 </div>
-              </div>
-              <Switch
-                checked={formData.send_whatsapp_reminder}
-                onCheckedChange={(checked) => updateFormData({ send_whatsapp_reminder: checked })}
-                disabled={!hasWhatsAppRemindersEnabled || !formData.patient_phone}
-              />
-            </div>
-          </CardHeader>
-          
-          {(!hasWhatsAppRemindersEnabled || !formData.patient_phone) && (
-            <CardContent className="pt-0">
-              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                {!hasWhatsAppRemindersEnabled && (
-                  <p>• Configure os lembretes por WhatsApp nas configurações da agenda</p>
+                {!hasWhatsAppAccess && (
+                  <div className="mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      asChild
+                    >
+                      <a href="/plans" target="_blank">
+                        Ver Planos
+                      </a>
+                    </Button>
+                  </div>
                 )}
-                {!formData.patient_phone && (
-                  <p>• Telefone do paciente necessário para enviar lembretes</p>
-                )}
-              </div>
-            </CardContent>
-          )}
-        </Card>
+              </CardContent>
+            )}
+          </Card>
+        </TooltipProvider>
 
         {(!hasEmailRemindersEnabled && !hasWhatsAppRemindersEnabled) && (
           <Card className="bg-muted/50 border-dashed border-2">

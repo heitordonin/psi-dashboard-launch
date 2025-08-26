@@ -6,12 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ArrowLeft, Clock, MapPin, Calendar as CalendarIcon, MessageCircle } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Calendar as CalendarIcon, MessageCircle, AlertCircle } from "lucide-react";
 import { useAgendaSettings } from "@/hooks/useAgendaSettings";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
 import { AgendaSettings } from "@/types/appointment";
+import { cn } from "@/lib/utils";
 
 const TIMEZONES = [
   { value: 'America/Sao_Paulo', label: 'GMT-3 São Paulo' },
@@ -43,6 +46,7 @@ const REMINDER_MINUTES_OPTIONS = [
 export default function AgendaConfiguracoes() {
   const { user } = useSecureAuth();
   const { settings, saveSettings, isSaving } = useAgendaSettings();
+  const { hasWhatsAppAccess, messagesRemaining, planSlug, isLoading } = useWhatsAppLimit();
   
   const [formData, setFormData] = useState<Partial<AgendaSettings>>({
     user_id: user?.id || '',
@@ -238,48 +242,93 @@ export default function AgendaConfiguracoes() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CalendarIcon className="mr-2 h-5 w-5" />
-              Lembretes por WhatsApp
-            </CardTitle>
-            <CardDescription>
-              Configure um lembrete automático por WhatsApp antes das consultas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="whatsapp_reminder_1_enabled"
-                  checked={formData.whatsapp_reminder_1_enabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_enabled: checked }))}
-                />
-                <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
+        <TooltipProvider>
+          <Card className={cn(!hasWhatsAppAccess ? "opacity-60" : "")}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <CalendarIcon className="mr-2 h-5 w-5" />
+                    Lembretes por WhatsApp
+                    {!hasWhatsAppAccess && !isLoading && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertCircle className="ml-2 w-4 h-4 text-amber-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Disponível apenas nos planos pagos</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    {!hasWhatsAppAccess 
+                      ? "Disponível nos planos Gestão e Psi Regular"
+                      : planSlug === 'gestao' 
+                        ? `Configure lembretes automáticos (${messagesRemaining || 0} mensagens restantes)`
+                        : "Configure um lembrete automático por WhatsApp antes das consultas"
+                    }
+                  </CardDescription>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Label className="text-sm text-muted-foreground">Enviar</Label>
-                <Select
-                  value={formData.whatsapp_reminder_1_minutes?.toString() || '60'}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(value) }))}
-                  disabled={!formData.whatsapp_reminder_1_enabled}
-                >
-                  <SelectTrigger className="w-44">
-                    <SelectValue placeholder="Selecione o tempo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REMINDER_MINUTES_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value.toString()}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!hasWhatsAppAccess ? (
+                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>WhatsApp indisponível no plano gratuito</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Faça upgrade para ter acesso aos lembretes automáticos por WhatsApp:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• <strong>Plano Gestão:</strong> 40 mensagens/mês por R$69</li>
+                    <li>• <strong>Plano Psi Regular:</strong> Mensagens ilimitadas por R$269</li>
+                  </ul>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    asChild
+                  >
+                    <a href="/plans" target="_blank">
+                      Ver Planos
+                    </a>
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="whatsapp_reminder_1_enabled"
+                      checked={formData.whatsapp_reminder_1_enabled}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_enabled: checked }))}
+                    />
+                    <Label htmlFor="whatsapp_reminder_1_enabled">Ativado</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-sm text-muted-foreground">Enviar</Label>
+                    <Select
+                      value={formData.whatsapp_reminder_1_minutes?.toString() || '60'}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, whatsapp_reminder_1_minutes: parseInt(value) }))}
+                      disabled={!formData.whatsapp_reminder_1_enabled}
+                    >
+                      <SelectTrigger className="w-44">
+                        <SelectValue placeholder="Selecione o tempo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REMINDER_MINUTES_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TooltipProvider>
 
         <Card>
           <CardHeader>
