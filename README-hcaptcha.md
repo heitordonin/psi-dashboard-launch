@@ -24,10 +24,10 @@ Após registrar o site, você receberá:
 ## 4. Configurar no projeto
 
 ### Frontend (Site Key)
-Edite o arquivo `src/components/ui/captcha.tsx`:
+A Site Key já foi configurada no projeto:
 ```typescript
-// Substitua pela sua chave real
-const HCAPTCHA_SITE_KEY = 'sua-site-key-aqui';
+// Em src/components/ui/captcha.tsx
+const HCAPTCHA_SITE_KEY = '3ca82662-74f4-47d8-82f0-a30e15da650c';
 ```
 
 ### Backend (Secret Key)

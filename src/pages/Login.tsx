@@ -44,13 +44,17 @@ const Login = () => {
 
   const verifyCaptcha = async (token: string): Promise<boolean> => {
     try {
+      console.log('Verificando CAPTCHA token:', token);
+      
       const { data, error } = await supabase.functions.invoke('verify-captcha', {
         body: { token }
       });
 
+      console.log('Resposta da verificação CAPTCHA:', { data, error });
+
       if (error) {
         console.error('Error verifying CAPTCHA:', error);
-        toast.error('Erro ao verificar CAPTCHA');
+        toast.error('Erro ao verificar CAPTCHA: ' + error.message);
         return false;
       }
 

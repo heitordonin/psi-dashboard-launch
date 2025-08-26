@@ -2,9 +2,9 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { useTheme } from 'next-themes';
 
-// Site key público - substitua pela sua chave real do hCaptcha
-// Para obter: https://dashboard.hcaptcha.com/sites
-const HCAPTCHA_SITE_KEY = 'your-real-hcaptcha-site-key-here';
+// Site key público do hCaptcha
+// Obtido em: https://dashboard.hcaptcha.com/sites
+const HCAPTCHA_SITE_KEY = '3ca82662-74f4-47d8-82f0-a30e15da650c';
 
 export interface CaptchaRef {
   execute: () => void;
@@ -48,6 +48,7 @@ export const Captcha = forwardRef<CaptchaRef, CaptchaProps>(({
   };
 
   const handleError = (err: string) => {
+    console.error('hCaptcha error:', err);
     setToken(null);
     onError?.(err);
   };
