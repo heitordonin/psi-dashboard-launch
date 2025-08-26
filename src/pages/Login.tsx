@@ -44,43 +44,48 @@ const Login = () => {
 
   const verifyCaptcha = async (token: string): Promise<boolean> => {
     try {
-      console.log('Verificando CAPTCHA token:', token);
+      console.log('🔍 [CAPTCHA] Iniciando verificação do token:', token?.substring(0, 20) + '...');
       
       const { data, error } = await supabase.functions.invoke('verify-captcha', {
         body: { token }
       });
 
-      console.log('Resposta da verificação CAPTCHA:', { data, error });
+      console.log('🔍 [CAPTCHA] Resposta completa da Edge Function:', JSON.stringify({ data, error }, null, 2));
 
       // Se houve erro na invocação da função
       if (error) {
-        console.error('Error invoking CAPTCHA function:', error);
+        console.error('❌ [CAPTCHA] Erro na invocação da função:', error);
         toast.error('Erro ao conectar com serviço de verificação');
         return false;
       }
 
       // Verificar se a validação foi bem-sucedida
-      if (data?.success) {
-        console.log('CAPTCHA validado com sucesso');
+      if (data?.success === true) {
+        console.log('✅ [CAPTCHA] CAPTCHA validado com SUCESSO!');
         return true;
       } else {
         // Tratar diferentes códigos de erro do hCaptcha
         const errorCodes = data?.['error-codes'] || [];
-        console.log('CAPTCHA validation failed:', errorCodes);
+        console.log('❌ [CAPTCHA] Validação falhou. Error codes:', errorCodes);
+        console.log('❌ [CAPTCHA] Dados completos de erro:', data);
         
         if (errorCodes.includes('sitekey-secret-mismatch')) {
+          console.log('❌ [CAPTCHA] Erro: Site Key e Secret Key não coincidem');
           toast.error('Erro de configuração do CAPTCHA. Contate o suporte.');
         } else if (errorCodes.includes('invalid-input-response')) {
+          console.log('❌ [CAPTCHA] Erro: Token inválido');
           toast.error('Token do CAPTCHA inválido. Tente novamente.');
         } else if (errorCodes.includes('timeout-or-duplicate')) {
+          console.log('❌ [CAPTCHA] Erro: Token expirado ou duplicado');
           toast.error('CAPTCHA expirou ou já foi usado. Complete novamente.');
         } else {
+          console.log('❌ [CAPTCHA] Erro genérico:', data?.error);
           toast.error(data?.error || 'Falha na verificação do CAPTCHA');
         }
         return false;
       }
     } catch (error) {
-      console.error('Error verifying CAPTCHA:', error);
+      console.error('💥 [CAPTCHA] Erro inesperado:', error);
       toast.error('Erro inesperado ao verificar CAPTCHA');
       return false;
     }
@@ -88,45 +93,67 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 [LOGIN] Iniciando processo de login');
     
     if (!captchaToken) {
+      console.log('❌ [LOGIN] CAPTCHA não foi resolvido');
       toast.error('Por favor, complete o CAPTCHA');
       return;
     }
 
+    console.log('🔐 [LOGIN] CAPTCHA token disponível, iniciando login...');
     setIsLoading(true);
 
     try {
       // Verificar CAPTCHA primeiro
+      console.log('🔍 [LOGIN] Verificando CAPTCHA...');
       const captchaValid = await verifyCaptcha(captchaToken);
+      
+      console.log('🔍 [LOGIN] Resultado da verificação CAPTCHA:', captchaValid);
+      
       if (!captchaValid) {
+        console.log('❌ [LOGIN] CAPTCHA inválido, resetando e abortando login');
         captchaRef.current?.reset();
         setCaptchaToken(null);
         return;
       }
 
+      console.log('✅ [LOGIN] CAPTCHA válido! Prosseguindo com autenticação...');
+      console.log('👤 [LOGIN] Tentando autenticar usuário:', email);
+      
       const { error } = await signIn(email, password);
       
+      console.log('🔐 [LOGIN] Resultado da autenticação:', error ? 'ERRO' : 'SUCESSO');
+      
       if (error) {
+        console.error('❌ [LOGIN] Erro na autenticação:', error);
+        console.log('❌ [LOGIN] Detalhes do erro:', JSON.stringify(error, null, 2));
+        
         captchaRef.current?.reset();
         setCaptchaToken(null);
         
         if (error.message === 'Invalid login credentials') {
+          console.log('❌ [LOGIN] Credenciais inválidas');
           toast.error('Email ou senha incorretos');
         } else if (error.message === 'Email not confirmed') {
+          console.log('❌ [LOGIN] Email não confirmado');
           setIsEmailNotConfirmedOpen(true);
         } else {
+          console.log('❌ [LOGIN] Erro genérico:', error.message);
           toast.error('Erro ao fazer login: ' + error.message);
         }
       } else {
+        console.log('🎉 [LOGIN] Login realizado com SUCESSO!');
         toast.success('Login realizado com sucesso!');
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error('💥 [LOGIN] Erro inesperado durante o login:', error);
       captchaRef.current?.reset();
       setCaptchaToken(null);
       toast.error('Erro inesperado ao fazer login');
     } finally {
+      console.log('🏁 [LOGIN] Finalizando processo de login');
       setIsLoading(false);
     }
   };
