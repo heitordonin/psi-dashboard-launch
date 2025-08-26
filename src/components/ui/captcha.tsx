@@ -2,8 +2,9 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { useTheme } from 'next-themes';
 
-// Site key público - pode ser no código
-const HCAPTCHA_SITE_KEY = '10000000-ffff-ffff-ffff-000000000001';
+// Site key público - substitua pela sua chave real do hCaptcha
+// Para obter: https://dashboard.hcaptcha.com/sites
+const HCAPTCHA_SITE_KEY = 'your-real-hcaptcha-site-key-here';
 
 export interface CaptchaRef {
   execute: () => void;
