@@ -33,7 +33,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, UserX, Loader2, Search, AlertTriangle } from "lucide-react";
 import { useCourtesyPlanValidation } from '@/hooks/useCourtesyPlanValidation';
-import { useForceSyncSubscription } from "@/hooks/useForceSyncSubscription";
 import { debounce } from "lodash";
 
 interface User {
@@ -68,7 +67,6 @@ export const CourtesyPlansManager = () => {
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Array<{field: string, message: string}>>([]);
   const queryClient = useQueryClient();
-  const forceSyncMutation = useForceSyncSubscription();
 
   const { validateCourtesyPlan, getFieldError, hasErrors } = useCourtesyPlanValidation();
 
@@ -303,7 +301,11 @@ export const CourtesyPlansManager = () => {
       
       // Force sync subscription for the user
       try {
-        await forceSyncMutation.mutateAsync();
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('force-subscription-sync', {
+          body: { userId: data.user_id }
+        });
+        
+        if (syncError) throw syncError;
         toast.success('Sincronização automática executada!');
       } catch (syncError) {
         console.error('Error syncing subscription:', syncError);
@@ -333,8 +335,22 @@ export const CourtesyPlansManager = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast.success('Plano cortesia desativado com sucesso!');
+      
+      // Force sync subscription for the user after deactivation
+      try {
+        const { data: syncResult, error: syncError } = await supabase.functions.invoke('force-subscription-sync', {
+          body: { userId: data.user_id }
+        });
+        
+        if (syncError) throw syncError;
+        toast.success('Sincronização automática executada!');
+      } catch (syncError) {
+        console.error('Error syncing subscription after deactivation:', syncError);
+        toast.warning('Plano desativado, mas erro na sincronização automática');
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['subscription-overrides'] });
     },
     onError: (error) => {

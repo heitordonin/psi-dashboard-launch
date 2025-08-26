@@ -128,7 +128,7 @@ serve(async (req) => {
             let expectedPlan = 'free';
             if (amount <= 6900) {
               expectedPlan = 'gestao';
-            } else if (amount <= 24900) {
+            } else if (amount <= 26900) { // Updated to handle both R$249.00 (24900) and R$269.00 (26900)
               expectedPlan = 'psi_regular';
             }
 

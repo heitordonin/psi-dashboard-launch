@@ -196,7 +196,7 @@ serve(async (req) => {
     let planSlug = "free";
     if (amount === 6900) { // R$69,00
       planSlug = "gestao";
-    } else if (amount === 24900) { // R$249,00
+    } else if (amount === 24900 || amount === 26900) { // R$249,00 (antigo) ou R$269,00 (novo)
       planSlug = "psi_regular";
     }
 
