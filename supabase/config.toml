@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.get-reminder-system-metrics]
 verify_jwt = true
+
+[functions.verify-captcha]
+verify_jwt = false

@@ -1,22 +1,32 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCpf, formatPhone } from '@/utils/inputFormatters';
 import { SignupFormData } from './SignupFormValidation';
 import { TermsAcceptanceCheckbox } from './TermsAcceptanceCheckbox';
+import { Captcha, type CaptchaRef } from '@/components/ui/captcha';
 
 interface SignupFormFieldsProps {
   formData: SignupFormData;
   errors: Record<string, string>;
   onFieldChange: (field: keyof SignupFormData, value: string | boolean) => void;
+  captchaToken: string | null;
+  onCaptchaVerify: (token: string) => void;
+  onCaptchaError: () => void;
+  onCaptchaExpire: () => void;
 }
 
 export const SignupFormFields: React.FC<SignupFormFieldsProps> = ({
   formData,
   errors,
   onFieldChange,
+  captchaToken,
+  onCaptchaVerify,
+  onCaptchaError,
+  onCaptchaExpire,
 }) => {
+  const captchaRef = useRef<CaptchaRef>(null);
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCpf = formatCpf(e.target.value);
     onFieldChange('cpf', formattedCpf);
@@ -118,6 +128,14 @@ export const SignupFormFields: React.FC<SignupFormFieldsProps> = ({
         checked={formData.acceptedTerms}
         onChange={(checked) => onFieldChange('acceptedTerms', checked)}
         error={errors.acceptedTerms}
+      />
+
+      <Captcha
+        ref={captchaRef}
+        onVerify={onCaptchaVerify}
+        onError={onCaptchaError}
+        onExpire={onCaptchaExpire}
+        className="flex justify-center"
       />
     </>
   );

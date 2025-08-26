@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { CpfExistsModal } from './CpfExistsModal';
 import { toast } from 'sonner';
 import { ValidPlan } from '@/utils/planValidation';
 import { supabase } from '@/integrations/supabase/client';
+import { type CaptchaRef } from '@/components/ui/captcha';
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -29,16 +30,57 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showCpfExistsModal, setShowCpfExistsModal] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { signUp } = useAuth();
   const { checkCpfExists, isChecking } = useCpfValidation();
   const navigate = useNavigate();
+  const captchaRef = useRef<CaptchaRef>(null);
 
   const handleFieldChange = (field: keyof SignupFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const verifyCaptcha = async (token: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-captcha', {
+        body: { token }
+      });
+
+      if (error) {
+        console.error('Error verifying CAPTCHA:', error);
+        toast.error('Erro ao verificar CAPTCHA');
+        return false;
+      }
+
+      return data?.success === true;
+    } catch (error) {
+      console.error('Error verifying CAPTCHA:', error);
+      toast.error('Erro ao verificar CAPTCHA');
+      return false;
+    }
+  };
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+  };
+
+  const handleCaptchaError = () => {
+    setCaptchaToken(null);
+    toast.error('Erro no CAPTCHA. Tente novamente.');
+  };
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken(null);
+    toast.warning('CAPTCHA expirou. Complete novamente.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!captchaToken) {
+      toast.error('Por favor, complete o CAPTCHA');
+      return;
+    }
     
     const validationErrors = validateSignupForm(formData);
     setErrors(validationErrors);
@@ -50,10 +92,20 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
     setLoading(true);
 
     try {
+      // Verificar CAPTCHA primeiro
+      const captchaValid = await verifyCaptcha(captchaToken);
+      if (!captchaValid) {
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+        return;
+      }
+
       // Verificar se o CPF já existe antes de tentar criar a conta
       const cpfExists = await checkCpfExists(formData.cpf, formData.email);
       
       if (cpfExists) {
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
         setLoading(false);
         setShowCpfExistsModal(true);
         return;
@@ -68,7 +120,11 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
         phone: sanitizedData.phone
       });
 
-      if (error) throw error;
+      if (error) {
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+        throw error;
+      }
 
       // Salvar aceite dos termos após signup bem-sucedido
       try {
@@ -133,6 +189,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
 
     } catch (error: any) {
       console.error('Error:', error);
+      captchaRef.current?.reset();
+      setCaptchaToken(null);
       
       // Verificar se é erro de CPF duplicado específico do banco
       if (error.message?.includes('duplicate key value violates unique constraint "unique_cpf"') ||
@@ -153,9 +211,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
           formData={formData}
           errors={errors}
           onFieldChange={handleFieldChange}
+          captchaToken={captchaToken}
+          onCaptchaVerify={handleCaptchaVerify}
+          onCaptchaError={handleCaptchaError}
+          onCaptchaExpire={handleCaptchaExpire}
         />
         
-        <Button type="submit" className="w-full" disabled={loading || isChecking}>
+        <Button type="submit" className="w-full" disabled={loading || isChecking || !captchaToken}>
           {loading ? 'Criando conta...' : isChecking ? 'Verificando CPF...' : 'Criar Conta'}
         </Button>
       </form>
