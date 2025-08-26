@@ -52,16 +52,36 @@ const Login = () => {
 
       console.log('Resposta da verificação CAPTCHA:', { data, error });
 
+      // Se houve erro na invocação da função
       if (error) {
-        console.error('Error verifying CAPTCHA:', error);
-        toast.error('Erro ao verificar CAPTCHA: ' + error.message);
+        console.error('Error invoking CAPTCHA function:', error);
+        toast.error('Erro ao conectar com serviço de verificação');
         return false;
       }
 
-      return data?.success === true;
+      // Verificar se a validação foi bem-sucedida
+      if (data?.success) {
+        console.log('CAPTCHA validado com sucesso');
+        return true;
+      } else {
+        // Tratar diferentes códigos de erro do hCaptcha
+        const errorCodes = data?.['error-codes'] || [];
+        console.log('CAPTCHA validation failed:', errorCodes);
+        
+        if (errorCodes.includes('sitekey-secret-mismatch')) {
+          toast.error('Erro de configuração do CAPTCHA. Contate o suporte.');
+        } else if (errorCodes.includes('invalid-input-response')) {
+          toast.error('Token do CAPTCHA inválido. Tente novamente.');
+        } else if (errorCodes.includes('timeout-or-duplicate')) {
+          toast.error('CAPTCHA expirou ou já foi usado. Complete novamente.');
+        } else {
+          toast.error(data?.error || 'Falha na verificação do CAPTCHA');
+        }
+        return false;
+      }
     } catch (error) {
       console.error('Error verifying CAPTCHA:', error);
-      toast.error('Erro ao verificar CAPTCHA');
+      toast.error('Erro inesperado ao verificar CAPTCHA');
       return false;
     }
   };

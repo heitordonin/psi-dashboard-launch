@@ -15,10 +15,11 @@ serve(async (req) => {
     const { token, remoteip } = await req.json();
 
     if (!token) {
+      console.log('CAPTCHA verification failed: Token is required');
       return new Response(
         JSON.stringify({ success: false, error: 'Token is required' }),
         { 
-          status: 400, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -30,7 +31,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Server configuration error' }),
         { 
-          status: 500, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -70,6 +71,7 @@ serve(async (req) => {
         }
       );
     } else {
+      console.log('hCaptcha verification failed:', verifyResult['error-codes'] || []);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -77,7 +79,7 @@ serve(async (req) => {
           'error-codes': verifyResult['error-codes'] || []
         }),
         { 
-          status: 400, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -88,7 +90,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
       { 
-        status: 500, 
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );

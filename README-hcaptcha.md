@@ -31,7 +31,13 @@ const HCAPTCHA_SITE_KEY = '3ca82662-74f4-47d8-82f0-a30e15da650c';
 ```
 
 ### Backend (Secret Key)
-A secret key já foi configurada no Supabase. Ela será usada pela Edge Function `verify-captcha` para validar os tokens.
+A Secret Key precisa ser configurada no Supabase:
+1. No dashboard do hCaptcha, vá para a mesma página da Site Key (Sites → sua site)
+2. Copie a "Secret Key" que corresponde à Site Key acima
+3. No Supabase: Settings → Edge Functions → Secrets
+4. Atualize a secret `HCAPTCHA_SECRET_KEY` com o valor copiado
+
+⚠️ **IMPORTANTE**: A Site Key e Secret Key devem ser da MESMA site no dashboard do hCaptcha!
 
 ## 5. Testar
 
@@ -39,6 +45,26 @@ A secret key já foi configurada no Supabase. Ela será usada pela Edge Function
 2. O CAPTCHA deve aparecer normalmente (sem mensagem de teste)
 3. Complete o desafio
 4. A validação deve funcionar corretamente
+
+## 6. Solução de Problemas
+
+### Erro: "sitekey-secret-mismatch"
+- A Site Key e Secret Key não pertencem à mesma site no hCaptcha
+- Solução: Verifique se você copiou a Secret Key da MESMA página onde está a Site Key
+
+### Erro: "invalid-input-response"
+- O token do CAPTCHA é inválido ou malformado
+- Solução: Recarregue a página e tente novamente
+
+### Erro: "timeout-or-duplicate"
+- O CAPTCHA expirou ou já foi usado
+- Solução: Complete o CAPTCHA novamente
+
+### Domínios não configurados
+- Se o CAPTCHA não aparecer ou der erro de domínio
+- Solução: Adicione todos os domínios necessários no dashboard do hCaptcha:
+  - `localhost` e `127.0.0.1` para desenvolvimento
+  - Seu domínio de produção
 
 ## Importante
 
