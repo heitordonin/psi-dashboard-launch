@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCpf, formatPhone } from '@/utils/inputFormatters';
 import { SignupFormData } from './SignupFormValidation';
+import { TermsAcceptanceCheckbox } from './TermsAcceptanceCheckbox';
 
 interface SignupFormFieldsProps {
   formData: SignupFormData;
   errors: Record<string, string>;
-  onFieldChange: (field: keyof SignupFormData, value: string) => void;
+  onFieldChange: (field: keyof SignupFormData, value: string | boolean) => void;
 }
 
 export const SignupFormFields: React.FC<SignupFormFieldsProps> = ({
@@ -112,6 +113,12 @@ export const SignupFormFields: React.FC<SignupFormFieldsProps> = ({
         />
         {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
       </div>
+
+      <TermsAcceptanceCheckbox
+        checked={formData.acceptedTerms}
+        onChange={(checked) => onFieldChange('acceptedTerms', checked)}
+        error={errors.acceptedTerms}
+      />
     </>
   );
 };

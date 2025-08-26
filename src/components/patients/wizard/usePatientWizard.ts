@@ -29,6 +29,7 @@ export const usePatientWizard = ({ patientToEdit, onClose }: UsePatientWizardPro
     has_financial_guardian: false,
     guardian_cpf: '',
     is_payment_from_abroad: false,
+    acceptedTerms: false,
   });
 
   // Pre-fill form data when editing
@@ -51,6 +52,7 @@ export const usePatientWizard = ({ patientToEdit, onClose }: UsePatientWizardPro
         has_financial_guardian: patientToEdit.has_financial_guardian || false,
         guardian_cpf: patientToEdit.guardian_cpf || '',
         is_payment_from_abroad: patientToEdit.is_payment_from_abroad || false,
+        acceptedTerms: true, // Already accepted when editing existing patient
       });
     }
   }, [patientToEdit]);

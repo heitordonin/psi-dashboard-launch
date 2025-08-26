@@ -24,6 +24,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
     fullName: '',
     cpf: '',
     phone: '',
+    acceptedTerms: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -32,7 +33,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
   const { checkCpfExists, isChecking } = useCpfValidation();
   const navigate = useNavigate();
 
-  const handleFieldChange = (field: keyof SignupFormData, value: string) => {
+  const handleFieldChange = (field: keyof SignupFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -68,6 +69,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, selectedPlan 
       });
 
       if (error) throw error;
+
+      // Salvar aceite dos termos após signup bem-sucedido
+      try {
+        await supabase.functions.invoke('save-terms-acceptance', {
+          body: {
+            email: sanitizedData.email,
+            formType: 'user_signup'
+          }
+        });
+      } catch (termsError) {
+        console.error('Erro ao salvar aceite dos termos:', termsError);
+        // Não falhar o processo por erro nos termos
+      }
 
       toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.", {
         duration: 5000,

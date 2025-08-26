@@ -25,6 +25,7 @@ interface PatientWizardData {
   has_financial_guardian: boolean;
   guardian_cpf: string;
   is_payment_from_abroad: boolean;
+  acceptedTerms: boolean;
 }
 
 export const useCadastroPacienteWizard = () => {
@@ -49,6 +50,7 @@ export const useCadastroPacienteWizard = () => {
     has_financial_guardian: false,
     guardian_cpf: '',
     is_payment_from_abroad: false,
+    acceptedTerms: false,
   });
 
   const token = searchParams.get('token');
@@ -126,6 +128,19 @@ export const useCadastroPacienteWizard = () => {
       }
 
       if (data?.success) {
+        // Salvar aceite dos termos após submissão bem-sucedida
+        try {
+          await supabase.functions.invoke('save-terms-acceptance', {
+            body: {
+              email: formData.email,
+              formType: 'patient_signup'
+            }
+          });
+        } catch (termsError) {
+          console.error('Erro ao salvar aceite dos termos:', termsError);
+          // Não falhar o processo por erro nos termos
+        }
+
         toast.success('Cadastro realizado com sucesso!');
         setValidationState('success');
       } else {

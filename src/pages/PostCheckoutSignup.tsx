@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, ArrowRight } from "lucide-react";
+import { TermsAcceptanceCheckbox } from "@/components/auth/TermsAcceptanceCheckbox";
 
 const PostCheckoutSignup = () => {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,8 @@ const PostCheckoutSignup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -49,12 +52,15 @@ const PostCheckoutSignup = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !fullName) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
-      });
+    const newErrors: Record<string, string> = {};
+    
+    if (!email) newErrors.email = "Email é obrigatório";
+    if (!password) newErrors.password = "Senha é obrigatória";
+    if (!fullName) newErrors.fullName = "Nome completo é obrigatório";
+    if (!acceptedTerms) newErrors.acceptedTerms = "Você deve aceitar os Termos de Uso para continuar";
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -73,6 +79,19 @@ const PostCheckoutSignup = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Salvar aceite dos termos após signup bem-sucedido
+      try {
+        await supabase.functions.invoke('save-terms-acceptance', {
+          body: {
+            email,
+            formType: 'post_checkout'
+          }
+        });
+      } catch (termsError) {
+        console.error('Erro ao salvar aceite dos termos:', termsError);
+        // Não falhar o processo por erro nos termos
       }
 
       // Após criar conta, vincular sessão do Stripe com o usuário real
@@ -156,8 +175,10 @@ const PostCheckoutSignup = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Seu nome completo"
+                className={errors.fullName ? 'border-red-500' : ''}
                 required
               />
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
 
             <div className="space-y-2">
@@ -168,9 +189,17 @@ const PostCheckoutSignup = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Escolha uma senha segura"
+                className={errors.password ? 'border-red-500' : ''}
                 required
               />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
+
+            <TermsAcceptanceCheckbox
+              checked={acceptedTerms}
+              onChange={setAcceptedTerms}
+              error={errors.acceptedTerms}
+            />
 
             <Button
               type="submit"

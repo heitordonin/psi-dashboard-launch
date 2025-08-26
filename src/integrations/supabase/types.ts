@@ -1095,6 +1095,184 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_simulation_interactions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["interaction_type"]
+          admin_user_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          simulation_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["interaction_type"]
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          simulation_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["interaction_type"]
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          simulation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_simulation_interactions_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_simulation_results: {
+        Row: {
+          created_at: string
+          economia_anual: number
+          economia_percentual: number
+          email_sent_at: string | null
+          id: string
+          pf_anual_data: Json
+          pf_data: Json
+          pj_data: Json
+          recommendation: string
+          simulation_id: string
+        }
+        Insert: {
+          created_at?: string
+          economia_anual?: number
+          economia_percentual?: number
+          email_sent_at?: string | null
+          id?: string
+          pf_anual_data?: Json
+          pf_data?: Json
+          pj_data?: Json
+          recommendation: string
+          simulation_id: string
+        }
+        Update: {
+          created_at?: string
+          economia_anual?: number
+          economia_percentual?: number
+          email_sent_at?: string | null
+          id?: string
+          pf_anual_data?: Json
+          pf_data?: Json
+          pj_data?: Json
+          recommendation?: string
+          simulation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_simulation_results_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_simulations: {
+        Row: {
+          aceite_marketing: boolean
+          aceite_termos: boolean
+          cidade: string | null
+          consultorio: string
+          created_at: string
+          d: number
+          despesas_pagas: string
+          email: string
+          fmm: number
+          gastos_pos: number
+          id: string
+          inss_pf: number
+          ip_address: string | null
+          nome: string
+          plano_saude: number
+          recebimento_empresa: string
+          s: number
+          saude_diversa: number
+          status: Database["public"]["Enums"]["simulation_status"]
+          terapia: number
+          updated_at: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          valor_despesas_res: number
+          whatsapp: string
+        }
+        Insert: {
+          aceite_marketing?: boolean
+          aceite_termos?: boolean
+          cidade?: string | null
+          consultorio?: string
+          created_at?: string
+          d?: number
+          despesas_pagas?: string
+          email: string
+          fmm?: number
+          gastos_pos?: number
+          id?: string
+          inss_pf?: number
+          ip_address?: string | null
+          nome: string
+          plano_saude?: number
+          recebimento_empresa?: string
+          s?: number
+          saude_diversa?: number
+          status?: Database["public"]["Enums"]["simulation_status"]
+          terapia?: number
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          valor_despesas_res?: number
+          whatsapp: string
+        }
+        Update: {
+          aceite_marketing?: boolean
+          aceite_termos?: boolean
+          cidade?: string | null
+          consultorio?: string
+          created_at?: string
+          d?: number
+          despesas_pagas?: string
+          email?: string
+          fmm?: number
+          gastos_pos?: number
+          id?: string
+          inss_pf?: number
+          ip_address?: string | null
+          nome?: string
+          plano_saude?: number
+          recebimento_empresa?: string
+          s?: number
+          saude_diversa?: number
+          status?: Database["public"]["Enums"]["simulation_status"]
+          terapia?: number
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          valor_despesas_res?: number
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           cancel_at_period_end: boolean
@@ -1141,6 +1319,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_terms_acceptance: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          email: string
+          form_type: string
+          id: string
+          ip_address: string | null
+          terms_url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          email: string
+          form_type: string
+          id?: string
+          ip_address?: string | null
+          terms_url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          email?: string
+          form_type?: string
+          id?: string
+          ip_address?: string | null
+          terms_url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       whatsapp_logs: {
         Row: {
@@ -1295,6 +1509,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      check_rate_limit: {
+        Args: { p_ip_address: string }
+        Returns: boolean
       }
       cleanup_duplicate_subscriptions: {
         Args: Record<PropertyKey, never>
@@ -1581,9 +1799,15 @@ export type Database = {
     Enums: {
       admin_document_status: "pending" | "paid" | "overdue" | "draft"
       appointment_status: "scheduled" | "completed" | "no_show" | "cancelled"
+      interaction_type:
+        | "contacted"
+        | "email_sent"
+        | "status_changed"
+        | "note_added"
       payment_status: "draft" | "pending" | "paid" | "failed"
       reminder_status: "sent" | "failed"
       reminder_type: "email" | "whatsapp"
+      simulation_status: "submitted" | "contacted" | "converted"
       whatsapp_message_type:
         | "text"
         | "payment_reminder"
@@ -1718,9 +1942,16 @@ export const Constants = {
     Enums: {
       admin_document_status: ["pending", "paid", "overdue", "draft"],
       appointment_status: ["scheduled", "completed", "no_show", "cancelled"],
+      interaction_type: [
+        "contacted",
+        "email_sent",
+        "status_changed",
+        "note_added",
+      ],
       payment_status: ["draft", "pending", "paid", "failed"],
       reminder_status: ["sent", "failed"],
       reminder_type: ["email", "whatsapp"],
+      simulation_status: ["submitted", "contacted", "converted"],
       whatsapp_message_type: [
         "text",
         "payment_reminder",

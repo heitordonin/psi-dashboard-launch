@@ -8,6 +8,7 @@ export interface SignupFormData {
   fullName: string;
   cpf: string;
   phone: string;
+  acceptedTerms: boolean;
 }
 
 export const validateSignupForm = (formData: SignupFormData) => {
@@ -52,6 +53,11 @@ export const validateSignupForm = (formData: SignupFormData) => {
     newErrors.phone = 'Celular é obrigatório';
   } else if (!validatePhoneNumber(formData.phone)) {
     newErrors.phone = 'Celular deve ter um formato válido';
+  }
+
+  // Validação de aceite dos termos
+  if (!formData.acceptedTerms) {
+    newErrors.acceptedTerms = 'Você deve aceitar os Termos de Uso para continuar';
   }
 
   return newErrors;

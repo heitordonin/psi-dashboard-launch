@@ -21,4 +21,5 @@ export interface PatientWizardData {
   has_financial_guardian: boolean;
   guardian_cpf: string;
   is_payment_from_abroad: boolean;
+  acceptedTerms: boolean;
 }

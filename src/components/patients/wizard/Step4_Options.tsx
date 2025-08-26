@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCpf } from '@/utils/inputFormatters';
 import { validateCpf } from '@/utils/validators';
 import { PatientWizardData } from './types';
+import { TermsAcceptanceCheckbox } from '@/components/auth/TermsAcceptanceCheckbox';
 
 interface Step4_OptionsProps {
   formData: PatientWizardData;
@@ -39,6 +40,11 @@ export const Step4_Options = ({
       }
     } else if (formData.has_financial_guardian && !formData.guardian_cpf) {
       stepErrors.guardian_cpf = 'CPF do responsável é obrigatório';
+    }
+
+    // Validação dos termos de uso
+    if (!formData.acceptedTerms) {
+      stepErrors.acceptedTerms = 'Você deve aceitar os Termos de Uso para continuar';
     }
 
     setErrors(stepErrors);
@@ -95,6 +101,12 @@ export const Step4_Options = ({
             </div>
           )}
         </div>
+
+        <TermsAcceptanceCheckbox
+          checked={formData.acceptedTerms}
+          onChange={(checked) => updateFormData({ acceptedTerms: checked })}
+          error={errors.acceptedTerms}
+        />
       </div>
 
       {!isLastStep && (
