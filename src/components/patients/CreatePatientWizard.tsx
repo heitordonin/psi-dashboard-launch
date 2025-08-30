@@ -5,6 +5,7 @@ import { Patient } from '@/types/patient';
 import { usePatientWizard } from './wizard/usePatientWizard';
 import { WizardHeader } from './wizard/WizardHeader';
 import { WizardStepRenderer } from './wizard/WizardStepRenderer';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 
 interface CreatePatientWizardProps {
   onClose: () => void;
@@ -24,6 +25,8 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
     updateFormData,
     handleChoiceSelection,
   } = usePatientWizard({ patientToEdit, onClose });
+
+  const { user: secureUser } = useSecureAuth();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 keyboard-aware">
@@ -47,7 +50,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
             handleChoiceSelection={handleChoiceSelection}
             onClose={onClose}
             patientToEdit={patientToEdit}
-            ownerEmail={null}
+            ownerEmail={secureUser?.email ?? null}
           />
         </CardContent>
       </Card>
