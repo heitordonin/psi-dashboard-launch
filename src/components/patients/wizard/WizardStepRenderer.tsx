@@ -20,6 +20,7 @@ interface WizardStepRendererProps {
   handleChoiceSelection: (type: 'manual' | 'invite') => void;
   onClose: () => void;
   patientToEdit?: Patient | null;
+  ownerEmail?: string | null;
 }
 
 export const WizardStepRenderer = ({
@@ -32,7 +33,8 @@ export const WizardStepRenderer = ({
   handlePrevious,
   handleChoiceSelection,
   onClose,
-  patientToEdit
+  patientToEdit,
+  ownerEmail
 }: WizardStepRendererProps) => {
   // For edit mode, skip the choice step and start directly with personal data
   if (isEditMode) {
@@ -63,6 +65,7 @@ export const WizardStepRenderer = ({
             updateFormData={updateFormData}
             onNext={handleNext}
             onPrevious={handlePrevious}
+            ownerEmail={ownerEmail}
           />
         );
       case 4:
@@ -123,6 +126,7 @@ export const WizardStepRenderer = ({
           updateFormData={updateFormData}
           onNext={handleNext}
           onPrevious={handlePrevious}
+          ownerEmail={ownerEmail}
         />
       );
     case 5:

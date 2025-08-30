@@ -47,6 +47,7 @@ export const CreatePatientWizard = ({ onClose, patientToEdit }: CreatePatientWiz
             handleChoiceSelection={handleChoiceSelection}
             onClose={onClose}
             patientToEdit={patientToEdit}
+            ownerEmail={null}
           />
         </CardContent>
       </Card>

@@ -81,6 +81,7 @@ export const CadastroPacienteForm = ({
             onNext={onFinalSubmit}
             onPrevious={onPrevious}
             isLastStep={true}
+            ownerEmail={ownerEmail}
           />
         );
       default:

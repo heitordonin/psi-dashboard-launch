@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatCpf } from '@/utils/inputFormatters';
-import { validateCpf } from '@/utils/validators';
+import { validateCPF } from '@/utils/securityValidation';
+import { isDemoUserByEmail } from '@/utils/demoUser';
 import { PatientWizardData } from './types';
 
 
@@ -14,6 +15,7 @@ interface Step4_OptionsProps {
   onNext: () => void;
   onPrevious: () => void;
   isLastStep?: boolean;
+  ownerEmail?: string | null;
 }
 
 export const Step4_Options = ({ 
@@ -21,7 +23,8 @@ export const Step4_Options = ({
   updateFormData, 
   onNext, 
   onPrevious,
-  isLastStep = false
+  isLastStep = false,
+  ownerEmail
 }: Step4_OptionsProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -35,7 +38,9 @@ export const Step4_Options = ({
     const stepErrors: Record<string, string> = {};
     
     if (formData.has_financial_guardian && formData.guardian_cpf) {
-      if (!validateCpf(formData.guardian_cpf)) {
+      // Skip validation for demo user
+      const skipValidation = ownerEmail ? isDemoUserByEmail(ownerEmail) : false;
+      if (!validateCPF(formData.guardian_cpf, skipValidation)) {
         stepErrors.guardian_cpf = 'CPF inválido';
       }
     } else if (formData.has_financial_guardian && !formData.guardian_cpf) {
