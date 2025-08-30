@@ -164,7 +164,10 @@ export const validatePatientForm = (formData: any, userEmail?: string): Record<s
     console.log('Skipping form validation for demo user:', userEmail);
     return {}; // No errors for demo user
   }
-  const result = patientSchema.safeParse(formData);
+  
+  // Use dynamic schema that considers demo user status
+  const schema = createPatientSchema(userEmail);
+  const result = schema.safeParse(formData);
   
   if (result.success) {
     return {}; // No errors
