@@ -33,16 +33,10 @@ Deno.serve(async (req) => {
 
     console.log('Validating token:', token.substring(0, 8) + '...') // Log first 8 chars for debugging
 
-    // Query the patient_invites table with owner profile info
+    // Query the patient_invites table directly
     const { data: invite, error: queryError } = await supabase
       .from('patient_invites')
-      .select(`
-        *,
-        profiles!patient_invites_owner_id_fkey (
-          full_name,
-          user_id
-        )
-      `)
+      .select('*')
       .eq('token', token)
       .eq('status', 'pending')
       .single()
