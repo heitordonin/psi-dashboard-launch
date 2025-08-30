@@ -33,6 +33,7 @@ export const useCadastroPacienteWizard = () => {
   const [validationState, setValidationState] = useState<'loading' | 'valid' | 'invalid' | 'success'>('loading');
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [formData, setFormData] = useState<PatientWizardData>({
     full_name: '',
     patient_type: 'individual',
@@ -77,6 +78,8 @@ export const useCadastroPacienteWizard = () => {
 
         if (data?.success) {
           setValidationState('valid');
+          // Store owner email for validation purposes
+          setOwnerEmail(data.ownerEmail);
         } else {
           setValidationState('invalid');
         }
@@ -161,6 +164,7 @@ export const useCadastroPacienteWizard = () => {
     progress,
     formData,
     isSubmitting,
+    ownerEmail,
     handleNext,
     handlePrevious,
     updateFormData,

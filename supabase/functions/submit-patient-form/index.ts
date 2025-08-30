@@ -69,6 +69,73 @@ Deno.serve(async (req) => {
 
     console.log('Token is valid, creating patient for owner:', invite.owner_id)
 
+    // Get owner's email from auth.users to check if they're demo user
+    const { data: ownerAuth, error: ownerError } = await supabase.auth.admin.getUserById(invite.owner_id)
+    
+    if (ownerError) {
+      console.error('Error fetching owner auth data:', ownerError)
+    }
+
+    const isDemoOwner = ownerAuth?.user?.email === 'suporte@psiclo.com.br'
+
+    // Skip validations for demo user's patients
+    if (!isDemoOwner) {
+      // Validate CPF format for individuals (only if not demo user)
+      if (formData.patient_type === 'individual' && formData.cpf && !formData.is_payment_from_abroad) {
+        const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/
+        if (!cpfRegex.test(formData.cpf)) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'CPF deve estar no formato 000.000.000-00' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
+      // Validate CNPJ format for companies (only if not demo user)
+      if (formData.patient_type === 'company' && formData.cnpj && !formData.is_payment_from_abroad) {
+        const cnpjRegex = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/
+        if (!cnpjRegex.test(formData.cnpj)) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'CNPJ deve estar no formato 00.000.000/0000-00' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
+      // Check for duplicate patients by CPF/CNPJ (only if not demo user)
+      if (formData.patient_type === 'individual' && formData.cpf) {
+        const { data: existingPatient } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('cpf', formData.cpf)
+          .eq('owner_id', invite.owner_id)
+          .single()
+
+        if (existingPatient) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Já existe um paciente cadastrado com este CPF' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
+      if (formData.patient_type === 'company' && formData.cnpj) {
+        const { data: existingPatient } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('cnpj', formData.cnpj)
+          .eq('owner_id', invite.owner_id)
+          .single()
+
+        if (existingPatient) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Já existe um paciente cadastrado com este CNPJ' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+    }
+
     // Prepare patient data for insertion
     const patientData = {
       owner_id: invite.owner_id,

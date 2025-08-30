@@ -33,10 +33,16 @@ Deno.serve(async (req) => {
 
     console.log('Validating token:', token.substring(0, 8) + '...') // Log first 8 chars for debugging
 
-    // Query the patient_invites table
+    // Query the patient_invites table with owner profile info
     const { data: invite, error: queryError } = await supabase
       .from('patient_invites')
-      .select('*')
+      .select(`
+        *,
+        profiles!patient_invites_owner_id_fkey (
+          full_name,
+          user_id
+        )
+      `)
       .eq('token', token)
       .eq('status', 'pending')
       .single()
@@ -80,9 +86,19 @@ Deno.serve(async (req) => {
 
     console.log('Token validation successful for invite:', invite.id)
 
-    // Return success
+    // Get owner's email from auth.users
+    const { data: ownerAuth, error: ownerError } = await supabase.auth.admin.getUserById(invite.owner_id)
+    
+    if (ownerError) {
+      console.error('Error fetching owner auth data:', ownerError)
+    }
+
+    // Return success with owner info
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        ownerEmail: ownerAuth?.user?.email || null
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

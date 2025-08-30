@@ -12,6 +12,7 @@ import { PatientWizardData } from './types';
 interface Step2_PersonalDataProps {
   formData: PatientWizardData;
   updateFormData: (updates: Partial<PatientWizardData>) => void;
+  ownerEmail?: string | null;
   onNext: () => void;
   onPrevious: () => void;
   isEditMode?: boolean;
@@ -20,6 +21,7 @@ interface Step2_PersonalDataProps {
 export const Step2_PersonalData = ({ 
   formData, 
   updateFormData, 
+  ownerEmail,
   onNext, 
   onPrevious,
   isEditMode = false
@@ -44,7 +46,9 @@ export const Step2_PersonalData = ({
   };
 
   const handleNext = () => {
-    const validationErrors = validatePatientForm(formData, user?.email);
+    // Use ownerEmail for public forms, user?.email for authenticated forms
+    const validationEmail = ownerEmail || user?.email;
+    const validationErrors = validatePatientForm(formData, validationEmail);
     
     // Filter errors relevant to this step
     const stepErrors: Record<string, string> = {};

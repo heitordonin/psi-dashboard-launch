@@ -11,6 +11,7 @@ const CadastroPaciente = () => {
     progress,
     formData,
     isSubmitting,
+    ownerEmail,
     handleNext,
     handlePrevious,
     updateFormData,
@@ -28,6 +29,7 @@ const CadastroPaciente = () => {
       progress={progress}
       formData={formData}
       isSubmitting={isSubmitting}
+      ownerEmail={ownerEmail}
       onNext={handleNext}
       onPrevious={handlePrevious}
       updateFormData={updateFormData}

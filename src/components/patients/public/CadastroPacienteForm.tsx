@@ -33,6 +33,7 @@ interface CadastroPacienteFormProps {
   progress: number;
   formData: PatientWizardData;
   isSubmitting: boolean;
+  ownerEmail: string | null;
   onNext: () => void;
   onPrevious: () => void;
   updateFormData: (updates: Partial<PatientWizardData>) => void;
@@ -45,6 +46,7 @@ export const CadastroPacienteForm = ({
   progress,
   formData,
   isSubmitting,
+  ownerEmail,
   onNext,
   onPrevious,
   updateFormData,
@@ -57,6 +59,7 @@ export const CadastroPacienteForm = ({
           <Step2_PersonalData
             formData={formData}
             updateFormData={updateFormData}
+            ownerEmail={ownerEmail}
             onNext={onNext}
             onPrevious={() => {}} // No previous on first step
           />
