@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     console.log('Invite created successfully:', invite.id)
 
     // Get the site URL for constructing the full invitation link
-    const siteUrl = (Deno.env.get('SITE_URL') || 'https://psiclo.lovable.app').replace(/\/+$/, '')
+    const siteUrl = (Deno.env.get('SITE_URL') || 'https://app.psiclo.com.br').replace(/\/+$/, '')
     const inviteUrl = `${siteUrl}/cadastro-paciente?token=${token}`
 
     console.log('Generated invite URL:', inviteUrl)
