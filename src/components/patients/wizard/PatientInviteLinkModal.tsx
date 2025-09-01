@@ -1,10 +1,17 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Share } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PatientInviteLinkModalProps {
@@ -33,52 +40,44 @@ export const PatientInviteLinkModal = ({ isOpen, onClose, inviteLink }: PatientI
     onClose();
   };
 
+  const handleConfirm = () => {
+    handleCopyLink();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Link de Cadastro do Paciente</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={isOpen} onOpenChange={handleClose}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-primary">
+            <Share className="w-5 h-5" />
+            Link de Cadastro do Paciente
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-muted-foreground">
             Copie este link e envie para o seu paciente. O link é válido por 2 horas.
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="invite-link">Link de Convite</Label>
-            <div className="flex space-x-2">
-              <Input
-                id="invite-link"
-                value={inviteLink}
-                readOnly
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopyLink}
-                className="shrink-0"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={handleClose}>
-              Fechar
-            </Button>
-            <Button onClick={handleCopyLink}>
-              {copied ? 'Copiado!' : 'Copiar Link'}
-            </Button>
-          </div>
+          <Input
+            value={inviteLink}
+            readOnly
+            className="text-sm"
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <AlertDialogFooter className="gap-2">
+          <AlertDialogCancel className="mt-0" onClick={handleClose}>
+            Fechar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            {copied ? 'Copiado!' : 'Copiar Link'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
