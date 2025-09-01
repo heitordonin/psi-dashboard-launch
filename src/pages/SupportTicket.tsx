@@ -13,11 +13,46 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { HeadphonesIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import TutorialVideoCarousel from '@/components/support/TutorialVideoCarousel';
 
 const SupportTicket = () => {
   const [subject, setSubject] = useState('');
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
+
+  // Dados dos vídeos tutoriais - você pode substituir pelos IDs reais dos seus vídeos
+  const tutorialVideos = [
+    {
+      id: '1',
+      title: 'Primeiros Passos no Psiclo',
+      description: 'Aprenda a configurar sua conta e fazer os primeiros cadastros',
+      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+    },
+    {
+      id: '2', 
+      title: 'Cadastro de Pacientes',
+      description: 'Como cadastrar e gerenciar informações dos seus pacientes',
+      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+    },
+    {
+      id: '3',
+      title: 'Sistema de Cobranças',
+      description: 'Gerencie pagamentos e envie lembretes via WhatsApp',
+      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+    },
+    {
+      id: '4',
+      title: 'Controle de Despesas',
+      description: 'Organize suas despesas e calcule a alíquota efetiva',
+      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+    },
+    {
+      id: '5',
+      title: 'Dashboard e Relatórios',
+      description: 'Visualize métricas e acompanhe o desempenho da sua clínica',
+      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+    }
+  ];
 
   const supportTicketMutation = useMutation({
     mutationFn: async (data: { subject: string; category: string; message: string }) => {
@@ -80,6 +115,10 @@ const SupportTicket = () => {
           </div>
 
           <div className="p-6 bg-gray-50 min-h-screen">
+            {/* Carrossel de Tutoriais */}
+            <TutorialVideoCarousel videos={tutorialVideos} />
+            
+            {/* Formulário de Suporte */}
             <div className="max-w-2xl mx-auto">
               <Card>
                 <CardHeader>
