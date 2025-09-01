@@ -20,37 +20,37 @@ const SupportTicket = () => {
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
 
-  // Dados dos vídeos tutoriais - você pode substituir pelos IDs reais dos seus vídeos
+  // Vídeos tutoriais do Psiclo
   const tutorialVideos = [
     {
       id: '1',
-      title: 'Primeiros Passos no Psiclo',
-      description: 'Aprenda a configurar sua conta e fazer os primeiros cadastros',
-      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+      title: 'Dashboard - Psiclo',
+      description: 'Visão geral do sistema e principais funcionalidades',
+      youtubeId: 'c13kDPUIaxU'
     },
     {
       id: '2', 
-      title: 'Cadastro de Pacientes',
-      description: 'Como cadastrar e gerenciar informações dos seus pacientes',
-      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+      title: 'Módulo Agenda - Psiclo',
+      description: 'Como gerenciar agendamentos e consultas',
+      youtubeId: 'yJHA2KfT_EU'
     },
     {
       id: '3',
-      title: 'Sistema de Cobranças',
-      description: 'Gerencie pagamentos e envie lembretes via WhatsApp',
-      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+      title: 'Cadastro de Pacientes - Psiclo',
+      description: 'Como cadastrar e gerenciar informações dos seus pacientes',
+      youtubeId: 'YU_M7dKm23I'
     },
     {
       id: '4',
-      title: 'Controle de Despesas',
-      description: 'Organize suas despesas e calcule a alíquota efetiva',
-      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+      title: 'Criar nova cobrança - Psiclo',
+      description: 'Sistema de cobranças e lembretes via WhatsApp',
+      youtubeId: 'gzT2DdtqxkY'
     },
     {
       id: '5',
-      title: 'Dashboard e Relatórios',
-      description: 'Visualize métricas e acompanhe o desempenho da sua clínica',
-      youtubeId: 'dQw4w9WgXcQ' // Substitua pelo ID real do vídeo
+      title: 'Criar nova despesa - Psiclo',
+      description: 'Controle de despesas e cálculo da alíquota efetiva',
+      youtubeId: '9EcQdVaFbDs'
     }
   ];
 
