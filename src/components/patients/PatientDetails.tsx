@@ -145,7 +145,7 @@ export const PatientDetails = ({
       {/* Mobile Header */}
       {isMobile && onBack && <MobilePatientHeader patient={patient} onBack={onBack} onEdit={onEditPatient} />}
 
-      <Card className="h-full flex flex-col">
+      <Card className="flex flex-col">
         {/* Desktop Header */}
         {!isMobile && <CardHeader className="flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -162,7 +162,7 @@ export const PatientDetails = ({
             </div>
           </CardHeader>}
 
-      <CardContent className="flex-1 overflow-hidden space-y-6">
+      <CardContent className="flex-1 space-y-6">
         {/* Patient Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
@@ -245,7 +245,7 @@ export const PatientDetails = ({
                 </button>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden p-0">
+            <CardContent className="flex-1 p-0">
               <div className="h-full overflow-y-auto px-6 pb-6">
                 {pendingCharges.length === 0 ? <div className="text-center py-6">
                     <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />

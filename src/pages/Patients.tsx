@@ -109,7 +109,7 @@ const Patients = () => {
           <div className="min-h-screen bg-gray-50">
             <PatientsHeader onNewPatient={() => handleNewPatient(patientCount)} />
 
-            <div className="flex h-[calc(100vh-64px)] gap-4 p-4">
+            <div className="flex min-h-[calc(100vh-64px)] gap-4 p-4">
               {/* Desktop Layout */}
               {!isMobile && (
                 <>
