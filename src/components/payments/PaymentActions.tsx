@@ -65,6 +65,7 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
       toast.success('Pagamento marcado como pago!');
       setIsMarkingAsPaid(false);
       setIsDateModalOpen(false);
@@ -91,6 +92,7 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
       toast.success('Cobrança marcada como pendente!');
     },
     onError: (error) => {

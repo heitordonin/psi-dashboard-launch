@@ -66,6 +66,7 @@ export const usePaymentData = (userId: string | undefined) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
       toast.success('Cobrança excluída com sucesso!');
     },
     onError: (error) => {
