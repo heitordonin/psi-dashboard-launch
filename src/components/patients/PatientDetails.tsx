@@ -23,7 +23,8 @@ export const PatientDetails = ({
   charges,
   isLoading,
   onEditPatient,
-  onBack
+  onBack,
+  onGeneratePayment
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
   if (!patient) {
@@ -228,12 +229,20 @@ export const PatientDetails = ({
           {/* Pending Charges */}
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-orange-500" />
-                <CardTitle className="text-base">Cobranças a Receber</CardTitle>
-                <Badge variant="outline" className="ml-auto">
-                  {pendingCharges.length}
-                </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-orange-500" />
+                  <CardTitle className="text-base">Cobranças a Receber</CardTitle>
+                  <Badge variant="outline">
+                    {pendingCharges.length}
+                  </Badge>
+                </div>
+                <button 
+                  onClick={() => onGeneratePayment?.(patient.id)}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  + Gerar nova cobrança
+                </button>
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
