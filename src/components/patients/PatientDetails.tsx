@@ -158,7 +158,7 @@ export const PatientDetails = ({
                 payment={charge}
                 onEdit={onEditPayment}
                 onDelete={onDeletePayment}
-                layout="compact"
+                layout="paid-only"
               />
             </div>
           </div>)}

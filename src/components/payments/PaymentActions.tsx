@@ -26,7 +26,7 @@ interface PaymentActionsProps {
   payment: PaymentWithPatient;
   onEdit: (payment: Payment) => void;
   onDelete: (paymentId: string) => void;
-  layout?: 'default' | 'compact';
+  layout?: 'default' | 'compact' | 'paid-only';
 }
 
 export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }: PaymentActionsProps) {
@@ -212,6 +212,35 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   const canDelete = !(payment.status === 'paid' || isBlockedByReceitaSaude);
   const canOpenLink = payment.has_payment_link && payment.status === 'pending';
   const canSendEmail = payment.status === 'pending' && !!payment.patients?.email && payment.patients.email.includes('@');
+
+  // Paid-only layout: Only mark as unpaid option
+  if (layout === 'paid-only') {
+    return (
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="touch-target">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+            {canMarkUnpaid && (
+              <DropdownMenuItem onClick={handleMarkAsUnpaid} className="min-h-[40px]">
+                <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <PaymentDateModal
+          isOpen={isDateModalOpen}
+          onClose={() => setIsDateModalOpen(false)}
+          onConfirm={handleConfirmPayment}
+          isLoading={isMarkingAsPaid}
+        />
+      </div>
+    );
+  }
 
   // Compact layout: CTA + menu
   if (layout === 'compact') {
