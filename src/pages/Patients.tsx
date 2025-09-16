@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { CreatePatientWizard } from "@/components/patients/CreatePatientWizard";
+import { CreatePaymentWizard } from "@/components/payments/CreatePaymentWizard";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -48,6 +49,10 @@ const Patients = () => {
     selectedPatientId
   } = usePatientDetailsState(patients, isMobile);
 
+  // Payment wizard state
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [preSelectedPatientId, setPreSelectedPatientId] = useState<string>('');
+
   // Enhanced patient select handler for mobile
   const enhancedPatientSelect = (patient: Patient) => {
     handlePatientSelect(patient);
@@ -69,6 +74,16 @@ const Patients = () => {
       deletePatientMutation.mutate(deletePatient.id);
       setDeletePatient(null);
     }
+  };
+
+  const handleGeneratePayment = (patientId: string) => {
+    setPreSelectedPatientId(patientId);
+    setShowPaymentWizard(true);
+  };
+
+  const handleClosePaymentWizard = () => {
+    setShowPaymentWizard(false);
+    setPreSelectedPatientId('');
   };
 
   if (isLoading) {
@@ -118,6 +133,7 @@ const Patients = () => {
                       charges={charges}
                       isLoading={chargesLoading}
                       onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
+                      onGeneratePayment={handleGeneratePayment}
                     />
                   </div>
                 </>
@@ -147,6 +163,7 @@ const Patients = () => {
                       isLoading={chargesLoading}
                       onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
                       onBack={showPatientList}
+                      onGeneratePayment={handleGeneratePayment}
                     />
                   </div>
                 </>
@@ -157,6 +174,15 @@ const Patients = () => {
               <CreatePatientWizard 
                 onClose={handleWizardClose} 
                 patientToEdit={editingPatient}
+              />
+            )}
+
+            {showPaymentWizard && (
+              <CreatePaymentWizard
+                isOpen={showPaymentWizard}
+                onClose={handleClosePaymentWizard}
+                patients={patients}
+                preSelectedPatientId={preSelectedPatientId}
               />
             )}
 

@@ -3,32 +3,41 @@ import { useState, useEffect } from 'react';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import type { CreatePaymentWizardProps, WizardFormData } from './types';
 
-export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick<CreatePaymentWizardProps, 'paymentToEdit' | 'patients' | 'isOpen'>) {
+export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSelectedPatientId }: Pick<CreatePaymentWizardProps, 'paymentToEdit' | 'patients' | 'isOpen' | 'preSelectedPatientId'>) {
   const { canPerformAdminAction } = useSecureAuth();
   const isEditMode = !!paymentToEdit;
   const isAdmin = canPerformAdminAction();
   
-  const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0);
-  const [formData, setFormData] = useState<WizardFormData>({
-    chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
-    paymentType: 'single',
-    amount: 0,
-    due_date: '',
-    description: '',
-    paymentMethods: {
-      boleto: true,
-      creditCard: false
-    },
-    monthlyInterest: 0,
-    lateFee: 0,
-    patient_id: '',
-    paymentTitular: 'patient',
-    payer_cpf: '',
-    sendEmailNotification: false,
-    email: '',
-    isReceived: false,
-    receivedDate: '',
-    retroactiveDateConfirmed: false
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (isEditMode) return 1;
+    if (preSelectedPatientId) return 1; // Skip step 0 when patient is pre-selected
+    return 0;
+  });
+  
+  const [formData, setFormData] = useState<WizardFormData>(() => {
+    const preSelectedPatient = preSelectedPatientId ? patients.find(p => p.id === preSelectedPatientId) : null;
+    
+    return {
+      chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
+      paymentType: 'single',
+      amount: 0,
+      due_date: '',
+      description: '',
+      paymentMethods: {
+        boleto: true,
+        creditCard: false
+      },
+      monthlyInterest: 0,
+      lateFee: 0,
+      patient_id: preSelectedPatientId || '',
+      paymentTitular: 'patient',
+      payer_cpf: '',
+      sendEmailNotification: false,
+      email: preSelectedPatient?.email || '',
+      isReceived: false,
+      receivedDate: '',
+      retroactiveDateConfirmed: false
+    };
   });
 
   // Initialize form data when editing a payment
@@ -97,7 +106,16 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
   };
 
   const resetWizard = () => {
-    setCurrentStep(isEditMode ? 1 : 0);
+    if (isEditMode) {
+      setCurrentStep(1);
+    } else if (preSelectedPatientId) {
+      setCurrentStep(1); // Skip step 0 when patient is pre-selected
+    } else {
+      setCurrentStep(0);
+    }
+    
+    const preSelectedPatient = preSelectedPatientId ? patients.find(p => p.id === preSelectedPatientId) : null;
+    
     setFormData({
       chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
       paymentType: 'single',
@@ -107,11 +125,11 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen }: Pick
       paymentMethods: { boleto: true, creditCard: false },
       monthlyInterest: 0,
       lateFee: 0,
-      patient_id: '',
+      patient_id: preSelectedPatientId || '',
       paymentTitular: 'patient',
       payer_cpf: '',
       sendEmailNotification: false,
-      email: '',
+      email: preSelectedPatient?.email || '',
       isReceived: false,
       receivedDate: '',
       retroactiveDateConfirmed: false

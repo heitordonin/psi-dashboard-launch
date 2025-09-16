@@ -14,7 +14,7 @@ import {
 import { isNextDisabled } from './wizard/wizardValidation';
 import type { CreatePaymentWizardProps } from './wizard/types';
 
-export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paymentToEdit }: CreatePaymentWizardProps) {
+export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paymentToEdit, preSelectedPatientId }: CreatePaymentWizardProps) {
   const {
     currentStep,
     setCurrentStep,
@@ -22,7 +22,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
     updateFormData,
     resetWizard,
     isEditMode
-  } = useCreatePaymentWizard({ paymentToEdit, patients, isOpen });
+  } = useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSelectedPatientId });
 
   const nextStep = () => {
     const nextStepNumber = getNextStep(currentStep, formData);

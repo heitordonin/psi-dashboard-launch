@@ -17,6 +17,7 @@ interface PatientDetailsProps {
   isLoading: boolean;
   onEditPatient: () => void;
   onBack?: () => void;
+  onGeneratePayment?: (patientId: string) => void;
 }
 
 export const PatientDetails = ({
@@ -24,7 +25,8 @@ export const PatientDetails = ({
   charges,
   isLoading,
   onEditPatient,
-  onBack
+  onBack,
+  onGeneratePayment
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
 
@@ -278,7 +280,10 @@ export const PatientDetails = ({
                     {pendingCharges.length}
                   </Badge>
                 </div>
-                <button className="text-primary hover:text-primary/80 text-sm font-medium underline-offset-4 hover:underline transition-colors">
+                <button 
+                  onClick={() => onGeneratePayment?.(patient.id)}
+                  className="text-primary hover:text-primary/80 text-sm font-medium underline-offset-4 hover:underline transition-colors"
+                >
                   + Gerar nova cobrança
                 </button>
               </div>

@@ -42,6 +42,7 @@ export interface CreatePaymentWizardProps {
   onSuccess?: () => void;
   patients: Patient[];
   paymentToEdit?: Payment | null;
+  preSelectedPatientId?: string;
 }
 
 // Re-export Patient type for convenience
