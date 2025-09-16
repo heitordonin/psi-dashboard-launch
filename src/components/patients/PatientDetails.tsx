@@ -16,6 +16,7 @@ interface PatientDetailsProps {
   isLoading: boolean;
   onEditPatient: () => void;
   onBack?: () => void;
+  onGeneratePayment?: (patientId: string) => void;
 }
 export const PatientDetails = ({
   patient,
