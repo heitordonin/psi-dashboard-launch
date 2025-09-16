@@ -233,9 +233,6 @@ export const PatientDetails = ({
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-orange-500" />
                   <CardTitle className="text-base">Cobranças a Receber</CardTitle>
-                  <Badge variant="outline">
-                    {pendingCharges.length}
-                  </Badge>
                 </div>
                 <button 
                   onClick={() => onGeneratePayment?.(patient.id)}
@@ -263,9 +260,6 @@ export const PatientDetails = ({
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <CardTitle className="text-base">Cobranças Recebidas</CardTitle>
-                <Badge variant="outline" className="ml-auto">
-                  {paidCharges.length}
-                </Badge>
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
