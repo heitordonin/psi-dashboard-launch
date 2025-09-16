@@ -7,7 +7,6 @@ import { Pagination, PaginationContent, PaginationItem, PaginationNext, Paginati
 import { PaymentItem } from "./PaymentItem";
 import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 import { ThumbZoneActions } from "@/components/ui/thumb-zone-actions";
-import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
@@ -122,11 +121,6 @@ export const PaymentsList = ({
                 Criar primeira cobrança
               </Button>
             </ThumbZoneActions>
-            {!isWizardOpen && (
-              <FloatingActionButton onClick={handleAddPayment}>
-                <Plus className="w-5 h-5" />
-              </FloatingActionButton>
-            )}
           </>
         )}
       </>
@@ -200,12 +194,6 @@ export const PaymentsList = ({
             </PaginationContent>
           </Pagination>
         </div>
-      )}
-      
-      {isMobile && !isWizardOpen && (
-        <FloatingActionButton onClick={handleAddPayment}>
-          <Plus className="w-5 h-5" />
-        </FloatingActionButton>
       )}
     </>
   );

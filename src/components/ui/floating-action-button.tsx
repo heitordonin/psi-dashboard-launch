@@ -24,5 +24,18 @@ export function FloatingActionButton({
     'default': 'w-14 h-14 text-base',
     'lg': 'w-16 h-16 text-lg'
   };
-  return;
+  return (
+    <Button
+      onClick={onClick}
+      className={cn(
+        "fixed rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50",
+        positionClasses[position],
+        sizeClasses[size],
+        className
+      )}
+      size="icon"
+    >
+      {children}
+    </Button>
+  );
 }
