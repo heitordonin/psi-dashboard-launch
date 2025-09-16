@@ -129,6 +129,17 @@ export const PaymentsList = ({
 
   const content = (
     <>
+      {/* Section Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Cobranças a Receber</h2>
+          <p className="text-sm text-gray-600">{payments.length} cobranças</p>
+        </div>
+        <button className="text-primary hover:text-primary/80 text-sm font-medium underline-offset-4 hover:underline transition-colors">
+          + Gerar nova cobrança
+        </button>
+      </div>
+
       {/* Items per page selector */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
