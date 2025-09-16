@@ -270,12 +270,17 @@ export const PatientDetails = ({
           {/* Pending Charges */}
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-orange-500" />
-                <CardTitle className="text-base">Cobranças a Receber</CardTitle>
-                <Badge variant="outline" className="ml-auto">
-                  {pendingCharges.length}
-                </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-orange-500" />
+                  <CardTitle className="text-base">Cobranças a Receber</CardTitle>
+                  <Badge variant="outline">
+                    {pendingCharges.length}
+                  </Badge>
+                </div>
+                <button className="text-primary hover:text-primary/80 text-sm font-medium underline-offset-4 hover:underline transition-colors">
+                  + Gerar nova cobrança
+                </button>
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
