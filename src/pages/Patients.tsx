@@ -13,6 +13,7 @@ import { usePatientsPageState } from "@/hooks/usePatientsPageState";
 import { usePatientDetailsState } from "@/hooks/usePatientDetailsState";
 import { usePatientCharges } from "@/hooks/usePatientCharges";
 import { useMobilePatientNavigation } from "@/hooks/useMobilePatientNavigation";
+import type { Patient } from "@/types/patient";
 
 const Patients = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ const Patients = () => {
     handleNewPatient,
   } = usePatientsPageState();
 
+  const { isMobile, showingDetails, showPatientList, handlePatientSelect: onMobilePatientSelect } = useMobilePatientNavigation();
+
   const {
     selectedPatient,
     filteredPatients,
@@ -43,9 +46,15 @@ const Patients = () => {
     setSearchTerm,
     handlePatientSelect,
     selectedPatientId
-  } = usePatientDetailsState(patients);
+  } = usePatientDetailsState(patients, isMobile);
 
-  const { isMobile, showingDetails, showPatientList } = useMobilePatientNavigation(selectedPatientId);
+  // Enhanced patient select handler for mobile
+  const enhancedPatientSelect = (patient: Patient) => {
+    handlePatientSelect(patient);
+    if (isMobile) {
+      onMobilePatientSelect();
+    }
+  };
 
   const { charges, isLoading: chargesLoading } = usePatientCharges(user?.id, selectedPatientId);
 
@@ -97,7 +106,7 @@ const Patients = () => {
                       searchTerm={searchTerm}
                       onSearchChange={setSearchTerm}
                       selectedPatientId={selectedPatientId}
-                      onPatientSelect={handlePatientSelect}
+                      onPatientSelect={enhancedPatientSelect}
                       onNewPatient={() => handleNewPatient(patientCount)}
                     />
                   </div>
@@ -125,7 +134,7 @@ const Patients = () => {
                       searchTerm={searchTerm}
                       onSearchChange={setSearchTerm}
                       selectedPatientId={selectedPatientId}
-                      onPatientSelect={handlePatientSelect}
+                      onPatientSelect={enhancedPatientSelect}
                       onNewPatient={() => handleNewPatient(patientCount)}
                     />
                   </div>

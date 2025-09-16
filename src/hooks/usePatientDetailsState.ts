@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Patient } from '@/types/patient';
 
-export const usePatientDetailsState = (patients: Patient[]) => {
+export const usePatientDetailsState = (patients: Patient[], isMobile: boolean = false) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,12 +23,12 @@ export const usePatientDetailsState = (patients: Patient[]) => {
     return fullName.includes(searchLower) || document.includes(searchLower);
   });
 
-  // Auto-select first patient if none selected and patients exist
+  // Auto-select first patient if none selected and patients exist (only on desktop)
   useEffect(() => {
-    if (!id && filteredPatients.length > 0) {
+    if (!isMobile && !id && filteredPatients.length > 0) {
       navigate(`/patients/${filteredPatients[0].id}`, { replace: true });
     }
-  }, [id, filteredPatients, navigate]);
+  }, [id, filteredPatients, navigate, isMobile]);
 
   // Handle patient selection
   const handlePatientSelect = (patient: Patient) => {
