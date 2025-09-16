@@ -12,12 +12,11 @@ import { usePatientsData } from "@/hooks/usePatientsData";
 import { usePatientsPageState } from "@/hooks/usePatientsPageState";
 import { usePatientDetailsState } from "@/hooks/usePatientDetailsState";
 import { usePatientCharges } from "@/hooks/usePatientCharges";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobilePatientNavigation } from "@/hooks/useMobilePatientNavigation";
 
 const Patients = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const isMobile = useIsMobile();
   
   const {
     patients,
@@ -45,6 +44,8 @@ const Patients = () => {
     handlePatientSelect,
     selectedPatientId
   } = usePatientDetailsState(patients);
+
+  const { isMobile, showingDetails, showPatientList } = useMobilePatientNavigation(selectedPatientId);
 
   const { charges, isLoading: chargesLoading } = usePatientCharges(user?.id, selectedPatientId);
 
@@ -85,28 +86,62 @@ const Patients = () => {
             <PatientsHeader onNewPatient={() => handleNewPatient(patientCount)} />
 
             <div className="flex h-[calc(100vh-64px)] gap-4 p-4">
-              {/* Left Panel - Patient List */}
-              <div className={`${isMobile ? 'w-full' : 'w-[30%]'} ${isMobile && selectedPatient ? 'hidden' : ''}`}>
-                <PatientSidebar
-                  patients={filteredPatients}
-                  isLoading={patientsLoading}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  selectedPatientId={selectedPatientId}
-                  onPatientSelect={handlePatientSelect}
-                  onNewPatient={() => handleNewPatient(patientCount)}
-                />
-              </div>
+              {/* Desktop Layout */}
+              {!isMobile && (
+                <>
+                  {/* Left Panel - Patient List */}
+                  <div className="w-[30%]">
+                    <PatientSidebar
+                      patients={filteredPatients}
+                      isLoading={patientsLoading}
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      selectedPatientId={selectedPatientId}
+                      onPatientSelect={handlePatientSelect}
+                      onNewPatient={() => handleNewPatient(patientCount)}
+                    />
+                  </div>
 
-              {/* Right Panel - Patient Details */}
-              <div className={`${isMobile ? 'w-full' : 'w-[70%]'} ${isMobile && !selectedPatient ? 'hidden' : ''}`}>
-                <PatientDetails
-                  patient={selectedPatient}
-                  charges={charges}
-                  isLoading={chargesLoading}
-                  onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
-                />
-              </div>
+                  {/* Right Panel - Patient Details */}
+                  <div className="w-[70%]">
+                    <PatientDetails
+                      patient={selectedPatient}
+                      charges={charges}
+                      isLoading={chargesLoading}
+                      onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Mobile Layout */}
+              {isMobile && (
+                <>
+                  {/* Patient List View */}
+                  <div className={`w-full transition-transform duration-300 ${showingDetails ? '-translate-x-full absolute' : 'translate-x-0'}`}>
+                    <PatientSidebar
+                      patients={filteredPatients}
+                      isLoading={patientsLoading}
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      selectedPatientId={selectedPatientId}
+                      onPatientSelect={handlePatientSelect}
+                      onNewPatient={() => handleNewPatient(patientCount)}
+                    />
+                  </div>
+
+                  {/* Patient Details View */}
+                  <div className={`w-full transition-transform duration-300 ${showingDetails ? 'translate-x-0' : 'translate-x-full absolute'}`}>
+                    <PatientDetails
+                      patient={selectedPatient}
+                      charges={charges}
+                      isLoading={chargesLoading}
+                      onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
+                      onBack={showPatientList}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {showWizard && (

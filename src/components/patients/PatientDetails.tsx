@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { EnhancedSkeleton } from '@/components/ui/enhanced-skeleton';
 import { formatCurrency } from '@/utils/priceFormatter';
 import { cn } from '@/lib/utils';
+import { MobilePatientHeader } from './MobilePatientHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient } from '@/types/payment';
 
@@ -14,15 +16,22 @@ interface PatientDetailsProps {
   charges: PaymentWithPatient[];
   isLoading: boolean;
   onEditPatient: () => void;
+  onBack?: () => void;
 }
 
 export const PatientDetails = ({
   patient,
   charges,
   isLoading,
-  onEditPatient
+  onEditPatient,
+  onBack
 }: PatientDetailsProps) => {
+  const isMobile = useIsMobile();
+
   if (!patient) {
+    if (isMobile) {
+      return null; // Don't show placeholder on mobile
+    }
     return (
       <Card className="h-full flex items-center justify-center">
         <CardContent className="text-center">
@@ -149,21 +158,34 @@ export const PatientDetails = ({
   );
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-xl">{patient.full_name}</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
-              {documentLabel}: {documentValue}
-            </p>
-          </div>
-          <Button onClick={onEditPatient} size="sm" variant="outline">
-            <Edit2 className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
-        </div>
-      </CardHeader>
+    <>
+      {/* Mobile Header */}
+      {isMobile && onBack && (
+        <MobilePatientHeader 
+          patient={patient}
+          onBack={onBack}
+          onEdit={onEditPatient}
+        />
+      )}
+
+      <Card className="h-full flex flex-col">
+        {/* Desktop Header */}
+        {!isMobile && (
+          <CardHeader className="flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <CardTitle className="text-xl">{patient.full_name}</CardTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  {documentLabel}: {documentValue}
+                </p>
+              </div>
+              <Button onClick={onEditPatient} size="sm" variant="outline">
+                <Edit2 className="w-4 h-4 mr-2" />
+                Editar
+              </Button>
+            </div>
+          </CardHeader>
+        )}
 
       <CardContent className="flex-1 overflow-hidden space-y-6">
         {/* Patient Info */}
@@ -296,6 +318,7 @@ export const PatientDetails = ({
           </Card>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </>
   );
 };
