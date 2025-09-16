@@ -17,6 +17,18 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSel
   const [formData, setFormData] = useState<WizardFormData>(() => {
     const preSelectedPatient = preSelectedPatientId ? patients.find(p => p.id === preSelectedPatientId) : null;
     
+    // Auto-fill payer_cpf based on patient type for pre-selected patient
+    let initialPayerCpf = '';
+    if (preSelectedPatient) {
+      if (preSelectedPatient.patient_type === 'company') {
+        initialPayerCpf = preSelectedPatient.cnpj || '';
+      } else if (preSelectedPatient.is_payment_from_abroad) {
+        initialPayerCpf = ''; // International patients don't have CPF
+      } else {
+        initialPayerCpf = preSelectedPatient.cpf || '';
+      }
+    }
+    
     return {
       chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
       paymentType: 'single',
@@ -31,7 +43,7 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSel
       lateFee: 0,
       patient_id: preSelectedPatientId || '',
       paymentTitular: 'patient',
-      payer_cpf: '',
+      payer_cpf: initialPayerCpf,
       sendEmailNotification: false,
       email: preSelectedPatient?.email || '',
       isReceived: false,
@@ -116,6 +128,18 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSel
     
     const preSelectedPatient = preSelectedPatientId ? patients.find(p => p.id === preSelectedPatientId) : null;
     
+    // Auto-fill payer_cpf based on patient type for pre-selected patient
+    let initialPayerCpf = '';
+    if (preSelectedPatient) {
+      if (preSelectedPatient.patient_type === 'company') {
+        initialPayerCpf = preSelectedPatient.cnpj || '';
+      } else if (preSelectedPatient.is_payment_from_abroad) {
+        initialPayerCpf = ''; // International patients don't have CPF
+      } else {
+        initialPayerCpf = preSelectedPatient.cpf || '';
+      }
+    }
+    
     setFormData({
       chargeType: isAdmin ? 'link' : 'manual', // Default to 'manual' for non-admins
       paymentType: 'single',
@@ -127,7 +151,7 @@ export function useCreatePaymentWizard({ paymentToEdit, patients, isOpen, preSel
       lateFee: 0,
       patient_id: preSelectedPatientId || '',
       paymentTitular: 'patient',
-      payer_cpf: '',
+      payer_cpf: initialPayerCpf,
       sendEmailNotification: false,
       email: preSelectedPatient?.email || '',
       isReceived: false,
