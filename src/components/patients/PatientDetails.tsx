@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedSkeleton } from '@/components/ui/enhanced-skeleton';
+import { PaymentActions } from '@/components/payments/PaymentActions';
 import { formatCurrency } from '@/utils/priceFormatter';
 import { cn } from '@/lib/utils';
 import { MobilePatientHeader } from './MobilePatientHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Patient } from '@/types/patient';
-import type { PaymentWithPatient } from '@/types/payment';
+import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
   patient?: Patient;
   charges: PaymentWithPatient[];
@@ -17,6 +18,8 @@ interface PatientDetailsProps {
   onEditPatient: () => void;
   onBack?: () => void;
   onGeneratePayment?: (patientId: string) => void;
+  onEditPayment?: (payment: Payment) => void;
+  onDeletePayment?: (paymentId: string) => void;
 }
 export const PatientDetails = ({
   patient,
@@ -24,7 +27,9 @@ export const PatientDetails = ({
   isLoading,
   onEditPatient,
   onBack,
-  onGeneratePayment
+  onGeneratePayment,
+  onEditPayment,
+  onDeletePayment
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
   if (!patient) {
@@ -86,17 +91,18 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-3">
       {/* Header */}
-      <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
+      <div className="grid grid-cols-4 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
         <div className="text-center">Vencimento</div>
         <div className="text-right">Valor</div>
+        <div className="text-center">Ações</div>
       </div>
       
       {/* Rows */}
       <div className="space-y-2">
         {charges.map(charge => {
         const isOverdue = new Date(charge.due_date) < new Date();
-        return <div key={charge.id} className="grid grid-cols-3 gap-4 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+        return <div key={charge.id} className="grid grid-cols-4 gap-4 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
               <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
                 {truncateDescription(charge.description || '')}
               </div>
@@ -105,6 +111,14 @@ export const PatientDetails = ({
               </div>
               <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
                 {formatCurrency(charge.amount)}
+              </div>
+              <div className="flex justify-center">
+                <PaymentActions 
+                  payment={charge}
+                  onEdit={onEditPayment}
+                  onDelete={onDeletePayment}
+                  layout="compact"
+                />
               </div>
             </div>;
       })}

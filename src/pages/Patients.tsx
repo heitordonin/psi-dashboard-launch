@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { CreatePatientWizard } from "@/components/patients/CreatePatientWizard";
 import { CreatePaymentWizard } from "@/components/payments/CreatePaymentWizard";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { usePaymentData } from "@/hooks/usePaymentData";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PatientsHeader } from "@/components/patients/PatientsHeader";
@@ -15,6 +16,7 @@ import { usePatientDetailsState } from "@/hooks/usePatientDetailsState";
 import { usePatientCharges } from "@/hooks/usePatientCharges";
 import { useMobilePatientNavigation } from "@/hooks/useMobilePatientNavigation";
 import type { Patient } from "@/types/patient";
+import type { Payment } from "@/types/payment";
 
 const Patients = () => {
   const navigate = useNavigate();
@@ -52,6 +54,9 @@ const Patients = () => {
   // Payment wizard state
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [preSelectedPatientId, setPreSelectedPatientId] = useState<string>('');
+  
+  // Payment data for deletion
+  const { deletePaymentMutation } = usePaymentData(user?.id);
 
   // Enhanced patient select handler for mobile
   const enhancedPatientSelect = (patient: Patient) => {
@@ -84,6 +89,16 @@ const Patients = () => {
   const handleClosePaymentWizard = () => {
     setShowPaymentWizard(false);
     setPreSelectedPatientId('');
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    // For now, we'll use the existing payment editing flow
+    // This could be enhanced later with a dedicated edit modal
+    console.log('Edit payment:', payment);
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    deletePaymentMutation.mutate(paymentId);
   };
 
   if (isLoading) {
@@ -134,6 +149,8 @@ const Patients = () => {
                       isLoading={chargesLoading}
                       onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
                       onGeneratePayment={handleGeneratePayment}
+                      onEditPayment={handleEditPayment}
+                      onDeletePayment={handleDeletePayment}
                     />
                   </div>
                 </>
@@ -164,6 +181,8 @@ const Patients = () => {
                       onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
                       onBack={showPatientList}
                       onGeneratePayment={handleGeneratePayment}
+                      onEditPayment={handleEditPayment}
+                      onDeletePayment={handleDeletePayment}
                     />
                   </div>
                 </>
