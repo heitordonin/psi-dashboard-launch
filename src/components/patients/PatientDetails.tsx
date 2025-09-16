@@ -128,9 +128,11 @@ export const PatientDetails = ({
   const PaidChargesTable = ({ charges }: { charges: PaymentWithPatient[] }) => (
     <div className="space-y-3">
       {/* Header */}
-      <div className="grid grid-cols-4 gap-3 pb-2 border-b text-sm font-medium text-muted-foreground">
+      <div className={`grid gap-3 pb-2 border-b text-sm font-medium text-muted-foreground ${
+        isMobile ? 'grid-cols-3' : 'grid-cols-4'
+      }`}>
         <div>Descrição</div>
-        <div className="text-center">Vencimento</div>
+        {!isMobile && <div className="text-center">Vencimento</div>}
         <div className="text-center">Pagamento</div>
         <div className="text-right">Valor</div>
       </div>
@@ -138,13 +140,17 @@ export const PatientDetails = ({
       {/* Rows */}
       <div className="space-y-2">
         {charges.map((charge) => (
-          <div key={charge.id} className="grid grid-cols-4 gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+          <div key={charge.id} className={`grid gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors ${
+            isMobile ? 'grid-cols-3' : 'grid-cols-4'
+          }`}>
             <div className="text-sm text-foreground">
               {truncateDescription(charge.description || '')}
             </div>
-            <div className="text-sm text-center text-muted-foreground">
-              {new Date(charge.due_date).toLocaleDateString('pt-BR')}
-            </div>
+            {!isMobile && (
+              <div className="text-sm text-center text-muted-foreground">
+                {new Date(charge.due_date).toLocaleDateString('pt-BR')}
+              </div>
+            )}
             <div className="text-sm text-center text-muted-foreground">
               {charge.paid_date ? new Date(charge.paid_date).toLocaleDateString('pt-BR') : '-'}
             </div>
