@@ -238,7 +238,7 @@ export const PatientDetails = ({
         </div>
 
         {/* Charges Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 overflow-hidden">
+        <div className="grid grid-cols-1 gap-4 flex-1 overflow-hidden">
           {/* Pending Charges */}
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
