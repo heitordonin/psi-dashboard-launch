@@ -6,15 +6,18 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { PatientsHeader } from "@/components/patients/PatientsHeader";
-import { PatientsSearchFilter } from "@/components/patients/PatientsSearchFilter";
-import { PatientsList } from "@/components/patients/PatientsList";
+import { PatientSidebar } from "@/components/patients/PatientSidebar";
+import { PatientDetails } from "@/components/patients/PatientDetails";
 import { usePatientsData } from "@/hooks/usePatientsData";
 import { usePatientsPageState } from "@/hooks/usePatientsPageState";
-import { filterPatients } from "@/utils/patientFilters";
+import { usePatientDetailsState } from "@/hooks/usePatientDetailsState";
+import { usePatientCharges } from "@/hooks/usePatientCharges";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Patients = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const isMobile = useIsMobile();
   
   const {
     patients,
@@ -24,19 +27,26 @@ const Patients = () => {
   } = usePatientsData();
 
   const {
-    searchTerm,
-    setSearchTerm,
     showWizard,
     editingPatient,
     deletePatient,
     setDeletePatient,
-    filters,
-    handleFilterChange,
     handleEditPatient,
     handleDeletePatient,
     handleWizardClose,
     handleNewPatient,
   } = usePatientsPageState();
+
+  const {
+    selectedPatient,
+    filteredPatients,
+    searchTerm,
+    setSearchTerm,
+    handlePatientSelect,
+    selectedPatientId
+  } = usePatientDetailsState(patients);
+
+  const { charges, isLoading: chargesLoading } = usePatientCharges(user?.id, selectedPatientId);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -44,16 +54,12 @@ const Patients = () => {
     }
   }, [user, isLoading, navigate]);
 
-  const filteredPatients = filterPatients(patients, searchTerm, filters);
-
   const confirmDelete = () => {
     if (deletePatient) {
       deletePatientMutation.mutate(deletePatient.id);
       setDeletePatient(null);
     }
   };
-
-  const hasActiveFilters = !!(filters.patientId || filters.cpfSearch || filters.hasGuardian || filters.isFromAbroad);
 
   if (isLoading) {
     return (
@@ -78,24 +84,29 @@ const Patients = () => {
           <div className="min-h-screen bg-gray-50">
             <PatientsHeader onNewPatient={() => handleNewPatient(patientCount)} />
 
-            <div className="container mx-auto px-4 py-6 space-y-6">
-              <PatientsSearchFilter
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                patients={patients}
-              />
+            <div className="flex h-[calc(100vh-64px)] gap-4 p-4">
+              {/* Left Panel - Patient List */}
+              <div className={`${isMobile ? 'w-full' : 'w-[30%]'} ${isMobile && selectedPatient ? 'hidden' : ''}`}>
+                <PatientSidebar
+                  patients={filteredPatients}
+                  isLoading={patientsLoading}
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  selectedPatientId={selectedPatientId}
+                  onPatientSelect={handlePatientSelect}
+                  onNewPatient={() => handleNewPatient(patientCount)}
+                />
+              </div>
 
-              <PatientsList
-                patients={filteredPatients}
-                isLoading={patientsLoading}
-                searchTerm={searchTerm}
-                hasActiveFilters={hasActiveFilters}
-                onEditPatient={handleEditPatient}
-                onDeletePatient={handleDeletePatient}
-                onNewPatient={() => handleNewPatient(patientCount)}
-              />
+              {/* Right Panel - Patient Details */}
+              <div className={`${isMobile ? 'w-full' : 'w-[70%]'} ${isMobile && !selectedPatient ? 'hidden' : ''}`}>
+                <PatientDetails
+                  patient={selectedPatient}
+                  charges={charges}
+                  isLoading={chargesLoading}
+                  onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
+                />
+              </div>
             </div>
 
             {showWizard && (

@@ -48,6 +48,13 @@ export const protectedRoutes = [
       </PhoneVerificationGuard>
     </ProtectedRoute>
   } />,
+  <Route key="patients-detail" path="/patients/:id" element={
+    <ProtectedRoute>
+      <PhoneVerificationGuard>
+        <Patients />
+      </PhoneVerificationGuard>
+    </ProtectedRoute>
+  } />,
   <Route key="payments" path="/payments" element={
     <ProtectedRoute>
       <PhoneVerificationGuard>
