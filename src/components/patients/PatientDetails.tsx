@@ -59,6 +59,11 @@ export const PatientDetails = ({
   const documentLabel = patient.patient_type === 'company' ? 'CNPJ' : 'CPF';
   const documentValue = patient.patient_type === 'company' ? patient.cnpj : patient.cpf;
 
+  const truncateDescription = (description: string, maxLength: number = 12): string => {
+    if (!description || description.length <= maxLength) return description || 'Sem descrição';
+    return description.substring(0, maxLength) + '...';
+  };
+
   const LoadingState = () => (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -80,37 +85,65 @@ export const PatientDetails = ({
     );
   }
 
-  const ChargeItem = ({ charge, isOverdue = false }: { charge: PaymentWithPatient; isOverdue?: boolean }) => (
-    <div className={cn(
-      "flex justify-between items-center p-3 rounded-lg border",
-      isOverdue ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-200"
-    )}>
-      <div className="flex-1">
-        <p className={cn(
-          "font-medium text-sm",
-          isOverdue ? "text-red-900" : "text-gray-900"
-        )}>
-          {charge.description || 'Cobrança'}
-        </p>
-        <p className={cn(
-          "text-xs",
-          isOverdue ? "text-red-600" : "text-gray-600"
-        )}>
-          Vencimento: {new Date(charge.due_date).toLocaleDateString('pt-BR')}
-        </p>
+  const PendingChargesTable = ({ charges }: { charges: PaymentWithPatient[] }) => (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
+        <div>Descrição</div>
+        <div className="text-center">Vencimento</div>
+        <div className="text-right">Valor</div>
       </div>
-      <div className="text-right">
-        <p className={cn(
-          "font-semibold text-sm",
-          isOverdue ? "text-red-700" : "text-gray-900"
-        )}>
-          {formatCurrency(charge.amount)}
-        </p>
-        {isOverdue && (
-          <Badge variant="destructive" className="text-xs">
-            Vencida
-          </Badge>
-        )}
+      
+      {/* Rows */}
+      <div className="space-y-2">
+        {charges.map((charge) => {
+          const isOverdue = new Date(charge.due_date) < new Date();
+          return (
+            <div key={charge.id} className="grid grid-cols-3 gap-4 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+              <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                {truncateDescription(charge.description || '')}
+              </div>
+              <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
+                {new Date(charge.due_date).toLocaleDateString('pt-BR')}
+              </div>
+              <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                {formatCurrency(charge.amount)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const PaidChargesTable = ({ charges }: { charges: PaymentWithPatient[] }) => (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="grid grid-cols-4 gap-3 pb-2 border-b text-sm font-medium text-muted-foreground">
+        <div>Descrição</div>
+        <div className="text-center">Vencimento</div>
+        <div className="text-center">Pagamento</div>
+        <div className="text-right">Valor</div>
+      </div>
+      
+      {/* Rows */}
+      <div className="space-y-2">
+        {charges.map((charge) => (
+          <div key={charge.id} className="grid grid-cols-4 gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
+            <div className="text-sm text-foreground">
+              {truncateDescription(charge.description || '')}
+            </div>
+            <div className="text-sm text-center text-muted-foreground">
+              {new Date(charge.due_date).toLocaleDateString('pt-BR')}
+            </div>
+            <div className="text-sm text-center text-muted-foreground">
+              {charge.paid_date ? new Date(charge.paid_date).toLocaleDateString('pt-BR') : '-'}
+            </div>
+            <div className="text-sm text-right font-medium text-foreground">
+              {formatCurrency(charge.amount)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -227,18 +260,9 @@ export const PatientDetails = ({
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {/* Show overdue charges first */}
-                    {overdueCharges.map((charge) => (
-                      <ChargeItem key={charge.id} charge={charge} isOverdue />
-                    ))}
-                    {/* Then show regular pending charges */}
-                    {pendingCharges
-                      .filter(charge => !overdueCharges.includes(charge))
-                      .map((charge) => (
-                        <ChargeItem key={charge.id} charge={charge} />
-                      ))}
-                  </div>
+                  <PendingChargesTable 
+                    charges={[...overdueCharges, ...pendingCharges.filter(charge => !overdueCharges.includes(charge))]} 
+                  />
                 )}
               </div>
             </CardContent>
@@ -265,26 +289,7 @@ export const PatientDetails = ({
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {paidCharges.map((charge) => (
-                      <div 
-                        key={charge.id}
-                        className="flex justify-between items-center p-3 rounded-lg bg-green-50 border border-green-200"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-green-900">
-                            {charge.description || 'Cobrança'}
-                          </p>
-                          <p className="text-xs text-green-600">
-                            Pago em: {charge.paid_date ? new Date(charge.paid_date).toLocaleDateString('pt-BR') : 'Data não informada'}
-                          </p>
-                        </div>
-                        <p className="font-semibold text-sm text-green-700">
-                          {formatCurrency(charge.amount)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                  <PaidChargesTable charges={paidCharges} />
                 )}
               </div>
             </CardContent>
