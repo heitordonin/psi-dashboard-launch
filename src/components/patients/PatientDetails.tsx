@@ -130,16 +130,17 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-3">
       {/* Header */}
-      <div className={`grid gap-3 pb-2 border-b text-sm font-medium text-muted-foreground ${isMobile ? 'grid-cols-3' : 'grid-cols-4'}`}>
+      <div className={`grid gap-3 pb-2 border-b text-sm font-medium text-muted-foreground ${isMobile ? 'grid-cols-4' : 'grid-cols-5'}`}>
         <div>Descrição</div>
         {!isMobile && <div className="text-center">Vencimento</div>}
         <div className="text-center">Pagamento</div>
         <div className="text-right">Valor</div>
+        <div className="text-center">Ações</div>
       </div>
       
       {/* Rows */}
       <div className="space-y-2">
-        {charges.map(charge => <div key={charge.id} className={`grid gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors ${isMobile ? 'grid-cols-3' : 'grid-cols-4'}`}>
+        {charges.map(charge => <div key={charge.id} className={`grid gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors ${isMobile ? 'grid-cols-4' : 'grid-cols-5'}`}>
             <div className="text-sm text-foreground">
               {truncateDescription(charge.description || '')}
             </div>
@@ -151,6 +152,14 @@ export const PatientDetails = ({
             </div>
             <div className="text-sm text-right font-medium text-foreground">
               {formatCurrency(charge.amount)}
+            </div>
+            <div className="flex justify-center">
+              <PaymentActions 
+                payment={charge}
+                onEdit={onEditPayment}
+                onDelete={onDeletePayment}
+                layout="compact"
+              />
             </div>
           </div>)}
       </div>
