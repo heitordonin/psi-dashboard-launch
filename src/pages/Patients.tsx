@@ -37,7 +37,7 @@ const Patients = () => {
     handleNewPatient,
   } = usePatientsPageState();
 
-  const { isMobile, showingDetails, showPatientList, handlePatientSelect: onMobilePatientSelect } = useMobilePatientNavigation();
+  const { isMobile, showingDetails, showPatientList, showPatientDetails } = useMobilePatientNavigation();
 
   const {
     selectedPatient,
@@ -52,7 +52,7 @@ const Patients = () => {
   const enhancedPatientSelect = (patient: Patient) => {
     handlePatientSelect(patient);
     if (isMobile) {
-      onMobilePatientSelect();
+      showPatientDetails();
     }
   };
 
