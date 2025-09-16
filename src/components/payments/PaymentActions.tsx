@@ -215,22 +215,6 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   if (layout === 'compact') {
     return (
       <div className="flex items-center gap-2">
-        {canMarkPaid && (
-          <Button size="sm" onClick={handleMarkAsPaid} disabled={isMarkingAsPaid}>
-            {isMarkingAsPaid ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                Processando
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Marcar como Pago
-              </>
-            )}
-          </Button>
-        )}
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="touch-target">
@@ -238,9 +222,9 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
-            {canOpenLink && (
-              <DropdownMenuItem onClick={() => setIsLinkOpen(true)} className="min-h-[40px]">
-                <LinkIcon className="h-4 w-4 mr-2" /> Ver Link
+            {canMarkPaid && (
+              <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isMarkingAsPaid} className="min-h-[40px]">
+                {isMarkingAsPaid ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />} Marcar como Pago
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={handleSendEmail} disabled={!canSendEmail || isSendingEmail} className="min-h-[40px]">
