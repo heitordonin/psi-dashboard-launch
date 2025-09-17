@@ -93,43 +93,52 @@ export function PaymentTable({ payments, onEdit, onDelete }: PaymentTableProps) 
       {/* Mobile version - simplified cards */}
       <div className="sm:hidden">
         <ul className="divide-y divide-gray-200">
-          {sortedPayments.map(payment => (
-            <li key={payment.id} className="px-4 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {payment.patients?.full_name || 'Sem paciente'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {new Intl.NumberFormat('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL'
-                    }).format(Number(payment.amount))}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Venc: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
-                  </p>
+          {sortedPayments.map(payment => {
+            // Check if payment is overdue for mobile version
+            const isOverdue = !payment.paid_date && new Date(payment.due_date) < new Date();
+            
+            return (
+              <li key={payment.id} className="px-4 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {payment.patients?.full_name || 'Sem paciente'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(Number(payment.amount))}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Venc: {new Date(payment.due_date).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {payment.paid_date ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                        Pago
+                      </span>
+                    ) : isOverdue ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                        Vencida
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                        Pendente
+                      </span>
+                    )}
+                    <PaymentActions 
+                      payment={payment}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      layout="compact"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {payment.paid_date ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                      Pago
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                      Pendente
-                    </span>
-                  )}
-                  <PaymentActions 
-                    payment={payment}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    layout="compact"
-                  />
-                </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
