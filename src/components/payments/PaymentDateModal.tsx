@@ -1,14 +1,8 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
 import { RetroactiveDateConfirmationDialog } from "./RetroactiveDateConfirmationDialog";
@@ -23,7 +17,6 @@ interface PaymentDateModalProps {
 
 export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false }: PaymentDateModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [showRetroactiveDialog, setShowRetroactiveDialog] = useState(false);
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [hasRetroactiveWarning, setHasRetroactiveWarning] = useState(false);
@@ -115,42 +108,23 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
               </p>
               
               <div className="space-y-2">
-                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal touch-target",
-                        !selectedDate && "text-muted-foreground",
-                        hasRetroactiveWarning && "border-orange-500",
-                        isFutureDate && "border-destructive"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Selecionar data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    className="w-auto p-0" 
-                    align="start" 
-                    side="bottom"
-                    sideOffset={16}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          handleDateChange(date);
-                          setIsCalendarOpen(false);
-                        }
-                      }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <input
+                  type="date"
+                  value={format(selectedDate, 'yyyy-MM-dd')}
+                  onChange={(e) => {
+                    const dateValue = e.target.value;
+                    if (dateValue) {
+                      const newDate = new Date(dateValue);
+                      handleDateChange(newDate);
+                    }
+                  }}
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  className={cn(
+                    "w-full px-3 py-2 border border-input bg-background text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                    hasRetroactiveWarning && "border-orange-500",
+                    isFutureDate && "border-destructive"
+                  )}
+                />
                 
                 {isFutureDate && (
                   <p className="text-sm text-destructive">
