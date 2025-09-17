@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { CheckCircle, Pencil, Trash2, Undo2, MoreVertical, Mail, MessageCircle, Link as LinkIcon, Loader2 } from "lucide-react";
+import { CheckCircle, Pencil, Trash2, Undo2, MoreVertical, Mail, MessageCircle, Link as LinkIcon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -242,6 +242,23 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+            {/* Receita Saúde Status Warning */}
+            {isBlockedByReceitaSaude && (
+              <>
+                <div className="px-3 py-2 bg-orange-50 border-l-4 border-orange-400 mx-1 my-1 rounded">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <span className="text-xs font-medium text-orange-800">
+                      Receita Saúde Emitida
+                    </span>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Algumas ações estão bloqueadas
+                  </p>
+                </div>
+                <div className="h-px bg-border my-1" />
+              </>
+            )}
             {canMarkUnpaid && (
               <DropdownMenuItem onClick={handleMarkAsUnpaid} className="min-h-[40px]">
                 <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
@@ -271,6 +288,23 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+            {/* Receita Saúde Status Warning */}
+            {isBlockedByReceitaSaude && (
+              <>
+                <div className="px-3 py-2 bg-orange-50 border-l-4 border-orange-400 mx-1 my-1 rounded">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <span className="text-xs font-medium text-orange-800">
+                      Receita Saúde Emitida
+                    </span>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Algumas ações estão bloqueadas
+                  </p>
+                </div>
+                <div className="h-px bg-border my-1" />
+              </>
+            )}
             {canMarkPaid && (
               <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isMarkingAsPaid} className="min-h-[40px]">
                 {isMarkingAsPaid ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />} Marcar como Pago
