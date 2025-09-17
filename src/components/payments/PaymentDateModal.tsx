@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { createSafeDateFromString, formatDateForInput } from "@/utils/dateUtils";
 import { validatePaymentDateReceitaSaude } from "@/utils/receitaSaudeValidation";
 import { RetroactiveDateConfirmationDialog } from "./RetroactiveDateConfirmationDialog";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -110,15 +111,15 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
               <div className="space-y-2">
                 <input
                   type="date"
-                  value={format(selectedDate, 'yyyy-MM-dd')}
+                  value={formatDateForInput(selectedDate)}
                   onChange={(e) => {
                     const dateValue = e.target.value;
                     if (dateValue) {
-                      const newDate = new Date(dateValue);
+                      const newDate = createSafeDateFromString(dateValue);
                       handleDateChange(newDate);
                     }
                   }}
-                  max={format(new Date(), 'yyyy-MM-dd')}
+                  max={formatDateForInput(new Date())}
                   className={cn(
                     "w-full px-3 py-2 border border-input bg-background text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
                     hasRetroactiveWarning && "border-orange-500",

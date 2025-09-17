@@ -11,6 +11,7 @@ import { useAdminDocuments } from '@/hooks/useAdminDocuments';
 import { MarkAsPaidModal } from './MarkAsPaidModal';
 import { MarkAsPaidData } from '@/types/adminDocument';
 import { toast } from 'sonner';
+import { createSafeDateFromString } from '@/utils/dateUtils';
 
 export const DocumentDetails = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export const DocumentDetails = () => {
   };
 
   const formatCompetency = (competency: string) => {
-    const date = new Date(competency + 'T00:00:00');
+    const date = createSafeDateFromString(competency);
     return format(date, "MMMM 'de' yyyy", { locale: ptBR });
   };
 

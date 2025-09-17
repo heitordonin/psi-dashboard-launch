@@ -1,4 +1,5 @@
 // Validações específicas para regras da Receita Saúde
+import { createSafeDateFromString } from './dateUtils';
 
 /**
  * Valida se uma data retroativa está dentro do limite legal da Receita Saúde
@@ -9,7 +10,7 @@
  * @returns { isValid: boolean, errorMessage?: string }
  */
 export function validateReceitaSaudeDate(retroactiveDate: string, currentDate?: Date) {
-  const targetDate = new Date(retroactiveDate + 'T00:00:00');
+  const targetDate = createSafeDateFromString(retroactiveDate);
   const today = currentDate || new Date();
   
   // Normalizar as datas para remover componente de tempo

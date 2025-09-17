@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { createSafeDateFromString } from "@/utils/dateUtils";
 
 export const useDashboardData = (startDate: string, endDate: string) => {
   const { user } = useAuth();
@@ -35,8 +36,11 @@ export const useDashboardData = (startDate: string, endDate: string) => {
           }
           
           const checkDate = new Date(dateToCheck);
-          const start = startDate ? new Date(startDate) : null;
-          const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+          const start = startDate ? createSafeDateFromString(startDate) : null;
+          const end = endDate ? createSafeDateFromString(endDate) : null;
+          if (end) {
+            end.setHours(23, 59, 59, 999);
+          }
           
           if (start && checkDate < start) return false;
           if (end && checkDate > end) return false;

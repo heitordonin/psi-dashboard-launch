@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RevenueExpenseChart } from "./RevenueExpenseChart";
 import { MarginKPI } from "./MarginKPI";
 import { GaugeChart } from "./GaugeChart";
+import { createSafeDateFromString } from "@/utils/dateUtils";
 
 interface DashboardChartsProps {
   startDate: string;
@@ -43,8 +44,11 @@ export const DashboardCharts = ({ startDate, endDate }: DashboardChartsProps) =>
           }
           
           const checkDate = new Date(dateToCheck);
-          const start = startDate ? new Date(startDate) : null;
-          const end = endDate ? new Date(endDate + 'T23:59:59') : null;
+          const start = startDate ? createSafeDateFromString(startDate) : null;
+          const end = endDate ? createSafeDateFromString(endDate) : null;
+          if (end) {
+            end.setHours(23, 59, 59, 999);
+          }
           
           if (start && checkDate < start) return false;
           if (end && checkDate > end) return false;

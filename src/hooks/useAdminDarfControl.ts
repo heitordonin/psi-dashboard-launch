@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { createSafeDateFromString } from "@/utils/dateUtils";
 
 export const useAdminDarfControl = (dueMonth: string) => {
   const queryClient = useQueryClient();
@@ -56,7 +57,7 @@ export const useAdminDarfControl = (dueMonth: string) => {
 
       // Get users with DARF sent for this due month
       const startOfMonth = `${dueMonth}-01`;
-      const nextMonth = new Date(dueMonth + '-01');
+      const nextMonth = createSafeDateFromString(dueMonth + '-01');
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       const endOfMonth = format(nextMonth, 'yyyy-MM-dd');
 
@@ -130,7 +131,7 @@ export const useAdminDarfControl = (dueMonth: string) => {
 
       // Get users with DARF sent for this due month
       const startOfMonth = `${dueMonth}-01`;
-      const nextMonth = new Date(dueMonth + '-01');
+      const nextMonth = createSafeDateFromString(dueMonth + '-01');
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       const endOfMonth = format(nextMonth, 'yyyy-MM-dd');
 
@@ -213,12 +214,15 @@ export const useAdminDarfControl = (dueMonth: string) => {
 
   const unmarkCompletedMutation = useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      const { error } = await supabase
+        const endOfMonth = createSafeDateFromString(dueMonth + '-01');
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        
+        const { error } = await supabase
         .from('darf_manual_completions')
         .delete()
         .eq('user_id', userId)
         .gte('competency', `${dueMonth}-01`)
-        .lt('competency', format(new Date(dueMonth + '-01').setMonth(new Date(dueMonth + '-01').getMonth() + 1), 'yyyy-MM-dd'));
+        .lt('competency', format(endOfMonth, 'yyyy-MM-dd'));
 
       if (error) throw error;
     },

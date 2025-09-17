@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { createSafeDateFromString } from "@/utils/dateUtils";
 
 interface ReceivedDatePickerProps {
   receivedDate: string;
@@ -43,13 +44,13 @@ export function ReceivedDatePicker({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {receivedDate ? format(new Date(receivedDate + 'T00:00:00'), "dd/MM/yyyy") : "Selecionar data do pagamento"}
+            {receivedDate ? format(createSafeDateFromString(receivedDate), "dd/MM/yyyy") : "Selecionar data do pagamento"}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={receivedDate ? new Date(receivedDate + 'T00:00:00') : undefined}
+            selected={receivedDate ? createSafeDateFromString(receivedDate) : undefined}
             onSelect={handleDateSelect}
             disabled={(date) => date > new Date()}
             initialFocus

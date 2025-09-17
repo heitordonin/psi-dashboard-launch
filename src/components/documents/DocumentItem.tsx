@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AdminDocument } from '@/types/adminDocument';
 import { useNavigate } from 'react-router-dom';
+import { createSafeDateFromString } from '@/utils/dateUtils';
 
 interface DocumentItemProps {
   document: AdminDocument;
@@ -35,7 +36,7 @@ export const DocumentItem = ({ document, onViewDocument }: DocumentItemProps) =>
   };
 
   const formatCompetency = (competency: string) => {
-    const date = new Date(competency + 'T00:00:00');
+    const date = createSafeDateFromString(competency);
     return format(date, "MM/yyyy", { locale: ptBR });
   };
 

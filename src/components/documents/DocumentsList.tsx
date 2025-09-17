@@ -13,6 +13,7 @@ import { DocumentItem } from './DocumentItem';
 import { AdminDocument } from '@/types/adminDocument';
 import { useAdminDocuments } from '@/hooks/useAdminDocuments';
 import { toast } from 'sonner';
+import { createSafeDateFromString } from '@/utils/dateUtils';
 
 interface DocumentsListProps {
   documents: AdminDocument[];
@@ -27,12 +28,12 @@ export const DocumentsList = ({ documents }: DocumentsListProps) => {
   // Get unique competencies for filter
   const competencies = useMemo(() => {
     const unique = Array.from(new Set(documents.map(doc => {
-      const date = new Date(doc.competency + 'T00:00:00');
+      const date = createSafeDateFromString(doc.competency);
       return date.toISOString().slice(0, 7); // YYYY-MM format
     }))).sort().reverse();
     
     return unique.map(comp => {
-      const date = new Date(comp + '-01');
+      const date = createSafeDateFromString(comp + '-01');
       return {
         value: comp,
         label: date.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
@@ -45,7 +46,7 @@ export const DocumentsList = ({ documents }: DocumentsListProps) => {
     return documents.filter(doc => {
       const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
-      const docCompetency = new Date(doc.competency + 'T00:00:00').toISOString().slice(0, 7);
+      const docCompetency = createSafeDateFromString(doc.competency).toISOString().slice(0, 7);
       const matchesCompetency = competencyFilter === 'all' || docCompetency === competencyFilter;
       
       return matchesSearch && matchesStatus && matchesCompetency;
