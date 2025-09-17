@@ -207,7 +207,7 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   };
 
   const canMarkPaid = payment.status !== 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude;
-  const canMarkUnpaid = payment.status === 'paid' && !isBlockedByReceitaSaude;
+  const canMarkUnpaid = (payment.status === 'paid' || payment.paid_date) && !isBlockedByReceitaSaude;
   const canEdit = !(payment.has_payment_link || isBlockedByReceitaSaude);
   const canDelete = !(payment.status === 'paid' || isBlockedByReceitaSaude);
   const canOpenLink = payment.has_payment_link && payment.status === 'pending';
