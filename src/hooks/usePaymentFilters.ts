@@ -1,5 +1,6 @@
 
 import { useMemo, useState } from "react";
+import { createSafeDateFromString, getTodayLocalDate } from "@/utils/dateUtils";
 import type { PaymentWithPatient } from "@/types/payment";
 
 export interface PaymentFilters {
@@ -26,7 +27,7 @@ export const usePaymentFilters = () => {
     return useMemo(() => {
       return payments.filter(payment => {
         const patientName = payment.patients?.full_name || '';
-        const dueDateFormatted = new Date(payment.due_date).toLocaleDateString('pt-BR');
+        const dueDateFormatted = createSafeDateFromString(payment.due_date).toLocaleDateString('pt-BR');
         const amountFormatted = payment.amount.toString();
         
         const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,13 +37,27 @@ export const usePaymentFilters = () => {
                              amountFormatted.includes(searchTerm);
         
         const matchesPatientId = !filters.patientId || payment.patient_id === filters.patientId;
-        const matchesStatus = !filters.status || payment.status === filters.status;
+        
+        // Handle special "overdue" status filter
+        const matchesStatus = (() => {
+          if (!filters.status) return true;
+          
+          if (filters.status === "overdue") {
+            // Overdue: not paid and due date is before today
+            const isNotPaid = payment.status !== 'paid';
+            const isDueBefore = createSafeDateFromString(payment.due_date) < getTodayLocalDate();
+            return isNotPaid && isDueBefore;
+          }
+          
+          // Regular status matching
+          return payment.status === filters.status;
+        })();
         
         const matchesDateRange = (() => {
           if (!filters.startDate && !filters.endDate) return true;
-          const paymentDate = new Date(payment.due_date);
-          const startDate = filters.startDate ? new Date(filters.startDate) : null;
-          const endDate = filters.endDate ? new Date(filters.endDate) : null;
+          const paymentDate = createSafeDateFromString(payment.due_date);
+          const startDate = filters.startDate ? createSafeDateFromString(filters.startDate) : null;
+          const endDate = filters.endDate ? createSafeDateFromString(filters.endDate) : null;
           
           if (startDate && paymentDate < startDate) return false;
           if (endDate && paymentDate > endDate) return false;

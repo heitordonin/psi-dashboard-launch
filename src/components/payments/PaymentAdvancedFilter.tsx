@@ -113,6 +113,7 @@ export function PaymentAdvancedFilter({
                 <SelectItem value="__all">Todos os status</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
+                <SelectItem value="overdue">Vencida</SelectItem>
               </SelectContent>
             </Select>
           </div>
