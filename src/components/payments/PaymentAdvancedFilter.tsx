@@ -78,18 +78,19 @@ export function PaymentAdvancedFilter({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Filtros Avançados</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="patient">Paciente</Label>
+      <DialogContent className="max-w-md p-0">
+        <div className="border-b p-6">
+          <DialogTitle className="text-lg font-semibold">Filtros Avançados</DialogTitle>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="patient" className="text-sm font-medium">Paciente</Label>
             <Select 
               value={tempFilters.patientId || "__all"} 
               onValueChange={(value) => setTempFilters({ ...tempFilters, patientId: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos os pacientes" />
               </SelectTrigger>
               <SelectContent>
@@ -103,33 +104,37 @@ export function PaymentAdvancedFilter({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="startDate">Data início (vencimento)</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={tempFilters.startDate}
-              onChange={(e) => setTempFilters({ ...tempFilters, startDate: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-sm font-medium">Data início</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={tempFilters.startDate}
+                onChange={(e) => setTempFilters({ ...tempFilters, startDate: e.target.value })}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate" className="text-sm font-medium">Data fim</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={tempFilters.endDate}
+                onChange={(e) => setTempFilters({ ...tempFilters, endDate: e.target.value })}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="endDate">Data fim (vencimento)</Label>
-            <Input
-              id="endDate"
-              type="date"
-              value={tempFilters.endDate}
-              onChange={(e) => setTempFilters({ ...tempFilters, endDate: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="status">Status</Label>
+          <div className="space-y-2">
+            <Label htmlFor="status" className="text-sm font-medium">Status</Label>
             <Select 
               value={tempFilters.status || "__all"} 
               onValueChange={(value) => setTempFilters({ ...tempFilters, status: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
@@ -141,37 +146,45 @@ export function PaymentAdvancedFilter({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="minAmount">Valor mínimo</Label>
-            <Input
-              id="minAmount"
-              type="number"
-              value={tempFilters.minAmount}
-              onChange={(e) => setTempFilters({ ...tempFilters, minAmount: e.target.value })}
-              placeholder="R$ 0,00"
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minAmount" className="text-sm font-medium">Valor mínimo</Label>
+              <Input
+                id="minAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={tempFilters.minAmount}
+                onChange={(e) => setTempFilters({ ...tempFilters, minAmount: e.target.value })}
+                placeholder="0,00"
+                className="w-full"
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="maxAmount">Valor máximo</Label>
-            <Input
-              id="maxAmount"
-              type="number"
-              value={tempFilters.maxAmount}
-              onChange={(e) => setTempFilters({ ...tempFilters, maxAmount: e.target.value })}
-              placeholder="R$ 0,00"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="maxAmount" className="text-sm font-medium">Valor máximo</Label>
+              <Input
+                id="maxAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={tempFilters.maxAmount}
+                onChange={(e) => setTempFilters({ ...tempFilters, maxAmount: e.target.value })}
+                placeholder="0,00"
+                className="w-full"
+              />
+            </div>
           </div>
+        </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleClearFilters} variant="outline" className="flex-1">
-              <X className="w-4 h-4 mr-2" />
-              Limpar
-            </Button>
-            <Button onClick={handleApplyFilters} className="flex-1">
-              Aplicar Filtros
-            </Button>
-          </div>
+        <div className="border-t p-6 flex gap-3">
+          <Button onClick={handleClearFilters} variant="outline" className="flex-1">
+            <X className="w-4 h-4 mr-2" />
+            Limpar
+          </Button>
+          <Button onClick={handleApplyFilters} className="flex-1">
+            Aplicar Filtros
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
