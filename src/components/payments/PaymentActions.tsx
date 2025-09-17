@@ -208,6 +208,19 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
 
   const canMarkPaid = payment.status !== 'paid' && !payment.has_payment_link && !isBlockedByReceitaSaude;
   const canMarkUnpaid = (payment.status === 'paid' || payment.paid_date) && !isBlockedByReceitaSaude;
+  
+  // DEBUG: Log para investigar por que canMarkUnpaid é false
+  if (payment.status === 'paid' || payment.paid_date) {
+    console.log('🔍 Investigando canMarkUnpaid para pagamento:', {
+      paymentId: payment.id,
+      patientName: payment.patients?.full_name,
+      status: payment.status,
+      paid_date: payment.paid_date,
+      receita_saude_receipt_issued: payment.receita_saude_receipt_issued,
+      isBlockedByReceitaSaude,
+      canMarkUnpaid
+    });
+  }
   const canEdit = !(payment.has_payment_link || isBlockedByReceitaSaude);
   const canDelete = !(payment.status === 'paid' || isBlockedByReceitaSaude);
   const canOpenLink = payment.has_payment_link && payment.status === 'pending';
@@ -275,6 +288,23 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
               <DropdownMenuItem onClick={handleMarkAsUnpaid} className="min-h-[40px]">
                 <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
               </DropdownMenuItem>
+            )}
+            {/* Show blocked option with tooltip when payment is paid but blocked by receita saude */}
+            {(payment.status === 'paid' || payment.paid_date) && !canMarkUnpaid && isBlockedByReceitaSaude && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <DropdownMenuItem disabled className="min-h-[40px] opacity-50">
+                        <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
+                      </DropdownMenuItem>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Não é possível desmarcar pagamentos com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             <DropdownMenuItem onClick={() => onDelete(payment.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
               <Trash2 className="h-4 w-4 mr-2" /> Excluir
