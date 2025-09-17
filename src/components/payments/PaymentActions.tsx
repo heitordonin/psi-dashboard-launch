@@ -301,7 +301,15 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Não é possível desmarcar pagamentos com recibo emitido. Desmarque no Controle Receita Saúde para permitir alterações.</p>
+                    <div className="max-w-xs">
+                      <p className="font-medium text-orange-600 mb-2">❌ Recibo da Receita Saúde já foi emitido</p>
+                      <p className="text-sm mb-1">📝 Para permitir alterações:</p>
+                      <ol className="text-sm space-y-1 list-decimal list-inside">
+                        <li>Acesse 'Controle Receita Saúde'</li>
+                        <li>Desmarque o recibo deste pagamento</li>
+                        <li>Retorne aqui - a opção ficará disponível</li>
+                      </ol>
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -406,8 +414,15 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Não é possível alterar uma cobrança com recibo emitido.</p>
-                <p>Desmarque no Controle Receita Saúde para permitir alterações.</p>
+                <div className="max-w-xs">
+                  <p className="font-medium text-orange-600 mb-2">❌ Recibo da Receita Saúde já foi emitido</p>
+                  <p className="text-sm mb-1">📝 Para permitir alterações:</p>
+                  <ol className="text-sm space-y-1 list-decimal list-inside">
+                    <li>Acesse 'Controle Receita Saúde'</li>
+                    <li>Desmarque o recibo deste pagamento</li>
+                    <li>Retorne aqui - a opção ficará disponível</li>
+                  </ol>
+                </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
