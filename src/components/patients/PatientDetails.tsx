@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Edit2, Mail, Phone, MapPin, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EnhancedSkeleton } from '@/components/ui/enhanced-skeleton';
 import { PaymentActions } from '@/components/payments/PaymentActions';
 import { formatCurrency } from '@/utils/priceFormatter';
@@ -33,6 +34,18 @@ export const PatientDetails = ({
   onDeletePayment
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
+  const [selectedPayment, setSelectedPayment] = useState<PaymentWithPatient | null>(null);
+  const [isActionsDialogOpen, setIsActionsDialogOpen] = useState(false);
+
+  const handlePaymentClick = (payment: PaymentWithPatient) => {
+    setSelectedPayment(payment);
+    setIsActionsDialogOpen(true);
+  };
+
+  const handleCloseActionsDialog = () => {
+    setIsActionsDialogOpen(false);
+    setSelectedPayment(null);
+  };
   if (!patient) {
     if (isMobile) {
       return null; // Don't show placeholder on mobile
@@ -95,7 +108,7 @@ export const PatientDetails = ({
     charges
   }: {
     charges: PaymentWithPatient[];
-  }) => <div className="space-y-3">
+  }) => <div className="space-y-2">
       {/* Header */}
       <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
@@ -104,30 +117,22 @@ export const PatientDetails = ({
       </div>
       
       {/* Rows */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         {charges.map(charge => {
         const isOverdue = createSafeDateFromString(charge.due_date) < getTodayLocalDate();
-        return <div key={charge.id} className="border border-border/50 rounded-lg p-3 hover:bg-muted/30 transition-colors">
-              {/* Main row with payment info */}
-              <div className="grid grid-cols-3 gap-4 mb-2">
-                <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                  {truncateDescription(charge.description || '', 15)}
-                </div>
-                <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
-                  {formatDate(charge.due_date)}
-                </div>
-                <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                  {formatCurrency(charge.amount)}
-                </div>
+        return <div 
+              key={charge.id} 
+              className="grid grid-cols-3 gap-4 py-3 px-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors border border-transparent hover:border-border/30"
+              onClick={() => handlePaymentClick(charge)}
+            >
+              <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                {truncateDescription(charge.description || '', 25)}
               </div>
-              {/* Actions row */}
-              <div className="flex justify-end pt-2 border-t border-border/30">
-                <PaymentActions 
-                  payment={charge}
-                  onEdit={onEditPayment}
-                  onDelete={onDeletePayment}
-                  layout="compact"
-                />
+              <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
+                {formatDate(charge.due_date)}
+              </div>
+              <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                {formatCurrency(charge.amount)}
               </div>
             </div>;
       })}
@@ -137,7 +142,7 @@ export const PatientDetails = ({
     charges
   }: {
     charges: PaymentWithPatient[];
-  }) => <div className="space-y-3">
+  }) => <div className="space-y-2">
       {/* Header */}
       <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
@@ -146,28 +151,20 @@ export const PatientDetails = ({
       </div>
       
       {/* Rows */}
-      <div className="space-y-3">
-        {charges.map(charge => <div key={charge.id} className="border border-border/50 rounded-lg p-3 hover:bg-muted/30 transition-colors">
-            {/* Main row with payment info */}
-            <div className="grid grid-cols-3 gap-4 mb-2">
-              <div className="text-sm text-foreground">
-                {truncateDescription(charge.description || '', 15)}
-              </div>
-              <div className="text-sm text-center text-muted-foreground">
-                {charge.paid_date ? formatDate(charge.paid_date) : '-'}
-              </div>
-              <div className="text-sm text-right font-medium text-foreground">
-                {formatCurrency(charge.amount)}
-              </div>
+      <div className="space-y-1">
+        {charges.map(charge => <div 
+            key={charge.id} 
+            className="grid grid-cols-3 gap-4 py-3 px-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors border border-transparent hover:border-border/30"
+            onClick={() => handlePaymentClick(charge)}
+          >
+            <div className="text-sm text-foreground">
+              {truncateDescription(charge.description || '', 25)}
             </div>
-            {/* Actions row */}
-            <div className="flex justify-end pt-2 border-t border-border/30">
-              <PaymentActions 
-                payment={charge}
-                onEdit={onEditPayment}
-                onDelete={onDeletePayment}
-                layout="paid-only"
-              />
+            <div className="text-sm text-center text-muted-foreground">
+              {charge.paid_date ? formatDate(charge.paid_date) : '-'}
+            </div>
+            <div className="text-sm text-right font-medium text-foreground">
+              {formatCurrency(charge.amount)}
             </div>
           </div>)}
       </div>
@@ -305,5 +302,37 @@ export const PatientDetails = ({
         </div>
       </CardContent>
       </Card>
+
+      {/* Actions Dialog */}
+      <Dialog open={isActionsDialogOpen} onOpenChange={handleCloseActionsDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Ações da Cobrança</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <p className="text-sm font-medium">{selectedPayment.description || 'Sem descrição'}</p>
+                <p className="text-sm text-muted-foreground">
+                  Valor: {formatCurrency(selectedPayment.amount)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedPayment.status === 'paid' ? 'Pago em' : 'Vence em'}: {' '}
+                  {formatDate(selectedPayment.status === 'paid' && selectedPayment.paid_date 
+                    ? selectedPayment.paid_date 
+                    : selectedPayment.due_date
+                  )}
+                </p>
+              </div>
+              <PaymentActions 
+                payment={selectedPayment}
+                onEdit={onEditPayment}
+                onDelete={onDeletePayment}
+                layout={selectedPayment.status === 'paid' ? 'paid-only' : 'compact'}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>;
 };
