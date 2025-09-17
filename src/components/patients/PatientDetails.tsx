@@ -72,7 +72,7 @@ export const PatientDetails = ({
     return createSafeDateFromString(dateString).toLocaleDateString('pt-BR');
   };
   
-  const truncateDescription = (description: string, maxLength: number = 12): string => {
+  const truncateDescription = (description: string, maxLength: number = 20): string => {
     if (!description || description.length <= maxLength) return description || 'Sem descrição';
     return description.substring(0, maxLength) + '...';
   };
@@ -97,28 +97,31 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-3">
       {/* Header */}
-      <div className="grid grid-cols-4 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
+      <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
         <div className="text-center">Vencimento</div>
         <div className="text-right">Valor</div>
-        <div className="text-center">Ações</div>
       </div>
       
       {/* Rows */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {charges.map(charge => {
         const isOverdue = createSafeDateFromString(charge.due_date) < getTodayLocalDate();
-        return <div key={charge.id} className="grid grid-cols-4 gap-4 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
-              <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                {truncateDescription(charge.description || '')}
+        return <div key={charge.id} className="border border-border/50 rounded-lg p-3 hover:bg-muted/30 transition-colors">
+              {/* Main row with payment info */}
+              <div className="grid grid-cols-3 gap-4 mb-2">
+                <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                  {truncateDescription(charge.description || '', 15)}
+                </div>
+                <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
+                  {formatDate(charge.due_date)}
+                </div>
+                <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                  {formatCurrency(charge.amount)}
+                </div>
               </div>
-              <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
-                {formatDate(charge.due_date)}
-              </div>
-              <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                {formatCurrency(charge.amount)}
-              </div>
-              <div className="flex justify-center">
+              {/* Actions row */}
+              <div className="flex justify-end pt-2 border-t border-border/30">
                 <PaymentActions 
                   payment={charge}
                   onEdit={onEditPayment}
@@ -136,30 +139,29 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-3">
       {/* Header */}
-      <div className={`grid gap-3 pb-2 border-b text-sm font-medium text-muted-foreground ${isMobile ? 'grid-cols-4' : 'grid-cols-5'}`}>
+      <div className="grid grid-cols-3 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
-        {!isMobile && <div className="text-center">Vencimento</div>}
         <div className="text-center">Pagamento</div>
         <div className="text-right">Valor</div>
-        <div className="text-center">Ações</div>
       </div>
       
       {/* Rows */}
-      <div className="space-y-2">
-        {charges.map(charge => <div key={charge.id} className={`grid gap-3 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors ${isMobile ? 'grid-cols-4' : 'grid-cols-5'}`}>
-            <div className="text-sm text-foreground">
-              {truncateDescription(charge.description || '')}
+      <div className="space-y-3">
+        {charges.map(charge => <div key={charge.id} className="border border-border/50 rounded-lg p-3 hover:bg-muted/30 transition-colors">
+            {/* Main row with payment info */}
+            <div className="grid grid-cols-3 gap-4 mb-2">
+              <div className="text-sm text-foreground">
+                {truncateDescription(charge.description || '', 15)}
+              </div>
+              <div className="text-sm text-center text-muted-foreground">
+                {charge.paid_date ? formatDate(charge.paid_date) : '-'}
+              </div>
+              <div className="text-sm text-right font-medium text-foreground">
+                {formatCurrency(charge.amount)}
+              </div>
             </div>
-            {!isMobile && <div className="text-sm text-center text-muted-foreground">
-                {formatDate(charge.due_date)}
-              </div>}
-            <div className="text-sm text-center text-muted-foreground">
-              {charge.paid_date ? formatDate(charge.paid_date) : '-'}
-            </div>
-            <div className="text-sm text-right font-medium text-foreground">
-              {formatCurrency(charge.amount)}
-            </div>
-            <div className="flex justify-center">
+            {/* Actions row */}
+            <div className="flex justify-end pt-2 border-t border-border/30">
               <PaymentActions 
                 payment={charge}
                 onEdit={onEditPayment}
