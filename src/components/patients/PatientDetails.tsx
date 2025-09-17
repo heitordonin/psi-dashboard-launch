@@ -1,10 +1,10 @@
-import React from 'react';
-import { Edit2, Mail, Phone, MapPin, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit2, Mail, Phone, MapPin, CreditCard, CheckCircle, AlertCircle, MoreVertical, Pencil, Trash2, Undo2, MessageCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedSkeleton } from '@/components/ui/enhanced-skeleton';
-import { PaymentActions } from '@/components/payments/PaymentActions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { formatCurrency } from '@/utils/priceFormatter';
 import { MobilePatientHeader } from './MobilePatientHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -32,6 +32,7 @@ export const PatientDetails = ({
   onDeletePayment
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   if (!patient) {
     if (isMobile) {
       return null; // Don't show placeholder on mobile
@@ -75,7 +76,61 @@ export const PatientDetails = ({
     if (!description || description.length <= maxLength) return description || 'Sem descrição';
     return description.substring(0, maxLength) + '...';
   };
-  const LoadingState = () => <div className="space-y-6 p-6">
+  // Helper function to render payment action menu items
+  const renderPaymentMenuItems = (charge: PaymentWithPatient) => {
+    const isBlockedByReceitaSaude = charge.receita_saude_receipt_issued;
+    const canMarkPaid = charge.status !== 'paid' && !charge.has_payment_link && !isBlockedByReceitaSaude;
+    const canMarkUnpaid = (charge.status === 'paid' || charge.paid_date) && !isBlockedByReceitaSaude;
+    const canEdit = !(charge.has_payment_link || isBlockedByReceitaSaude);
+    const canDelete = !(charge.status === 'paid' || isBlockedByReceitaSaude);
+    const canSendEmail = charge.status === 'pending' && !!charge.patients?.email && charge.patients.email.includes('@');
+
+    return (
+      <>
+        {isBlockedByReceitaSaude && (
+          <>
+            <div className="px-3 py-2 bg-orange-50 border-l-4 border-orange-400 mx-1 my-1 rounded">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <span className="text-xs font-medium text-orange-800">
+                  Receita Saúde Emitida
+                </span>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">
+                Algumas ações estão bloqueadas
+              </p>
+            </div>
+            <div className="h-px bg-border my-1" />
+          </>
+        )}
+        {canMarkPaid && (
+          <DropdownMenuItem onClick={() => {/* TODO: implement */}} className="min-h-[40px]">
+            <CheckCircle className="h-4 w-4 mr-2" /> Marcar como Pago
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canSendEmail} className="min-h-[40px]">
+          <Mail className="h-4 w-4 mr-2" /> Lembrete Email
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!charge.patients?.phone || charge.status !== 'pending'} className="min-h-[40px]">
+          <MessageCircle className="h-4 w-4 mr-2" /> Lembrete WhatsApp
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onEditPayment?.(charge)} disabled={!canEdit} className="min-h-[40px]">
+          <Pencil className="h-4 w-4 mr-2" /> Editar
+        </DropdownMenuItem>
+        {(charge.status === 'paid' || charge.paid_date) && (
+          <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canMarkUnpaid} className={`min-h-[40px] ${!canMarkUnpaid ? 'opacity-50' : ''}`}>
+            <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => onDeletePayment?.(charge.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
+          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+        </DropdownMenuItem>
+      </>
+    );
+  };
+
+  const LoadingState = () => (
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <EnhancedSkeleton variant="shimmer" className="h-8 w-48" />
         <EnhancedSkeleton variant="pulse" className="h-8 w-20" />
@@ -84,7 +139,8 @@ export const PatientDetails = ({
         <EnhancedSkeleton variant="shimmer" className="h-24 rounded-lg" />
         <EnhancedSkeleton variant="pulse" className="h-24 rounded-lg" />
       </div>
-    </div>;
+    </div>
+  );
   if (isLoading) {
     return <Card className="h-full">
         <LoadingState />
@@ -96,39 +152,36 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-2">
       {/* Header */}
-      <div className="grid grid-cols-4 gap-2 pb-2 border-b text-sm font-medium text-muted-foreground">
+      <div className="grid grid-cols-3 gap-2 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
         <div className="text-center">Vencimento</div>
         <div className="text-right">Valor</div>
-        <div className="text-right">Ações</div>
       </div>
       
       {/* Rows */}
       <div className="space-y-1">
         {charges.map(charge => {
         const isOverdue = createSafeDateFromString(charge.due_date) < getTodayLocalDate();
-        return <div 
-              key={charge.id} 
-              className="grid grid-cols-4 gap-2 py-3 px-2 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border/30 items-center"
-            >
-              <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                {truncateDescription(charge.description || '', 25)}
+        return <DropdownMenu key={charge.id} open={selectedPaymentId === charge.id} onOpenChange={(open) => setSelectedPaymentId(open ? charge.id : null)}>
+              <DropdownMenuTrigger asChild>
+                <div 
+                  className="grid grid-cols-3 gap-2 py-3 px-2 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border/30 items-center cursor-pointer"
+                >
+                  <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                    {truncateDescription(charge.description || '', 25)}
+                  </div>
+                  <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
+                    {formatDate(charge.due_date)}
+                  </div>
+                  <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
+                    {formatCurrency(charge.amount)}
+                  </div>
               </div>
-              <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
-                {formatDate(charge.due_date)}
-              </div>
-              <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
-                {formatCurrency(charge.amount)}
-              </div>
-              <div className="text-right">
-                <PaymentActions
-                  payment={charge}
-                  onEdit={onEditPayment}
-                  onDelete={onDeletePayment}
-                  layout="compact"
-                />
-              </div>
-            </div>;
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+              {renderPaymentMenuItems(charge)}
+            </DropdownMenuContent>
+            </DropdownMenu>;
       })}
       </div>
     </div>;
@@ -138,37 +191,34 @@ export const PatientDetails = ({
     charges: PaymentWithPatient[];
   }) => <div className="space-y-2">
       {/* Header */}
-      <div className="grid grid-cols-4 gap-2 pb-2 border-b text-sm font-medium text-muted-foreground">
+      <div className="grid grid-cols-3 gap-2 pb-2 border-b text-sm font-medium text-muted-foreground">
         <div>Descrição</div>
         <div className="text-center">Pagamento</div>
         <div className="text-right">Valor</div>
-        <div className="text-right">Ações</div>
       </div>
       
       {/* Rows */}
       <div className="space-y-1">
-        {charges.map(charge => <div 
-            key={charge.id} 
-            className="grid grid-cols-4 gap-2 py-3 px-2 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border/30 items-center"
-          >
-            <div className="text-sm text-foreground">
-              {truncateDescription(charge.description || '', 25)}
-            </div>
-            <div className="text-sm text-center text-muted-foreground">
-              {charge.paid_date ? formatDate(charge.paid_date) : '-'}
-            </div>
-            <div className="text-sm text-right font-medium text-foreground">
-              {formatCurrency(charge.amount)}
-            </div>
-            <div className="text-right">
-              <PaymentActions
-                payment={charge}
-                onEdit={onEditPayment}
-                onDelete={onDeletePayment}
-                layout="compact"
-              />
-            </div>
-          </div>)}
+        {charges.map(charge => <DropdownMenu key={charge.id} open={selectedPaymentId === charge.id} onOpenChange={(open) => setSelectedPaymentId(open ? charge.id : null)}>
+            <DropdownMenuTrigger asChild>
+              <div 
+                className="grid grid-cols-3 gap-2 py-3 px-2 rounded-md hover:bg-muted/50 transition-colors border border-transparent hover:border-border/30 items-center cursor-pointer"
+              >
+                <div className="text-sm text-foreground">
+                  {truncateDescription(charge.description || '', 25)}
+                </div>
+                <div className="text-sm text-center text-muted-foreground">
+                  {charge.paid_date ? formatDate(charge.paid_date) : '-'}
+                </div>
+                <div className="text-sm text-right font-medium text-foreground">
+                  {formatCurrency(charge.amount)}
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
+              {renderPaymentMenuItems(charge)}
+            </DropdownMenuContent>
+          </DropdownMenu>)}
       </div>
     </div>;
   return <>
