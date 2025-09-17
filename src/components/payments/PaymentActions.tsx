@@ -15,7 +15,7 @@ import { WhatsAppConfirmationDialog } from "./WhatsAppConfirmationDialog";
 import { PaymentDateModal } from "./PaymentDateModal";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/SupabaseAuthContext";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
 import { useWhatsAppLimit } from "@/hooks/useWhatsAppLimit";
@@ -35,6 +35,7 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
+  const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
   
   // WhatsApp hooks
   const { user } = useAuth();
@@ -120,6 +121,10 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
   };
 
   const handleMarkAsUnpaid = () => {
+    if (!canMarkUnpaid) {
+      setIsExplanationDialogOpen(true);
+      return;
+    }
     markAsUnpaidMutation.mutate();
   };
 
@@ -284,35 +289,15 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
             <DropdownMenuItem onClick={() => onEdit(payment)} disabled={!canEdit} className="min-h-[40px]">
               <Pencil className="h-4 w-4 mr-2" /> Editar
             </DropdownMenuItem>
-            {canMarkUnpaid && (
-              <DropdownMenuItem onClick={handleMarkAsUnpaid} className="min-h-[40px]">
+            {/* Always show the mark as unpaid option for paid payments */}
+            {(payment.status === 'paid' || payment.paid_date) && (
+              <DropdownMenuItem 
+                onClick={handleMarkAsUnpaid} 
+                disabled={!canMarkUnpaid} 
+                className={`min-h-[40px] ${!canMarkUnpaid ? 'opacity-50' : ''}`}
+              >
                 <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
               </DropdownMenuItem>
-            )}
-            {/* Show blocked option with tooltip when payment is paid but blocked by receita saude */}
-            {(payment.status === 'paid' || payment.paid_date) && !canMarkUnpaid && isBlockedByReceitaSaude && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <DropdownMenuItem disabled className="min-h-[40px] opacity-50">
-                        <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
-                      </DropdownMenuItem>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="max-w-xs">
-                      <p className="font-medium text-orange-600 mb-2">❌ Recibo da Receita Saúde já foi emitido</p>
-                      <p className="text-sm mb-1">📝 Para permitir alterações:</p>
-                      <ol className="text-sm space-y-1 list-decimal list-inside">
-                        <li>Acesse 'Controle Receita Saúde'</li>
-                        <li>Desmarque o recibo deste pagamento</li>
-                        <li>Retorne aqui - a opção ficará disponível</li>
-                      </ol>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             )}
             <DropdownMenuItem onClick={() => onDelete(payment.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
               <Trash2 className="h-4 w-4 mr-2" /> Excluir
@@ -348,6 +333,35 @@ export function PaymentActions({ payment, onEdit, onDelete, layout = 'default' }
           planSlug={planSlug}
           messagesRemaining={messagesRemaining}
         />
+
+        {/* Explanation Dialog */}
+        <Dialog open={isExplanationDialogOpen} onOpenChange={setIsExplanationDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-orange-600">❌ Operação Bloqueada</DialogTitle>
+              <DialogDescription asChild>
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    O recibo da Receita Saúde já foi emitido para este pagamento.
+                  </p>
+                  <div>
+                    <p className="text-sm font-medium mb-2">📝 Para permitir alterações:</p>
+                    <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
+                      <li>Acesse 'Controle Receita Saúde'</li>
+                      <li>Desmarque o recibo deste pagamento</li>
+                      <li>Retorne aqui - a opção ficará disponível</li>
+                    </ol>
+                  </div>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setIsExplanationDialogOpen(false)}>
+                Entendi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
