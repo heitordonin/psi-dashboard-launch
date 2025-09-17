@@ -93,7 +93,7 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
           <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
@@ -130,7 +130,7 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
                       {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Selecionar data"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 z-[9999]" align="start">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
