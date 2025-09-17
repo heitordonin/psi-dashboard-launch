@@ -2,6 +2,7 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle, Calendar, User, FileText, CreditCard } from "lucide-react";
+import { createSafeDateFromString, getTodayLocalDate } from "@/utils/dateUtils";
 import type { PaymentWithPatient } from "@/types/payment";
 
 interface PaymentMainInfoProps {
@@ -17,11 +18,11 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
   };
 
   const formatDate = (dateString: string) => {
-    // Para datas no formato YYYY-MM-DD, criar a data diretamente sem conversão de timezone
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month - 1 porque Date usa 0-based months
-    return format(date, 'dd/MM/yyyy', { locale: ptBR });
+    return createSafeDateFromString(dateString).toLocaleDateString('pt-BR');
   };
+
+  // Check if payment is overdue and not paid
+  const isOverdue = !payment.paid_date && createSafeDateFromString(payment.due_date) < getTodayLocalDate();
 
   return (
     <div className="flex-1 space-y-3">
@@ -42,8 +43,8 @@ export function PaymentMainInfo({ payment }: PaymentMainInfoProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-500" />
-          <span>Vencimento: {formatDate(payment.due_date)}</span>
+          <Calendar className={`w-4 h-4 ${isOverdue ? 'text-red-500' : 'text-gray-500'}`} />
+          <span className={isOverdue ? 'text-red-600' : ''}>Vencimento: {formatDate(payment.due_date)}</span>
         </div>
 
         {payment.paid_date && (
