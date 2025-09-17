@@ -131,10 +131,10 @@ export function PaymentDateModal({ isOpen, onClose, onConfirm, isLoading = false
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent 
-                    className="w-auto p-0 z-[10000]" 
-                    align="center" 
+                    className="w-auto p-0" 
+                    align="start" 
                     side="bottom"
-                    sideOffset={8}
+                    sideOffset={16}
                   >
                     <Calendar
                       mode="single"
