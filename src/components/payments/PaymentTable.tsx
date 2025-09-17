@@ -1,5 +1,8 @@
 import { PaymentTableRow } from "./PaymentTableRow";
 import { PaymentActions } from "./PaymentActions";
+import { useTableSorting, type SortField } from "@/hooks/useTableSorting";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Payment, PaymentWithPatient } from "@/types/payment";
 
 interface PaymentTableProps {
@@ -9,6 +12,29 @@ interface PaymentTableProps {
 }
 
 export function PaymentTable({ payments, onEdit, onDelete }: PaymentTableProps) {
+  const { sortedPayments, handleSort, getSortIcon } = useTableSorting(payments);
+
+  const renderSortButton = (field: SortField, label: string) => {
+    const sortIcon = getSortIcon(field);
+    
+    return (
+      <button
+        onClick={() => handleSort(field)}
+        className={cn(
+          "group inline-flex items-center space-x-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700 focus:outline-none focus:text-gray-700",
+          sortIcon && "text-gray-700"
+        )}
+      >
+        <span>{label}</span>
+        <span className="ml-2 flex-none rounded">
+          {sortIcon === 'asc' && <ArrowUp className="w-3 h-3" />}
+          {sortIcon === 'desc' && <ArrowDown className="w-3 h-3" />}
+          {!sortIcon && <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-100" />}
+        </span>
+      </button>
+    );
+  };
+
   if (payments.length === 0) {
     return (
       <div className="text-center py-12">
@@ -27,23 +53,23 @@ export function PaymentTable({ payments, onEdit, onDelete }: PaymentTableProps) 
           <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Paciente
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('patient', 'Paciente')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descrição
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('description', 'Descrição')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('status', 'Status')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Valor
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('amount', 'Valor')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vencimento
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('due_date', 'Vencimento')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pagamento
+                <th scope="col" className="px-6 py-3 text-left">
+                  {renderSortButton('paid_date', 'Pagamento')}
                 </th>
                 <th scope="col" className="relative px-6 py-3">
                   <span className="sr-only">Ações</span>
@@ -51,7 +77,7 @@ export function PaymentTable({ payments, onEdit, onDelete }: PaymentTableProps) 
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {payments.map(payment => (
+              {sortedPayments.map(payment => (
                 <PaymentTableRow
                   key={payment.id}
                   payment={payment}
@@ -67,7 +93,7 @@ export function PaymentTable({ payments, onEdit, onDelete }: PaymentTableProps) 
       {/* Mobile version - simplified cards */}
       <div className="sm:hidden">
         <ul className="divide-y divide-gray-200">
-          {payments.map(payment => (
+          {sortedPayments.map(payment => (
             <li key={payment.id} className="px-4 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
