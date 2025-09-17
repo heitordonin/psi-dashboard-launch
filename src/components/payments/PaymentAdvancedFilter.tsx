@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import type { PaymentFilters } from "@/hooks/usePaymentFilters";
 
 interface PaymentAdvancedFilterProps {
@@ -20,14 +20,22 @@ export function PaymentAdvancedFilter({
   patients 
 }: PaymentAdvancedFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [filters, setFilters] = useState<PaymentFilters>(currentFilters);
+  const [tempFilters, setTempFilters] = useState<PaymentFilters>(currentFilters);
+
+  // Check if any filter is active
+  const hasActiveFilters = currentFilters.patientId || 
+    currentFilters.startDate || 
+    currentFilters.endDate || 
+    currentFilters.status || 
+    currentFilters.minAmount || 
+    currentFilters.maxAmount;
 
   const handleApplyFilters = () => {
     // Convert "__all" back to empty string for filtering logic
     const processedFilters = {
-      ...filters,
-      patientId: filters.patientId === "__all" ? "" : filters.patientId,
-      status: filters.status === "__all" ? "" : filters.status
+      ...tempFilters,
+      patientId: tempFilters.patientId === "__all" ? "" : tempFilters.patientId,
+      status: tempFilters.status === "__all" ? "" : tempFilters.status
     };
     onFilterChange(processedFilters);
     setIsOpen(false);
@@ -42,17 +50,32 @@ export function PaymentAdvancedFilter({
       minAmount: "",
       maxAmount: ""
     };
-    setFilters(emptyFilters);
+    setTempFilters(emptyFilters);
     onFilterChange(emptyFilters);
     setIsOpen(false);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open) {
+      // Reset temp filters to current filters when opening
+      setTempFilters(currentFilters);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="whitespace-nowrap">
+        <Button 
+          variant="outline" 
+          className={`flex-1 sm:flex-none relative whitespace-nowrap ${hasActiveFilters ? 'bg-primary/10 border-primary text-primary' : ''}`}
+        >
           <Filter className="w-4 h-4 mr-2" />
-          Filtros
+          <span className="hidden sm:inline">Filtros avançados</span>
+          <span className="sm:hidden">Filtros</span>
+          {hasActiveFilters && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -63,8 +86,8 @@ export function PaymentAdvancedFilter({
           <div>
             <Label htmlFor="patient">Paciente</Label>
             <Select 
-              value={filters.patientId || "__all"} 
-              onValueChange={(value) => setFilters({ ...filters, patientId: value })}
+              value={tempFilters.patientId || "__all"} 
+              onValueChange={(value) => setTempFilters({ ...tempFilters, patientId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os pacientes" />
@@ -85,8 +108,8 @@ export function PaymentAdvancedFilter({
             <Input
               id="startDate"
               type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              value={tempFilters.startDate}
+              onChange={(e) => setTempFilters({ ...tempFilters, startDate: e.target.value })}
             />
           </div>
 
@@ -95,16 +118,16 @@ export function PaymentAdvancedFilter({
             <Input
               id="endDate"
               type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              value={tempFilters.endDate}
+              onChange={(e) => setTempFilters({ ...tempFilters, endDate: e.target.value })}
             />
           </div>
 
           <div>
             <Label htmlFor="status">Status</Label>
             <Select 
-              value={filters.status || "__all"} 
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
+              value={tempFilters.status || "__all"} 
+              onValueChange={(value) => setTempFilters({ ...tempFilters, status: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os status" />
@@ -123,8 +146,8 @@ export function PaymentAdvancedFilter({
             <Input
               id="minAmount"
               type="number"
-              value={filters.minAmount}
-              onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+              value={tempFilters.minAmount}
+              onChange={(e) => setTempFilters({ ...tempFilters, minAmount: e.target.value })}
               placeholder="R$ 0,00"
             />
           </div>
@@ -134,18 +157,19 @@ export function PaymentAdvancedFilter({
             <Input
               id="maxAmount"
               type="number"
-              value={filters.maxAmount}
-              onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+              value={tempFilters.maxAmount}
+              onChange={(e) => setTempFilters({ ...tempFilters, maxAmount: e.target.value })}
               placeholder="R$ 0,00"
             />
           </div>
 
           <div className="flex gap-2 pt-4">
             <Button onClick={handleClearFilters} variant="outline" className="flex-1">
+              <X className="w-4 h-4 mr-2" />
               Limpar
             </Button>
             <Button onClick={handleApplyFilters} className="flex-1">
-              Aplicar
+              Aplicar Filtros
             </Button>
           </div>
         </div>
