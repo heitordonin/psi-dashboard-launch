@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { PaymentItem } from "./PaymentItem";
+import { PaymentTable } from "./PaymentTable";
 import { EnhancedSkeleton } from "@/components/ui/enhanced-skeleton";
 import { ThumbZoneActions } from "@/components/ui/thumb-zone-actions";
 import { PullToRefreshContainer } from "@/components/ui/pull-to-refresh";
@@ -107,12 +107,12 @@ export const PaymentsList = ({
       </>;
   }
   const content = <>
-      {/* Items per page selector */}
-      
-
-      <div className="space-y-4">
-        {paginatedPayments.map(payment => <PaymentItem key={payment.id} payment={payment} onEdit={onEditPayment} onDelete={onDeletePayment} />)}
-      </div>
+      {/* Tabela de pagamentos */}
+      <PaymentTable 
+        payments={paginatedPayments}
+        onEdit={onEditPayment}
+        onDelete={onDeletePayment}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && <div className="mt-6">
