@@ -9,6 +9,7 @@ import { formatCurrency } from '@/utils/priceFormatter';
 import { cn } from '@/lib/utils';
 import { MobilePatientHeader } from './MobilePatientHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { createSafeDateFromString, getTodayLocalDate } from '@/utils/dateUtils';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
@@ -56,9 +57,8 @@ export const PatientDetails = ({
   const paidCharges = patientCharges.filter(charge => charge.status === 'paid');
 
   // Calculate overdue charges
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const overdueCharges = pendingCharges.filter(charge => new Date(charge.due_date) < today);
+  const today = getTodayLocalDate();
+  const overdueCharges = pendingCharges.filter(charge => createSafeDateFromString(charge.due_date) < today);
 
   // Calculate totals
   const totalPending = pendingCharges.reduce((sum, charge) => sum + Number(charge.amount), 0);
@@ -66,6 +66,12 @@ export const PatientDetails = ({
   const totalOverdue = overdueCharges.reduce((sum, charge) => sum + Number(charge.amount), 0);
   const documentLabel = patient.patient_type === 'company' ? 'CNPJ' : 'CPF';
   const documentValue = patient.patient_type === 'company' ? patient.cnpj : patient.cpf;
+  
+  // Safe date formatting function
+  const formatDate = (dateString: string): string => {
+    return createSafeDateFromString(dateString).toLocaleDateString('pt-BR');
+  };
+  
   const truncateDescription = (description: string, maxLength: number = 12): string => {
     if (!description || description.length <= maxLength) return description || 'Sem descrição';
     return description.substring(0, maxLength) + '...';
@@ -101,13 +107,13 @@ export const PatientDetails = ({
       {/* Rows */}
       <div className="space-y-2">
         {charges.map(charge => {
-        const isOverdue = new Date(charge.due_date) < new Date();
+        const isOverdue = createSafeDateFromString(charge.due_date) < getTodayLocalDate();
         return <div key={charge.id} className="grid grid-cols-4 gap-4 py-2 border-b border-border/50 hover:bg-muted/30 transition-colors">
               <div className={`text-sm ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
                 {truncateDescription(charge.description || '')}
               </div>
               <div className={`text-sm text-center ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}>
-                {new Date(charge.due_date).toLocaleDateString('pt-BR')}
+                {formatDate(charge.due_date)}
               </div>
               <div className={`text-sm text-right font-medium ${isOverdue ? 'text-red-600' : 'text-foreground'}`}>
                 {formatCurrency(charge.amount)}
@@ -145,10 +151,10 @@ export const PatientDetails = ({
               {truncateDescription(charge.description || '')}
             </div>
             {!isMobile && <div className="text-sm text-center text-muted-foreground">
-                {new Date(charge.due_date).toLocaleDateString('pt-BR')}
+                {formatDate(charge.due_date)}
               </div>}
             <div className="text-sm text-center text-muted-foreground">
-              {charge.paid_date ? new Date(charge.paid_date).toLocaleDateString('pt-BR') : '-'}
+              {charge.paid_date ? formatDate(charge.paid_date) : '-'}
             </div>
             <div className="text-sm text-right font-medium text-foreground">
               {formatCurrency(charge.amount)}
