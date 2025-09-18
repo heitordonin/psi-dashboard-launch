@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Edit2, Mail, Phone, MapPin, CreditCard, CheckCircle, AlertCircle, MoreVertical, Pencil, Trash2, Undo2, MessageCircle, Loader2 } from 'lucide-react';
+import { Edit2, Mail, Phone, MapPin, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedSkeleton } from '@/components/ui/enhanced-skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatCurrency } from '@/utils/priceFormatter';
 import { MobilePatientHeader } from './MobilePatientHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { createSafeDateFromString, getTodayLocalDate } from '@/utils/dateUtils';
+import { PaymentActions } from '@/components/payments/PaymentActions';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
@@ -76,58 +77,6 @@ export const PatientDetails = ({
     if (!description || description.length <= maxLength) return description || 'Sem descrição';
     return description.substring(0, maxLength) + '...';
   };
-  // Helper function to render payment action menu items
-  const renderPaymentMenuItems = (charge: PaymentWithPatient) => {
-    const isBlockedByReceitaSaude = charge.receita_saude_receipt_issued;
-    const canMarkPaid = charge.status !== 'paid' && !charge.has_payment_link && !isBlockedByReceitaSaude;
-    const canMarkUnpaid = (charge.status === 'paid' || charge.paid_date) && !isBlockedByReceitaSaude;
-    const canEdit = !(charge.has_payment_link || isBlockedByReceitaSaude);
-    const canDelete = !(charge.status === 'paid' || isBlockedByReceitaSaude);
-    const canSendEmail = charge.status === 'pending' && !!charge.patients?.email && charge.patients.email.includes('@');
-
-    return (
-      <>
-        {isBlockedByReceitaSaude && (
-          <>
-            <div className="px-3 py-2 bg-orange-50 border-l-4 border-orange-400 mx-1 my-1 rounded">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <span className="text-xs font-medium text-orange-800">
-                  Receita Saúde Emitida
-                </span>
-              </div>
-              <p className="text-xs text-orange-600 mt-1">
-                Algumas ações estão bloqueadas
-              </p>
-            </div>
-            <div className="h-px bg-border my-1" />
-          </>
-        )}
-        {canMarkPaid && (
-          <DropdownMenuItem onClick={() => {/* TODO: implement */}} className="min-h-[40px]">
-            <CheckCircle className="h-4 w-4 mr-2" /> Marcar como Pago
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canSendEmail} className="min-h-[40px]">
-          <Mail className="h-4 w-4 mr-2" /> Lembrete Email
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!charge.patients?.phone || charge.status !== 'pending'} className="min-h-[40px]">
-          <MessageCircle className="h-4 w-4 mr-2" /> Lembrete WhatsApp
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onEditPayment?.(charge)} disabled={!canEdit} className="min-h-[40px]">
-          <Pencil className="h-4 w-4 mr-2" /> Editar
-        </DropdownMenuItem>
-        {(charge.status === 'paid' || charge.paid_date) && (
-          <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canMarkUnpaid} className={`min-h-[40px] ${!canMarkUnpaid ? 'opacity-50' : ''}`}>
-            <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuItem onClick={() => onDeletePayment?.(charge.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
-          <Trash2 className="h-4 w-4 mr-2" /> Excluir
-        </DropdownMenuItem>
-      </>
-    );
-  };
 
   const LoadingState = () => (
     <div className="space-y-6 p-6">
@@ -179,7 +128,12 @@ export const PatientDetails = ({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
-              {renderPaymentMenuItems(charge)}
+              <PaymentActions 
+                payment={charge} 
+                onEdit={onEditPayment || (() => {})} 
+                onDelete={onDeletePayment || (() => {})} 
+                layout="compact" 
+              />
             </DropdownMenuContent>
             </DropdownMenu>;
       })}
@@ -216,7 +170,12 @@ export const PatientDetails = ({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background border shadow-lg min-w-[180px] z-50">
-              {renderPaymentMenuItems(charge)}
+              <PaymentActions 
+                payment={charge} 
+                onEdit={onEditPayment || (() => {})} 
+                onDelete={onDeletePayment || (() => {})} 
+                layout="compact" 
+              />
             </DropdownMenuContent>
           </DropdownMenu>)}
       </div>
