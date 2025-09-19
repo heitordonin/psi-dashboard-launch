@@ -40,7 +40,7 @@ const Patients = () => {
     handleNewPatient,
   } = usePatientsPageState();
 
-  const { isMobile, showingDetails, showPatientList, showPatientDetails } = useMobilePatientNavigation();
+  const { isMobile, showingDetails, showPatientList, showPatientListWithNavigation, showPatientDetails } = useMobilePatientNavigation({ navigate });
 
   const {
     selectedPatient,
@@ -181,7 +181,7 @@ const Patients = () => {
                       charges={charges}
                       isLoading={chargesLoading}
                       onEditPatient={() => selectedPatient && handleEditPatient(selectedPatient)}
-                      onBack={showPatientList}
+                      onBack={showPatientListWithNavigation}
                       onGeneratePayment={handleGeneratePayment}
                       onEditPayment={handleEditPayment}
                       onDeletePayment={handleDeletePayment}
