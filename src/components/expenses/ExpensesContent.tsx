@@ -139,14 +139,14 @@ export const ExpensesContent = ({ userId }: ExpensesContentProps) => {
       </div>
 
       <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
-        <DialogContent className="max-w-md p-0">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between border-b px-6 py-4">
+        <DialogContent className="w-[95vw] max-w-md sm:max-w-lg p-0 max-h-[95vh] overflow-hidden">
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between border-b px-4 sm:px-6 py-4 flex-shrink-0">
               <h2 className="text-lg font-semibold">
                 {editingExpense ? "Editar Despesa" : "Nova Despesa"}
               </h2>
             </div>
-            <div className="px-6 py-6">
+            <div className="px-4 sm:px-6 py-4 sm:py-6 overflow-y-auto flex-1">
               <ExpenseForm
                 expense={editingExpense}
                 onClose={handleCloseForm}

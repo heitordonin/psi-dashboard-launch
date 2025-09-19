@@ -433,7 +433,7 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
             )}
           />
 
-          <div className="flex gap-3 pt-6 border-t -mx-6 px-6 mt-6">
+          <div className="flex gap-3 pt-6 border-t -mx-4 sm:-mx-6 px-4 sm:px-6 mt-6">
             <Button 
               type="button" 
               variant="outline" 
