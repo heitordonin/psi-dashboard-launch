@@ -239,9 +239,8 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
   }, [watchIsResidential, watchAmount, selectedCategory, form]);
 
   return (
-    <div className="space-y-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="category_id"
@@ -434,7 +433,16 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
             )}
           />
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t -mx-6 px-6 mt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              disabled={mutation.isPending}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
             <Button 
               type="submit" 
               disabled={mutation.isPending}
@@ -445,17 +453,8 @@ export const ExpenseForm = ({ expense, onClose }: ExpenseFormProps) => {
                 : (expense ? "Atualizar" : "Criar")
               }
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              disabled={mutation.isPending}
-            >
-              Cancelar
-            </Button>
           </div>
         </form>
       </Form>
-    </div>
   );
 };
