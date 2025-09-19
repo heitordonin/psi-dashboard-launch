@@ -16,6 +16,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PaymentDateModal } from '@/components/payments/PaymentDateModal';
+import { DeleteConfirmationDialog } from '@/components/DeleteConfirmationDialog';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
@@ -42,6 +43,7 @@ export const PatientDetails = ({
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [pendingPaymentForDate, setPendingPaymentForDate] = useState<string | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<PaymentWithPatient | null>(null);
   const { user } = useAuth();
   const { sendWhatsApp } = useWhatsApp();
   const { canSend: canSendWhatsApp } = useWhatsAppLimit();
@@ -293,7 +295,7 @@ export const PatientDetails = ({
             Marcar como não pago
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => onDeletePayment?.(charge.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
+        <DropdownMenuItem onClick={() => setDeletingPayment(charge)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
           <Trash2 className="h-4 w-4 mr-2" /> Excluir
         </DropdownMenuItem>
       </>
@@ -531,6 +533,20 @@ export const PatientDetails = ({
         onClose={handleCloseDateModal}
         onConfirm={handleConfirmPayment}
         isLoading={markAsPaidMutation.isPending}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={!!deletingPayment}
+        onClose={() => setDeletingPayment(null)}
+        onConfirm={() => {
+          if (deletingPayment) {
+            onDeletePayment?.(deletingPayment.id);
+            setDeletingPayment(null);
+          }
+        }}
+        title="Excluir Cobrança"
+        description={`Tem certeza que deseja excluir a cobrança de ${deletingPayment ? formatCurrency(deletingPayment.amount) : ''} do paciente ${deletingPayment?.patients?.full_name || ''}? Esta ação não pode ser desfeita.`}
+        isLoading={false}
       />
     </>;
 };
