@@ -15,6 +15,7 @@ import { useWhatsAppLimit } from '@/hooks/useWhatsAppLimit';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PaymentDateModal } from '@/components/payments/PaymentDateModal';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
@@ -39,6 +40,8 @@ export const PatientDetails = ({
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+  const [pendingPaymentForDate, setPendingPaymentForDate] = useState<string | null>(null);
   const { user } = useAuth();
   const { sendWhatsApp } = useWhatsApp();
   const { canSend: canSendWhatsApp } = useWhatsAppLimit();
@@ -46,12 +49,12 @@ export const PatientDetails = ({
 
   // Mark as paid mutation
   const markAsPaidMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
+    mutationFn: async ({ paymentId, paidDate }: { paymentId: string; paidDate: Date }) => {
       const { error } = await supabase
         .from('payments')
         .update({ 
           status: 'paid',
-          paid_date: new Date().toISOString()
+          paid_date: paidDate.toISOString()
         })
         .eq('id', paymentId);
       
@@ -62,10 +65,14 @@ export const PatientDetails = ({
       queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
       toast.success('Cobrança marcada como paga!');
       setSelectedPaymentId(null);
+      setIsDateModalOpen(false);
+      setPendingPaymentForDate(null);
     },
     onError: (error) => {
       console.error('Error marking payment as paid:', error);
       toast.error('Erro ao marcar cobrança como paga');
+      setIsDateModalOpen(false);
+      setPendingPaymentForDate(null);
     }
   });
 
@@ -143,6 +150,23 @@ export const PatientDetails = ({
       console.error('Error sending WhatsApp:', error);
     }
   };
+
+  // Handlers for date modal
+  const handleMarkAsPaid = (paymentId: string) => {
+    setPendingPaymentForDate(paymentId);
+    setIsDateModalOpen(true);
+  };
+
+  const handleConfirmPayment = (date: Date) => {
+    if (pendingPaymentForDate) {
+      markAsPaidMutation.mutate({ paymentId: pendingPaymentForDate, paidDate: date });
+    }
+  };
+
+  const handleCloseDateModal = () => {
+    setIsDateModalOpen(false);
+    setPendingPaymentForDate(null);
+  };
   if (!patient) {
     if (isMobile) {
       return null; // Don't show placeholder on mobile
@@ -215,7 +239,7 @@ export const PatientDetails = ({
           </>
         )}
         {canMarkPaid && (
-          <DropdownMenuItem onClick={() => markAsPaidMutation.mutate(charge.id)} className="min-h-[40px]" disabled={markAsPaidMutation.isPending}>
+          <DropdownMenuItem onClick={() => handleMarkAsPaid(charge.id)} className="min-h-[40px]" disabled={markAsPaidMutation.isPending}>
             {markAsPaidMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -493,5 +517,11 @@ export const PatientDetails = ({
       </CardContent>
       </Card>
 
+      <PaymentDateModal
+        isOpen={isDateModalOpen}
+        onClose={handleCloseDateModal}
+        onConfirm={handleConfirmPayment}
+        isLoading={markAsPaidMutation.isPending}
+      />
     </>;
 };
