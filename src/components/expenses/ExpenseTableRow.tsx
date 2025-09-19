@@ -18,14 +18,6 @@ export function ExpenseTableRow({ expense, onEdit, onDelete }: ExpenseTableRowPr
         <div className="text-sm font-medium text-gray-900">
           {expense.expense_categories.name}
         </div>
-        <div className="text-sm text-gray-500">
-          {expense.expense_categories.code}
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="text-sm text-gray-900 max-w-xs truncate">
-          {expense.description || '-'}
-        </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">
@@ -39,20 +31,6 @@ export function ExpenseTableRow({ expense, onEdit, onDelete }: ExpenseTableRowPr
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        {expense.competency ? (
-          <span className="text-sm text-gray-900">{expense.competency}</span>
-        ) : (
-          <span className="text-sm text-gray-400">-</span>
-        )}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        {expense.is_residential ? (
-          <Badge variant="secondary">Residencial</Badge>
-        ) : (
-          <Badge variant="outline">Comercial</Badge>
-        )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <ExpenseActions 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import type { ExpenseWithCategory } from "@/types/expense";
 
-export type ExpenseSortField = 'category' | 'description' | 'amount' | 'payment_date' | 'competency';
+export type ExpenseSortField = 'category' | 'amount' | 'payment_date';
 export type SortDirection = 'asc' | 'desc' | null;
 
 interface SortConfig {
@@ -29,10 +29,6 @@ export function useExpenseTableSorting(expenses: ExpenseWithCategory[]) {
           aValue = a.expense_categories.name || '';
           bValue = b.expense_categories.name || '';
           break;
-        case 'description':
-          aValue = a.description || '';
-          bValue = b.description || '';
-          break;
         case 'amount':
           aValue = Number(a.residential_adjusted_amount || a.amount);
           bValue = Number(b.residential_adjusted_amount || b.amount);
@@ -40,10 +36,6 @@ export function useExpenseTableSorting(expenses: ExpenseWithCategory[]) {
         case 'payment_date':
           aValue = new Date(a.payment_date);
           bValue = new Date(b.payment_date);
-          break;
-        case 'competency':
-          aValue = a.competency || '';
-          bValue = b.competency || '';
           break;
         default:
           return 0;

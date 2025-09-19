@@ -59,19 +59,10 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
                   {renderSortButton('category', 'Categoria')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left">
-                  {renderSortButton('description', 'Descrição')}
-                </th>
-                <th scope="col" className="px-6 py-3 text-left">
                   {renderSortButton('amount', 'Valor')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left">
                   {renderSortButton('payment_date', 'Data Pagamento')}
-                </th>
-                <th scope="col" className="px-6 py-3 text-left">
-                  {renderSortButton('competency', 'Competência')}
-                </th>
-                <th scope="col" className="px-6 py-3 text-left">
-                  Tipo
                 </th>
                 <th scope="col" className="relative px-6 py-3">
                   <span className="sr-only">Ações</span>
@@ -109,20 +100,10 @@ export function ExpenseTable({ expenses, onEdit, onDelete }: ExpenseTableProps) 
                       {formatCurrency(effectiveAmount)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Pagamento: {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
+                      {new Date(expense.payment_date).toLocaleDateString('pt-BR')}
                     </p>
-                    {expense.competency && (
-                      <p className="text-xs text-gray-400">
-                        Competência: {expense.competency}
-                      </p>
-                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {expense.is_residential ? (
-                      <Badge variant="secondary">Residencial</Badge>
-                    ) : (
-                      <Badge variant="outline">Comercial</Badge>
-                    )}
+                  <div className="flex items-center">
                     <ExpenseActions 
                       expense={expense}
                       onEdit={onEdit}
