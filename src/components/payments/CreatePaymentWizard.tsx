@@ -53,6 +53,7 @@ export function CreatePaymentWizard({ isOpen, onClose, onSuccess, patients, paym
           totalSteps={getDisplayTotalSteps(formData, isEditMode)}
           stepTitle={getCurrentStepTitle(currentStep, formData, isEditMode)}
           title={isEditMode ? 'Editar Cobrança' : 'Nova Cobrança'}
+          onClose={handleClose}
         />
 
         <div className="py-6 px-6 overflow-y-auto flex-1 mobile-form-spacing">
