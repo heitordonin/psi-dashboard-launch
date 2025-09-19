@@ -9,6 +9,12 @@ import { formatCurrency } from '@/utils/priceFormatter';
 import { MobilePatientHeader } from './MobilePatientHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { createSafeDateFromString, getTodayLocalDate } from '@/utils/dateUtils';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useWhatsApp } from '@/hooks/useWhatsApp';
+import { useWhatsAppLimit } from '@/hooks/useWhatsAppLimit';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { Patient } from '@/types/patient';
 import type { PaymentWithPatient, Payment } from '@/types/payment';
 interface PatientDetailsProps {
@@ -33,6 +39,110 @@ export const PatientDetails = ({
 }: PatientDetailsProps) => {
   const isMobile = useIsMobile();
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { sendWhatsApp } = useWhatsApp();
+  const { canSend: canSendWhatsApp } = useWhatsAppLimit();
+  const queryClient = useQueryClient();
+
+  // Mark as paid mutation
+  const markAsPaidMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'paid',
+          paid_date: new Date().toISOString()
+        })
+        .eq('id', paymentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
+      toast.success('Cobrança marcada como paga!');
+      setSelectedPaymentId(null);
+    },
+    onError: (error) => {
+      console.error('Error marking payment as paid:', error);
+      toast.error('Erro ao marcar cobrança como paga');
+    }
+  });
+
+  // Mark as unpaid mutation
+  const markAsUnpaidMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'pending',
+          paid_date: null
+        })
+        .eq('id', paymentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['patient-charges'] });
+      toast.success('Cobrança marcada como pendente!');
+      setSelectedPaymentId(null);
+    },
+    onError: (error) => {
+      console.error('Error marking payment as unpaid:', error);
+      toast.error('Erro ao marcar cobrança como pendente');
+    }
+  });
+
+  // Email reminder mutation
+  const sendEmailReminderMutation = useMutation({
+    mutationFn: async (payment: PaymentWithPatient) => {
+      const { error } = await supabase.functions.invoke('send-email-reminder', {
+        body: { 
+          paymentId: payment.id,
+          patientEmail: payment.patients?.email,
+          patientName: payment.patients?.full_name,
+          amount: payment.amount,
+          dueDate: payment.due_date,
+          description: payment.description
+        }
+      });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Lembrete enviado por email!');
+      setSelectedPaymentId(null);
+    },
+    onError: (error) => {
+      console.error('Error sending email reminder:', error);
+      toast.error('Erro ao enviar lembrete por email');
+    }
+  });
+
+  // WhatsApp reminder handler
+  const handleSendWhatsApp = async (payment: PaymentWithPatient) => {
+    if (!canSendWhatsApp) {
+      toast.error('Limite de mensagens WhatsApp atingido');
+      return;
+    }
+
+    if (!payment.patients?.phone) {
+      toast.error('Paciente não possui telefone cadastrado');
+      return;
+    }
+
+    try {
+      await sendWhatsApp({
+        to: payment.patients.phone,
+        message: `Olá ${payment.patients.full_name}! Você possui uma cobrança de ${formatCurrency(payment.amount)} com vencimento em ${createSafeDateFromString(payment.due_date).toLocaleDateString('pt-BR')}. ${payment.description || ''}`,
+        paymentId: payment.id
+      });
+      setSelectedPaymentId(null);
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+    }
+  };
   if (!patient) {
     if (isMobile) {
       return null; // Don't show placeholder on mobile
@@ -84,6 +194,7 @@ export const PatientDetails = ({
     const canEdit = !(charge.has_payment_link || isBlockedByReceitaSaude);
     const canDelete = !(charge.status === 'paid' || isBlockedByReceitaSaude);
     const canSendEmail = charge.status === 'pending' && !!charge.patients?.email && charge.patients.email.includes('@');
+    const canSendWhatsAppMsg = charge.status === 'pending' && !!charge.patients?.phone && canSendWhatsApp;
 
     return (
       <>
@@ -104,22 +215,49 @@ export const PatientDetails = ({
           </>
         )}
         {canMarkPaid && (
-          <DropdownMenuItem onClick={() => {/* TODO: implement */}} className="min-h-[40px]">
-            <CheckCircle className="h-4 w-4 mr-2" /> Marcar como Pago
+          <DropdownMenuItem onClick={() => markAsPaidMutation.mutate(charge.id)} className="min-h-[40px]" disabled={markAsPaidMutation.isPending}>
+            {markAsPaidMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-2" />
+            )}
+            Marcar como Pago
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canSendEmail} className="min-h-[40px]">
-          <Mail className="h-4 w-4 mr-2" /> Lembrete Email
+        <DropdownMenuItem 
+          onClick={() => sendEmailReminderMutation.mutate(charge)} 
+          disabled={!canSendEmail || sendEmailReminderMutation.isPending} 
+          className="min-h-[40px]"
+        >
+          {sendEmailReminderMutation.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Mail className="h-4 w-4 mr-2" />
+          )}
+          Lembrete Email
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!charge.patients?.phone || charge.status !== 'pending'} className="min-h-[40px]">
+        <DropdownMenuItem 
+          onClick={() => handleSendWhatsApp(charge)} 
+          disabled={!canSendWhatsAppMsg} 
+          className="min-h-[40px]"
+        >
           <MessageCircle className="h-4 w-4 mr-2" /> Lembrete WhatsApp
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEditPayment?.(charge)} disabled={!canEdit} className="min-h-[40px]">
           <Pencil className="h-4 w-4 mr-2" /> Editar
         </DropdownMenuItem>
         {(charge.status === 'paid' || charge.paid_date) && (
-          <DropdownMenuItem onClick={() => {/* TODO: implement */}} disabled={!canMarkUnpaid} className={`min-h-[40px] ${!canMarkUnpaid ? 'opacity-50' : ''}`}>
-            <Undo2 className="h-4 w-4 mr-2" /> Marcar como não pago
+          <DropdownMenuItem 
+            onClick={() => markAsUnpaidMutation.mutate(charge.id)} 
+            disabled={!canMarkUnpaid || markAsUnpaidMutation.isPending} 
+            className={`min-h-[40px] ${!canMarkUnpaid ? 'opacity-50' : ''}`}
+          >
+            {markAsUnpaidMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Undo2 className="h-4 w-4 mr-2" />
+            )}
+            Marcar como não pago
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={() => onDeletePayment?.(charge.id)} disabled={!canDelete} className="text-red-600 min-h-[40px]">
