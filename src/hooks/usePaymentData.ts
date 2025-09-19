@@ -57,6 +57,18 @@ export const usePaymentData = (userId: string | undefined) => {
 
   const deletePaymentMutation = useMutation({
     mutationFn: async (paymentId: string) => {
+      // First delete related whatsapp_logs to avoid foreign key constraint
+      const { error: whatsappError } = await supabase
+        .from('whatsapp_logs')
+        .delete()
+        .eq('payment_id', paymentId);
+      
+      if (whatsappError) {
+        console.warn('Warning deleting whatsapp_logs:', whatsappError);
+        // Continue with payment deletion even if whatsapp_logs deletion fails
+      }
+
+      // Then delete the payment
       const { error } = await supabase
         .from('payments')
         .delete()

@@ -104,11 +104,16 @@ export const PatientDetails = ({
   // Email reminder mutation
   const sendEmailReminderMutation = useMutation({
     mutationFn: async (payment: PaymentWithPatient) => {
+      // Validate email exists
+      if (!payment.patients?.email) {
+        throw new Error('Paciente não possui email cadastrado');
+      }
+
       const { error } = await supabase.functions.invoke('send-email-reminder', {
         body: { 
           paymentId: payment.id,
-          patientEmail: payment.patients?.email,
-          patientName: payment.patients?.full_name,
+          patientEmail: payment.patients.email,
+          patientName: payment.patients.full_name,
           amount: payment.amount,
           dueDate: payment.due_date,
           description: payment.description
@@ -123,7 +128,11 @@ export const PatientDetails = ({
     },
     onError: (error) => {
       console.error('Error sending email reminder:', error);
-      toast.error('Erro ao enviar lembrete por email');
+      if (error.message?.includes('email cadastrado')) {
+        toast.error('Paciente não possui email cadastrado');
+      } else {
+        toast.error('Erro ao enviar lembrete por email');
+      }
     }
   });
 
