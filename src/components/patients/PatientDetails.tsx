@@ -112,7 +112,7 @@ export const PatientDetails = ({
       const { error } = await supabase.functions.invoke('send-email-reminder', {
         body: { 
           paymentId: payment.id,
-          patientEmail: payment.patients.email,
+          recipientEmail: payment.patients.email,
           patientName: payment.patients.full_name,
           amount: payment.amount,
           dueDate: payment.due_date,
