@@ -54,6 +54,7 @@ const Patients = () => {
   // Payment wizard state
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [preSelectedPatientId, setPreSelectedPatientId] = useState<string>('');
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   
   // Payment data for deletion
   const { deletePaymentMutation } = usePaymentData(user?.id);
@@ -89,12 +90,13 @@ const Patients = () => {
   const handleClosePaymentWizard = () => {
     setShowPaymentWizard(false);
     setPreSelectedPatientId('');
+    setEditingPayment(null);
   };
 
   const handleEditPayment = (payment: Payment) => {
-    // For now, we'll use the existing payment editing flow
-    // This could be enhanced later with a dedicated edit modal
-    console.log('Edit payment:', payment);
+    setEditingPayment(payment);
+    setPreSelectedPatientId('');
+    setShowPaymentWizard(true);
   };
 
   const handleDeletePayment = (paymentId: string) => {
@@ -202,6 +204,7 @@ const Patients = () => {
                 onClose={handleClosePaymentWizard}
                 patients={patients}
                 preSelectedPatientId={preSelectedPatientId}
+                paymentToEdit={editingPayment}
               />
             )}
 
